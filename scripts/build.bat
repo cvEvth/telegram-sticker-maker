@@ -18,7 +18,10 @@ if not defined VSINSTALL (
     echo [build] MSVC not found. Install Visual Studio 2022 Build Tools with the C++ workload.
     exit /b 1
 )
+rem vcvars64 points VCPKG_ROOT at the vcpkg bundled with Visual Studio (if installed); keep ours.
+set "TSM_VCPKG_ROOT=%VCPKG_ROOT%"
 call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" >nul || exit /b 1
+set "VCPKG_ROOT=%TSM_VCPKG_ROOT%"
 
 cd /d "%~dp0.."
 cmake --preset %PRESET% || exit /b 1
