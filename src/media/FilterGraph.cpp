@@ -2,6 +2,9 @@
 
 #include "core/CropMath.h"
 
+#include <QImage>
+#include <QPainter>
+#include <QPainterPath>
 #include <QStringList>
 #include <algorithm>
 
@@ -33,6 +36,20 @@ QString presetFilter(EncodePreset preset)
     case EncodePreset::Fast: return {};
     }
     return {};
+}
+
+bool writeRoundMask(QSize size, double radius, const QString& path)
+{
+    QImage mask(size, QImage::Format_Grayscale8);
+    mask.fill(Qt::black);
+    QPainter painter(&mask);
+    painter.setRenderHint(QPainter::Antialiasing);
+    const double r = std::min(size.width(), size.height()) / 2.0 * std::clamp(radius, 0.0, 1.0);
+    QPainterPath shape;
+    shape.addRoundedRect(QRectF(QPointF(0, 0), QSizeF(size)), r, r);
+    painter.fillPath(shape, Qt::white);
+    painter.end();
+    return mask.save(path, "PNG");
 }
 
 QString build(const Spec& spec)

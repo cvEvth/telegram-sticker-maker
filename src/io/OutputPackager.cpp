@@ -16,7 +16,6 @@
 namespace tsm::OutputPackager {
 
 namespace {
-const QString kPrefix = QStringLiteral("TG_Stickers");
 const QString kJsonName = QStringLiteral("stickers.json");
 
 // 同一批里的文件名去重（_2、_3……）
@@ -38,14 +37,30 @@ bool writeFile(const QString& path, const QByteArray& data)
     return file.open(QIODevice::WriteOnly) && file.write(data) == data.size() && file.commit();
 }
 
+QString native(const QString& path)
+{
+    return QDir::toNativeSeparators(path);
+}
+
 bool moveFile(const QString& from, const QString& to)
 {
     return QFile::rename(from, to) || (QFile::copy(from, to) && (QFile::remove(from), true));
 }
 
-QString native(const QString& path)
+bool transfer(const Item& item, const QString& to)
 {
-    return QDir::toNativeSeparators(path);
+    return item.keepSource ? QFile::copy(item.stagedFile, to) : moveFile(item.stagedFile, to);
+}
+
+// 预览副本复制到 folder/proxies/
+void copyProxy(const Item& item, const QString& folder, const QString& fileName, Result& result)
+{
+    if (item.proxyFile.isEmpty())
+        return;
+    const QString target = QDir(folder).filePath(proxyEntryName(fileName));
+    QDir().mkpath(QFileInfo(target).absolutePath());
+    if (!QFile::copy(item.proxyFile, target))
+        result.logLines << QStringLiteral("⚠️ 无法复制预览缓存 %1").arg(native(target));
 }
 
 // 退回方案：单个文件直接写到各自的目标目录
@@ -54,7 +69,7 @@ void writeLoose(const QList<Item>& items, Result& result)
     for (const Item& item : items) {
         QDir().mkpath(item.targetDir);
         const QString path = QDir(item.targetDir).filePath(OutputNaming::uniqueFileName(item.targetDir, item.fileName));
-        if (moveFile(item.stagedFile, path))
+        if (transfer(item, path))
             result.finalPaths.insert(item.taskId, path);
         else
             result.logLines << QStringLiteral("❌ 无法写入 %1").arg(native(path));
@@ -68,16 +83,19 @@ void writeLoose(const QList<Item>& items, Result& result)
     result.ok = !result.finalPaths.isEmpty();
 }
 
-void packageZip(const QList<Item>& items, const QString& zipDir, const QDateTime& now, Result& result)
+void packageZip(const QList<Item>& items, const QString& zipDir, const QDateTime& now, const Options& options, Result& result)
 {
     QDir().mkpath(zipDir);
-    const QString zipName = OutputNaming::uniqueFileName(zipDir, OutputNaming::timestampedName(kPrefix, now) + QStringLiteral(".zip"));
+    const QString zipName = OutputNaming::uniqueFileName(zipDir, OutputNaming::timestampedName(options.prefix, now) + QStringLiteral(".zip"));
     const QString zipPath = QDir(zipDir).filePath(zipName);
     const QStringList names = uniqueNames(items);
 
     QList<ZipWriter::Entry> entries;
-    for (int i = 0; i < items.size(); ++i)
+    for (int i = 0; i < items.size(); ++i) {
         entries << ZipWriter::Entry{names.at(i), items.at(i).stagedFile, {}};
+        if (!items.at(i).proxyFile.isEmpty())
+            entries << ZipWriter::Entry{proxyEntryName(names.at(i)), items.at(i).proxyFile, {}};
+    }
     entries << ZipWriter::Entry{kJsonName, {}, stickersJson(items, names)};
 
     QString error;
@@ -86,14 +104,14 @@ void packageZip(const QList<Item>& items, const QString& zipDir, const QDateTime
         result.locations << zipPath;
         for (const Item& item : items)
             result.finalPaths.insert(item.taskId, zipPath);
-        result.logLines << QStringLiteral("📦 已打包 %1 个贴纸: %2").arg(items.size()).arg(native(zipPath));
+        result.logLines << QStringLiteral("📦 已打包 %1 个%2: %3").arg(items.size()).arg(options.noun, native(zipPath));
         return;
     }
     result.logLines << QStringLiteral("⚠️ 打包失败（%1），改为直接写出单个文件").arg(error);
     writeLoose(items, result);
 }
 
-void packageFolders(const QList<Item>& items, const QDateTime& now, Result& result)
+void packageFolders(const QList<Item>& items, const QDateTime& now, const Options& options, Result& result)
 {
     // 按目标目录分组，保持列表顺序
     QMap<QString, QList<Item>> groups;
@@ -105,7 +123,7 @@ void packageFolders(const QList<Item>& items, const QDateTime& now, Result& resu
         groups[key] << item;
     }
 
-    const QString folderName = OutputNaming::timestampedName(kPrefix, now);
+    const QString folderName = OutputNaming::timestampedName(options.prefix, now);
     for (const QString& dir : order) {
         const QList<Item>& group = groups.value(dir);
         QDir().mkpath(dir);
@@ -119,7 +137,8 @@ void packageFolders(const QList<Item>& items, const QDateTime& now, Result& resu
         QStringList writtenNames;
         for (int i = 0; i < group.size(); ++i) {
             const QString path = QDir(folder).filePath(names.at(i));
-            if (moveFile(group.at(i).stagedFile, path)) {
+            if (transfer(group.at(i), path)) {
+                copyProxy(group.at(i), folder, names.at(i), result);
                 result.finalPaths.insert(group.at(i).taskId, path);
                 written << group.at(i);
                 writtenNames << names.at(i);
@@ -134,7 +153,7 @@ void packageFolders(const QList<Item>& items, const QDateTime& now, Result& resu
         if (!writeFile(QDir(folder).filePath(kJsonName), stickersJson(written, writtenNames)))
             result.logLines << QStringLiteral("⚠️ 无法写入 %1").arg(native(QDir(folder).filePath(kJsonName)));
         result.locations << folder;
-        result.logLines << QStringLiteral("📁 已输出 %1 个贴纸到: %2").arg(written.size()).arg(native(folder));
+        result.logLines << QStringLiteral("📁 已输出 %1 个%2到: %3").arg(written.size()).arg(options.noun, native(folder));
     }
     result.ok = !result.finalPaths.isEmpty();
 }
@@ -151,22 +170,29 @@ QByteArray stickersJson(const QList<Item>& items, const QStringList& fileNames)
         obj.insert(QStringLiteral("keywords"), QJsonArray::fromStringList(item.keywords));
         obj.insert(QStringLiteral("crop_radius"), item.cropRadius);
         obj.insert(QStringLiteral("shape"), shapeLabel(item.cropRadius));
+        if (!item.proxyFile.isEmpty())
+            obj.insert(QStringLiteral("proxy"), proxyEntryName(fileNames.value(i, item.fileName)));
         stickers.append(obj);
     }
     return QJsonDocument(QJsonObject{{QStringLiteral("stickers"), stickers}}).toJson(QJsonDocument::Indented);
 }
 
-Result package(const QList<Item>& items, bool asZip, const QString& zipDir, const QDateTime& now)
+QString proxyEntryName(const QString& fileName)
+{
+    return QStringLiteral("proxies/") + fileName + QStringLiteral(".mp4");
+}
+
+Result package(const QList<Item>& items, bool asZip, const QString& zipDir, const QDateTime& now, const Options& options)
 {
     Result result;
     if (items.isEmpty()) {
-        result.error = QStringLiteral("没有转换成功的贴纸");
+        result.error = QStringLiteral("没有可输出的%1").arg(options.noun);
         return result;
     }
     if (asZip)
-        packageZip(items, zipDir, now, result);
+        packageZip(items, zipDir, now, options, result);
     else
-        packageFolders(items, now, result);
+        packageFolders(items, now, options, result);
     if (!result.ok && result.error.isEmpty())
         result.error = QStringLiteral("输出失败");
     return result;

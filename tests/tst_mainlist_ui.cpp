@@ -1,13 +1,17 @@
 // 主列表交互（需求 3.3 / 3.4）与关键词弹窗（第 8 节）的界面测试。
 // 设置环境变量 TSM_SNAPSHOT_DIR 时保存截图。
 #include "app/AppPaths.h"
+#include "app/AppSettings.h"
 #include "app/Logger.h"
 #include "core/StickerList.h"
 #include "core/TaskListModel.h"
+#include "io/ZipWriter.h"
 #include "media/FFmpegTools.h"
 #include "media/ProcessRunner.h"
+#include "media/ProxyCache.h"
 #include "ui/KeywordDialog.h"
 #include "ui/MainWindow.h"
+#include "ui/SettingsPanel.h"
 #include "ui/TaskTableView.h"
 #include "ui/Theme.h"
 
@@ -329,6 +333,79 @@ private slots:
         QFile f(sessionFile);
         QVERIFY(f.open(QIODevice::ReadOnly));
         QCOMPARE(StickerList::parse(f.readAll()).entries.size(), 2);
+    }
+
+    // 导入 zip（附带预览缓存）→ 同一个 zip 再导入直接复用 → 格式错误的 json 报错 → 从面板导出
+    void importZipAndExportThroughWindow()
+    {
+        if (FFmpegTools::ffmpegPath().isEmpty())
+            QSKIP("ffmpeg not found");
+        const QString dir = m_dir.filePath(QStringLiteral("import_src"));
+        QDir().mkpath(dir);
+        const QString video = QDir(dir).filePath(QStringLiteral("导入.mp4"));
+        ProcessRunner::run(FFmpegTools::ffmpegPath(),
+                           {QStringLiteral("-hide_banner"), QStringLiteral("-loglevel"), QStringLiteral("error"), QStringLiteral("-y"),
+                            QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                            QStringLiteral("testsrc2=size=320x240:rate=25:duration=2"), QStringLiteral("-c:v"),
+                            QStringLiteral("mpeg4"), video});
+        StickerTask t;
+        t.inputPath = QStringLiteral("sources/导入.mp4");
+        t.info.fileName = QStringLiteral("导入.mp4");
+        t.info.isVideo = true;
+        t.emoji = QStringLiteral("🎉");
+        t.startTime = 0.5;
+        t.endTime = 1.5;
+        StickerList::WriteOptions options;
+        options.exportMode = QStringLiteral("sources");
+        options.pathFor = [](const StickerTask& task) { return task.inputPath; };
+        options.proxyFor = [](const StickerTask&) { return QStringLiteral("proxies/导入.mp4.mp4"); };
+        const QString zip = QDir(dir).filePath(QStringLiteral("bundle.zip"));
+        QVERIFY(ZipWriter::writeStored(zip, {{QStringLiteral("sticker_list.json"), {}, StickerList::write({t}, options)},
+                                             {QStringLiteral("sources/导入.mp4"), video, {}},
+                                             {QStringLiteral("proxies/导入.mp4.mp4"), {}, QByteArray("proxy")}}));
+        const QString bad = QDir(dir).filePath(QStringLiteral("bad.json"));
+        {
+            QFile f(bad);
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write("{}");
+        }
+        const QString outDir = QDir(dir).filePath(QStringLiteral("out"));
+        {
+            AppSettings settings;
+            settings.setOutputDir(outDir);
+            settings.setOutputAsZip(true);
+        }
+
+        QStringList logs;
+        auto conn = connect(&Logger::instance(), &Logger::lineAdded, this, [&logs](const QString& line) { logs << line; });
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        window.openPaths({zip, bad}); // 会话恢复结束后再按顺序处理
+        auto* table = window.findChild<TaskTableView*>();
+        auto* model = qobject_cast<TaskListModel*>(table->model());
+        QTRY_COMPARE_WITH_TIMEOUT(model->rowCount(), 1, 15000);
+        QTRY_VERIFY_WITH_TIMEOUT(logs.join(u'\n').contains(QStringLiteral("列表文件格式无效")), 5000);
+        const QString all = logs.join(u'\n');
+        QVERIFY2(all.contains(QStringLiteral("已导入 1 项")), qPrintable(all));
+        QVERIFY(all.contains(QStringLiteral("已装回 1 个预览缓存")));
+        QCOMPARE(model->taskAt(0).emoji, QStringLiteral("🎉"));
+        QCOMPARE(*model->taskAt(0).startTime, 0.5);
+        QVERIFY(model->taskAt(0).inputPath.contains(QStringLiteral("import_cache")));
+        QVERIFY(!window.findChild<ProxyCache*>()->cached(model->taskAt(0).inputPath).isEmpty());
+
+        window.openPaths({zip});
+        QTRY_COMPARE_WITH_TIMEOUT(model->rowCount(), 2, 15000);
+        QVERIFY(logs.join(u'\n').contains(QStringLiteral("直接复用导入缓存")));
+
+        emit window.findChild<SettingsPanel*>()->exportRequested(SettingsPanel::ExportTrimmed);
+        QTRY_VERIFY_WITH_TIMEOUT(logs.join(u'\n').contains(QStringLiteral("导出完成：2 项")), 60000);
+        QCOMPARE(QDir(outDir).entryList({QStringLiteral("TG_Trimmed_*.zip")}, QDir::Files).size(), 1);
+        QCOMPARE(model->taskAt(1).status, TaskStatus::Succeeded);
+        QTest::qWait(300);
+        snapshot(&window, QStringLiteral("export_done.png"));
+        disconnect(conn);
+        window.close();
     }
 };
 

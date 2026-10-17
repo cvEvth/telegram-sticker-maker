@@ -43,12 +43,12 @@ bool ProxyCache::needsProxy(const QString& path)
     return !native.contains(ext);
 }
 
-QString ProxyCache::proxyPathFor(const QString& source) const
+QString ProxyCache::pathIn(const QString& dir, const QString& source)
 {
     const QFileInfo fi(source);
     const QString identity = QStringLiteral("%1|%2|%3").arg(fi.absoluteFilePath()).arg(fi.lastModified().toMSecsSinceEpoch()).arg(fi.size());
     const QString hash = QString::fromLatin1(QCryptographicHash::hash(identity.toUtf8(), QCryptographicHash::Sha1).toHex().left(16));
-    return QDir(m_dir).filePath(fi.completeBaseName().left(40) + QStringLiteral("_") + hash + QStringLiteral(".mp4"));
+    return QDir(dir).filePath(fi.completeBaseName().left(40) + QStringLiteral("_") + hash + QStringLiteral(".mp4"));
 }
 
 QString ProxyCache::cached(const QString& source) const

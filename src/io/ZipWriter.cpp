@@ -1,6 +1,8 @@
 #include "io/ZipWriter.h"
 
+#include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <zip.h>
 
 namespace tsm::ZipWriter {
@@ -35,33 +37,36 @@ zip_t* openForWrite(const QString& path, QString* error)
 }
 } // namespace
 
-bool writeStored(const QString& zipPath, const QList<Entry>& entries, QString* error)
+bool writeStored(const QString& zipPath, const QList<Entry>& entries, QString* error, const ProgressFn& progress)
 {
-    // 先读入内存：libzip 在 zip_close 时才真正读取数据源，缓冲区必须一直有效
-    QList<QByteArray> buffers;
-    buffers.reserve(entries.size());
     for (const Entry& entry : entries) {
-        if (entry.filePath.isEmpty()) {
-            buffers << entry.data;
-            continue;
-        }
-        QFile file(entry.filePath);
-        if (!file.open(QIODevice::ReadOnly)) {
+        if (!entry.filePath.isEmpty() && !QFileInfo(entry.filePath).isFile()) {
             if (error)
-                *error = QStringLiteral("无法读取 %1: %2").arg(entry.filePath, file.errorString());
+                *error = QStringLiteral("找不到 %1").arg(QDir::toNativeSeparators(entry.filePath));
             return false;
         }
-        buffers << file.readAll();
     }
 
     zip_t* archive = openForWrite(zipPath, error);
     if (!archive)
         return false;
 
-    for (int i = 0; i < entries.size(); ++i) {
-        const QByteArray& data = buffers.at(i);
-        zip_source_t* source = zip_source_buffer(archive, data.constData(), zip_uint64_t(data.size()), 0);
-        const QByteArray name = entries.at(i).name.toUtf8();
+    // 内存数据的缓冲区要一直有效到 zip_close
+    const QList<Entry> held = entries;
+    for (const Entry& entry : held) {
+        zip_source_t* source = nullptr;
+        if (entry.filePath.isEmpty()) {
+            source = zip_source_buffer(archive, entry.data.constData(), zip_uint64_t(entry.data.size()), 0);
+        } else {
+#ifdef Q_OS_WIN
+            const std::wstring wide = entry.filePath.toStdWString();
+            source = zip_source_win32w(archive, wide.c_str(), 0, -1);
+#else
+            const QByteArray local = QFile::encodeName(entry.filePath);
+            source = zip_source_file(archive, local.constData(), 0, -1);
+#endif
+        }
+        const QByteArray name = entry.name.toUtf8();
         const zip_int64_t index = source ? zip_file_add(archive, name.constData(), source, ZIP_FL_ENC_UTF_8 | ZIP_FL_OVERWRITE) : -1;
         if (index < 0) {
             if (source)
@@ -74,9 +79,26 @@ bool writeStored(const QString& zipPath, const QList<Entry>& entries, QString* e
         zip_set_file_compression(archive, zip_uint64_t(index), ZIP_CM_STORE, 0);
     }
 
+    struct State {
+        const ProgressFn* fn;
+        bool cancelled = false;
+    } state{&progress};
+    if (progress) {
+        zip_register_progress_callback_with_state(
+            archive, 0.01,
+            [](zip_t*, double fraction, void* ud) {
+                auto* st = static_cast<State*>(ud);
+                if (!(*st->fn)(fraction))
+                    st->cancelled = true;
+            },
+            nullptr, &state);
+        zip_register_cancel_callback_with_state(
+            archive, [](zip_t*, void* ud) { return static_cast<State*>(ud)->cancelled ? 1 : 0; }, nullptr, &state);
+    }
+
     if (zip_close(archive) < 0) {
         if (error)
-            *error = QString::fromLocal8Bit(zip_strerror(archive));
+            *error = state.cancelled ? QStringLiteral("已取消") : QString::fromLocal8Bit(zip_strerror(archive));
         zip_discard(archive);
         QFile::remove(zipPath);
         return false;

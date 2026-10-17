@@ -3,6 +3,8 @@ qt_add_library(tsm_core STATIC
     app/AppPaths.cpp        app/AppPaths.h
     app/AppSettings.cpp     app/AppSettings.h
     app/BatchConverter.cpp  app/BatchConverter.h
+    app/Exporter.cpp        app/Exporter.h
+    app/ImportSource.cpp    app/ImportSource.h
     app/ListLoader.cpp      app/ListLoader.h
     app/Logger.cpp          app/Logger.h
     app/SessionStore.cpp    app/SessionStore.h
@@ -19,12 +21,15 @@ qt_add_library(tsm_core STATIC
     core/TaskListModel.cpp  core/TaskListModel.h
     core/TimelineState.cpp  core/TimelineState.h
     io/OutputPackager.cpp   io/OutputPackager.h
+    io/ZipReader.cpp        io/ZipReader.h
     io/ZipWriter.cpp        io/ZipWriter.h
     media/FFmpegTools.cpp   media/FFmpegTools.h
+    media/FfmpegRun.cpp     media/FfmpegRun.h
     media/FilterGraph.cpp   media/FilterGraph.h
     media/MediaProbe.cpp    media/MediaProbe.h
     media/ProcessRunner.cpp media/ProcessRunner.h
     media/ProxyCache.cpp    media/ProxyCache.h
+    media/SourceTrimmer.cpp media/SourceTrimmer.h
     media/StickerEncoder.cpp media/StickerEncoder.h
     media/ThumbnailService.cpp media/ThumbnailService.h
     media/WebmDuration.cpp  media/WebmDuration.h

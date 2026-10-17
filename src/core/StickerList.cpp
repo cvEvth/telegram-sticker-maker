@@ -173,6 +173,7 @@ ParseResult parse(const QByteArray& json)
             e.task.emoji = o.value(u"emoji").toString();
             e.task.keywords = readKeywords(o.value(u"keywords"));
             e.task.cropRadius = std::clamp(o.value(u"crop_radius").toDouble(), 0.0, 1.0);
+            e.proxy = o.value(u"proxy").toString(); // 导出"已裁切源文件"时附带的预览副本
             result.entries << e;
         }
     }

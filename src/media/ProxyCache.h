@@ -25,7 +25,9 @@ public:
     // 浏览器式播放器能直接流畅拖动的格式
     static bool needsProxy(const QString& path);
 
-    QString proxyPathFor(const QString& source) const;
+    QString proxyPathFor(const QString& source) const { return pathIn(m_dir, source); }
+    // 缓存目录 dir 下 source 对应的副本路径（文件不一定存在）
+    static QString pathIn(const QString& dir, const QString& source);
     // 已有缓存时返回副本路径（并刷新其"最近使用"时间），否则为空
     QString cached(const QString& source) const;
 

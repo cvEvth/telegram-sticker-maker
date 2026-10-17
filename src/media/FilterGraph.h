@@ -32,4 +32,7 @@ QRect evenCrop(const QRect& crop, QSize frame);
 // 预设滤镜：动漫轻度锐化 / 实拍轻度降噪 / 快速不加滤镜
 QString presetFilter(EncodePreset preset);
 
+// 圆角遮罩 PNG：圆角半径 = 短边一半 × radius；白色 = 保留，黑色 = 透明
+bool writeRoundMask(QSize size, double radius, const QString& path);
+
 } // namespace tsm::FilterGraph

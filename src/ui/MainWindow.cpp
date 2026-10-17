@@ -2,6 +2,7 @@
 
 #include "app/AppPaths.h"
 #include "app/BatchConverter.h"
+#include "app/Exporter.h"
 #include "app/Logger.h"
 #include "app/SessionStore.h"
 #include "core/Format.h"
@@ -71,6 +72,7 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , m_model(new TaskListModel(this))
     , m_converter(new BatchConverter(this))
+    , m_exporter(new Exporter(this))
     , m_thumbs(new ThumbnailService(this))
     , m_proxies(new ProxyCache(this))
     , m_session(new SessionStore(m_model, this))
@@ -247,7 +249,7 @@ void MainWindow::connectSignals()
 
     // 右侧面板
     connect(m_panel, &SettingsPanel::startRequested, this, [this] { startConversion({}); });
-    connect(m_panel, &SettingsPanel::exportRequested, this, [this] { notImplemented(QStringLiteral("导出")); });
+    connect(m_panel, &SettingsPanel::exportRequested, this, &MainWindow::startExport);
     connect(m_panel, &SettingsPanel::stopRequested, this, &MainWindow::requestStop);
     connect(m_panel, &SettingsPanel::openOutputRequested, this, &MainWindow::openOutputDir);
     connect(m_panel, &SettingsPanel::openDataDirRequested, this, &MainWindow::openDataDir);
@@ -264,6 +266,7 @@ void MainWindow::connectSignals()
     });
 
     connectConverter();
+    connectExporter();
 
     // 列表快捷键与"点击空白取消选择"在 eventFilter 里处理
     qApp->installEventFilter(this);
@@ -311,6 +314,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
     if (m_cancel)
         m_cancel->store(true);
     m_converter->cancel();
+    m_exporter->cancel();
     event->accept();
 }
 
@@ -388,18 +392,24 @@ void MainWindow::importDialog()
 
 void MainWindow::addPaths(const QStringList& paths)
 {
+    // 会话恢复或导入进行中：排队，结束后再添加
+    if (m_restorePending || m_busy == Busy::Restoring || m_busy == Busy::Importing) {
+        m_pendingPaths << paths;
+        return;
+    }
     QStringList media;
+    QStringList manifests;
     int unsupported = 0;
     for (const QString& path : paths) {
         const QFileInfo info(path);
         if (info.isDir()) {
             // 文件夹里有本工具导出的清单时改为走导入
-            if (const QString manifest = findManifestIn(info.absoluteFilePath()); !manifest.isEmpty())
-                importManifest(manifest);
+            if (!ImportSource::findManifestIn(info.absoluteFilePath()).isEmpty())
+                manifests << info.absoluteFilePath();
             else
                 media << scanFolder(info.absoluteFilePath());
         } else if (MediaKinds::isImportFile(path)) {
-            importManifest(path);
+            manifests << info.absoluteFilePath();
         } else if (MediaKinds::isSupportedMedia(path)) {
             media << info.absoluteFilePath();
         } else {
@@ -408,6 +418,16 @@ void MainWindow::addPaths(const QStringList& paths)
     }
     if (unsupported > 0)
         logInfo(QStringLiteral("⚠️ 跳过 %1 个不支持的文件").arg(unsupported));
+    if (!manifests.isEmpty()) {
+        // 一次导入一个，其余（含普通素材）排在后面按顺序处理
+        if (m_busy == Busy::None) {
+            m_pendingPaths << manifests.mid(1) << media;
+            importManifest(manifests.first());
+        } else {
+            logInfo(QStringLiteral("⚠️ 任务正在进行中，请先停止或等待完成"));
+        }
+        return;
+    }
     if (!media.isEmpty())
         startProbing(media);
     else if (unsupported == 0 && paths.size() == 1 && QFileInfo(paths.first()).isDir())
@@ -416,8 +436,62 @@ void MainWindow::addPaths(const QStringList& paths)
 
 void MainWindow::importManifest(const QString& path)
 {
-    // TODO(导入): 解析 sticker_list.json / stickers.json / zip（需求 9.2）
-    notImplemented(QStringLiteral("导入 %1").arg(QFileInfo(path).fileName()));
+    if (m_restorePending || m_busy == Busy::Restoring || m_busy == Busy::Importing) {
+        m_pendingPaths << path;
+        return;
+    }
+    if (m_busy != Busy::None) {
+        logInfo(QStringLiteral("⚠️ 任务正在进行中，请先停止或等待完成"));
+        return;
+    }
+    const QFileInfo fi(path);
+    const bool isZip = fi.isFile() && fi.suffix().compare(u"zip", Qt::CaseInsensitive) == 0;
+    m_cancel = std::make_shared<std::atomic_bool>(false);
+    setBusy(Busy::Importing, 0);
+    m_busyHint = (isZip ? QStringLiteral("正在解压 ") : QStringLiteral("正在读取 ")) + fi.fileName();
+    refreshUi();
+
+    const QString cacheDir = AppPaths::importCacheDir(m_settings.resolvedDataDir());
+    const auto cancel = m_cancel;
+    m_workers.start([this, path, cacheDir, cancel] {
+        const ImportSource::Prepared prepared = ImportSource::prepare(path, cacheDir, cancel);
+        const bool cancelled = cancel->load();
+        QMetaObject::invokeMethod(this, [this, path, prepared, cancelled] { onImportPrepared(path, prepared, cancelled); },
+                                  Qt::QueuedConnection);
+    });
+}
+
+void MainWindow::onImportPrepared(const QString& path, const ImportSource::Prepared& prepared, bool cancelled)
+{
+    setBusy(Busy::None, 0);
+    const QString name = QFileInfo(path).fileName();
+    if (cancelled) {
+        logInfo(QStringLiteral("🛑 已取消导入，已加入 0 项"));
+        m_pendingPaths.clear();
+        return;
+    }
+    if (!prepared.ok) {
+        logInfo(QStringLiteral("❌ 导入 %1 失败: %2").arg(name, prepared.error));
+        processPendingPaths();
+        return;
+    }
+    if (prepared.reusedExtraction)
+        logInfo(QStringLiteral("♻️ %1 之前解压过，直接复用导入缓存").arg(name));
+    const QList<StickerList::Entry>& entries = prepared.list.entries;
+    if (entries.isEmpty()) {
+        logInfo(QStringLiteral("⚠️ %1 中没有贴纸条目").arg(QFileInfo(prepared.manifestPath).fileName()));
+        processPendingPaths();
+        return;
+    }
+    const QString kind = prepared.list.kind == StickerList::Kind::StickerList ? QStringLiteral("列表") : QStringLiteral("转换输出");
+    logInfo(QStringLiteral("📥 正在导入%1 %2（%3 项）").arg(kind, name).arg(entries.size()));
+    startLoading(entries, prepared.baseDir, LoadPurpose::Import);
+}
+
+void MainWindow::processPendingPaths()
+{
+    if (!m_pendingPaths.isEmpty() && m_busy == Busy::None)
+        addPaths(std::exchange(m_pendingPaths, {}));
 }
 
 void MainWindow::startProbing(const QStringList& files)
@@ -435,21 +509,17 @@ void MainWindow::startProbing(const QStringList& files)
 void MainWindow::startLoading(const QList<StickerList::Entry>& entries, const QString& baseDir, LoadPurpose purpose)
 {
     if (m_busy != Busy::None) {
-        if (m_busy == Busy::Restoring && purpose == LoadPurpose::AddFiles) {
-            for (const auto& e : entries)
-                m_pendingPaths << e.task.inputPath; // 恢复完再添加
-            return;
-        }
         logInfo(QStringLiteral("⚠️ 任务正在进行中，请先停止或等待完成"));
         return;
     }
     m_loadPurpose = purpose;
-    m_loadAdded = m_loadFailed = m_loadMissing = 0;
+    m_loadAdded = m_loadFailed = m_loadMissing = m_loadProxies = 0;
     m_cancel = std::make_shared<std::atomic_bool>(false);
     setBusy(purpose == LoadPurpose::Restore ? Busy::Restoring : Busy::Importing, int(entries.size()));
 
     const auto cancel = m_cancel;
-    m_workers.start([this, entries, baseDir, cancel] {
+    const QString proxyDir = m_proxies->cacheDir();
+    m_workers.start([this, entries, baseDir, cancel, proxyDir] {
         for (const StickerList::Entry& entry : entries) {
             if (cancel->load())
                 break;
@@ -460,7 +530,16 @@ void MainWindow::startLoading(const QList<StickerList::Entry>& entries, const QS
                 refreshUi();
             }, Qt::QueuedConnection);
             const ListLoader::Result result = ListLoader::load(entry, baseDir);
-            QMetaObject::invokeMethod(this, [this, result, name] { onEntryLoaded(result, name); }, Qt::QueuedConnection);
+            // 附带的预览缓存装回缓存目录
+            bool proxyInstalled = false;
+            if (result.outcome == ListLoader::Outcome::Loaded && !entry.proxy.isEmpty()) {
+                const QString proxyFile = ListLoader::resolvePath(entry.proxy, baseDir, {});
+                proxyInstalled = ImportSource::installProxy(proxyFile, result.task.inputPath, proxyDir);
+            }
+            QMetaObject::invokeMethod(this, [this, result, name, proxyInstalled] {
+                m_loadProxies += proxyInstalled;
+                onEntryLoaded(result, name);
+            }, Qt::QueuedConnection);
         }
         const bool cancelled = cancel->load();
         QMetaObject::invokeMethod(this, [this, cancelled] { onLoadingFinished(cancelled); }, Qt::QueuedConnection);
@@ -503,8 +582,6 @@ void MainWindow::onLoadingFinished(bool cancelled)
         // 恢复期间不保存，结束后保存一次
         m_session->setSuspended(false);
         m_session->saveNow();
-        if (!m_pendingPaths.isEmpty())
-            addPaths(std::exchange(m_pendingPaths, {}));
         break;
     case LoadPurpose::Import:
         if (cancelled)
@@ -513,6 +590,10 @@ void MainWindow::onLoadingFinished(bool cancelled)
             logInfo(QStringLiteral("📥 已导入 %1 项%2").arg(m_loadAdded).arg(failed));
         if (m_loadMissing > 0)
             logInfo(QStringLiteral("⚠️ 有 %1 个源文件缺失，已跳过").arg(m_loadMissing));
+        if (m_loadProxies > 0) {
+            logInfo(QStringLiteral("🎞️ 已装回 %1 个预览缓存").arg(m_loadProxies));
+            refreshCacheInfo();
+        }
         break;
     case LoadPurpose::AddFiles:
         if (cancelled)
@@ -521,16 +602,26 @@ void MainWindow::onLoadingFinished(bool cancelled)
             logInfo(QStringLiteral("➕ 已添加 %1 项%2").arg(m_loadAdded).arg(failed));
         break;
     }
+    // 用户停止导入时，排队的其余导入一并取消；恢复结束后照常添加启动参数里的文件
+    if (cancelled && purpose != LoadPurpose::Restore)
+        m_pendingPaths.clear();
+    processPendingPaths();
 }
 
 // ---------------------------------------------------------------- 会话
 
 void MainWindow::restoreSession()
 {
+    m_restorePending = false;
+    // 没有可恢复的内容：直接开始自动保存，并处理启动参数里的文件
+    const auto nothingToRestore = [this] {
+        m_session->setSuspended(false);
+        processPendingPaths();
+    };
     const QString path = m_session->path();
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
-        m_session->setSuspended(false);
+        nothingToRestore();
         return;
     }
     const StickerList::ParseResult parsed = StickerList::parse(file.readAll());
@@ -542,11 +633,11 @@ void MainWindow::restoreSession()
         QFile::rename(path, backup);
         logInfo(QStringLiteral("⚠️ 会话文件无法读取，已备份为 %1").arg(QDir::toNativeSeparators(backup)));
         m_session->setPath(path);
-        m_session->setSuspended(false);
+        nothingToRestore();
         return;
     }
     if (parsed.entries.isEmpty()) {
-        m_session->setSuspended(false);
+        nothingToRestore();
         return;
     }
     startLoading(parsed.entries, QFileInfo(path).absolutePath(), LoadPurpose::Restore);
@@ -655,6 +746,109 @@ void MainWindow::connectConverter()
                 else
                     logInfo(QStringLiteral("🎉 批量转换已全部完成！（%1 成功，%2 失败）").arg(succeeded).arg(failed));
             });
+}
+
+// ---------------------------------------------------------------- 导出
+
+void MainWindow::startExport(int mode)
+{
+    if (m_busy != Busy::None)
+        return;
+    if (m_model->rowCount() == 0) {
+        logInfo(QStringLiteral("⚠️ 列表为空，没有可导出的内容"));
+        return;
+    }
+
+    ExportSettings settings;
+    settings.kind = mode == SettingsPanel::ExportTrimmed ? ExportKind::Trimmed : ExportKind::Sources;
+    settings.asZip = m_settings.outputAsZip();
+    settings.destDir = m_settings.outputDir();
+    settings.workRoot = QDir(m_settings.resolvedDataDir()).filePath(QStringLiteral("work"));
+    settings.proxyCacheDir = m_proxies->cacheDir();
+    if (settings.kind == ExportKind::Sources && !settings.asZip) {
+        // 不压缩：先选父文件夹，在里面建 sticker_bundle_YYYYMMDD_HHMMSS
+        const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("选择导出位置"), settings.destDir);
+        if (dir.isEmpty())
+            return;
+        settings.destDir = dir;
+    }
+
+    QList<ExportJob> jobs;
+    for (int row = 0; row < m_model->rowCount(); ++row) {
+        m_model->updateTask(row, [](StickerTask& t) {
+            t.resetRuntimeState();
+            t.statusText = QStringLiteral("等待导出...");
+        }, false);
+        jobs << ExportJob{m_model->taskAt(row), m_model->targetFileName(row), m_model->targetDirectory(row)};
+    }
+
+    setBusy(Busy::Exporting, int(jobs.size()));
+    const QString what = settings.kind == ExportKind::Sources ? QStringLiteral("原片 + 参数清单") : QStringLiteral("已裁切源文件");
+    logInfo(QStringLiteral("📤 开始导出 %1 项（%2）").arg(jobs.size()).arg(what));
+    m_exporter->start(jobs, settings);
+}
+
+void MainWindow::connectExporter()
+{
+    const auto nameOf = [this](const QString& id) {
+        const int row = m_model->rowOfId(id);
+        return row >= 0 ? m_model->taskAt(row).info.fileName : QString();
+    };
+
+    connect(m_exporter, &Exporter::taskStarted, this, [this, nameOf](const QString& id) {
+        m_model->updateTask(m_model->rowOfId(id), [](StickerTask& t) {
+            t.status = TaskStatus::Running;
+            t.statusText = QStringLiteral("正在导出...");
+            t.progress = 0;
+        }, false);
+        m_busyHint = QStringLiteral("正在导出 ") + nameOf(id);
+        refreshUi();
+    });
+
+    connect(m_exporter, &Exporter::taskProgress, this, [this, nameOf](const QString& id, int percent, const QString& text) {
+        m_model->updateTask(m_model->rowOfId(id), [&](StickerTask& t) {
+            t.progress = percent;
+            t.statusText = text;
+        }, false);
+        m_busyHint = QStringLiteral("[%1] %2").arg(nameOf(id), text);
+        refreshUi();
+    });
+
+    connect(m_exporter, &Exporter::taskFinished, this, [this](const QString& id, TaskStatus status, const QString& text, qint64 size) {
+        const int row = m_model->rowOfId(id);
+        // 打包失败时同一行会再收到一次结果，只在第一次计数
+        const bool first = row >= 0 && (m_model->taskAt(row).status == TaskStatus::Running
+                                         || m_model->taskAt(row).status == TaskStatus::Pending);
+        m_model->updateTask(row, [&](StickerTask& t) {
+            t.status = status;
+            t.statusText = text;
+            t.progress = status == TaskStatus::Succeeded ? 100 : t.progress;
+            t.outputSize = size;
+        }, false);
+        if (first)
+            ++m_busyDone;
+        refreshUi();
+    });
+
+    connect(m_exporter, &Exporter::packaging, this, [this](const QString& text) {
+        m_busyHint = text;
+        refreshUi();
+    });
+
+    connect(m_exporter, &Exporter::finished, this, [this](const ExportSummary& summary) {
+        for (const QString& line : summary.logLines)
+            logInfo(line);
+        if (!summary.locations.isEmpty())
+            m_lastOutput = summary.locations.first();
+        setBusy(Busy::None, 0);
+        const QString failed = summary.failed > 0 ? QStringLiteral("，%1 项失败").arg(summary.failed) : QString();
+        if (summary.cancelled > 0)
+            logInfo(QStringLiteral("🛑 已停止导出：%1 项已导出，%2 项已取消%3").arg(summary.exported).arg(summary.cancelled).arg(failed));
+        else
+            logInfo(QStringLiteral("📤 导出完成：%1 项%2").arg(summary.exported).arg(failed));
+        if (summary.missing > 0)
+            logInfo(QStringLiteral("⚠️ 有 %1 个源文件缺失，已跳过").arg(summary.missing));
+    });
 }
 
 // ---------------------------------------------------------------- 截取 / 裁切
@@ -962,6 +1156,8 @@ void MainWindow::requestStop()
         return;
     if (m_busy == Busy::Converting)
         m_converter->cancel();
+    else if (m_busy == Busy::Exporting)
+        m_exporter->cancel();
     else if (m_cancel)
         m_cancel->store(true);
     logInfo(QStringLiteral("🛑 正在停止..."));
@@ -1108,24 +1304,6 @@ QStringList MainWindow::scanFolder(const QString& dir)
     collator.setNumericMode(true);
     std::sort(files.begin(), files.end(), [&](const QString& a, const QString& b) { return collator.compare(a, b) < 0; });
     return files;
-}
-
-QString MainWindow::findManifestIn(const QString& dir)
-{
-    const QStringList names{QStringLiteral("sticker_list.json"), QStringLiteral("stickers.json")};
-    const QDir root(dir);
-    for (const QString& name : names) {
-        if (root.exists(name))
-            return root.filePath(name);
-    }
-    for (const QString& sub : root.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
-        const QDir child(root.filePath(sub));
-        for (const QString& name : names) {
-            if (child.exists(name))
-                return child.filePath(name);
-        }
-    }
-    return {};
 }
 
 } // namespace tsm

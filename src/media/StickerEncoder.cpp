@@ -11,8 +11,6 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QImage>
-#include <QPainter>
-#include <QPainterPath>
 #include <QProcess>
 #include <cmath>
 
@@ -386,18 +384,8 @@ QString StickerEncoder::filterGraph(QSize scale, QSize canvas, double fps, bool 
 
 bool StickerEncoder::writeMask(QSize size)
 {
-    // 圆角半径 = 短边一半 × 百分比；白色 = 保留，黑色 = 透明
-    QImage mask(size, QImage::Format_Grayscale8);
-    mask.fill(Qt::black);
-    QPainter painter(&mask);
-    painter.setRenderHint(QPainter::Antialiasing);
-    const double radius = std::min(size.width(), size.height()) / 2.0 * std::clamp(m_req.task.cropRadius, 0.0, 1.0);
-    QPainterPath path;
-    path.addRoundedRect(QRectF(QPointF(0, 0), QSizeF(size)), radius, radius);
-    painter.fillPath(path, Qt::white);
-    painter.end();
     m_maskPath = QDir(m_req.workDir).filePath(QStringLiteral("mask.png"));
-    return mask.save(m_maskPath, "PNG");
+    return FilterGraph::writeRoundMask(size, m_req.task.cropRadius, m_maskPath);
 }
 
 void StickerEncoder::report(int percent, const QString& text)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/AppSettings.h"
+#include "app/ImportSource.h"
 #include "app/ListLoader.h"
 #include "media/MediaProbe.h"
 
@@ -17,6 +18,8 @@ namespace tsm {
 class BatchConverter;
 class DropOverlay;
 class DropZone;
+class Exporter;
+struct ExportSummary;
 class HeaderBar;
 class LogPanel;
 class ProxyCache;
@@ -58,7 +61,9 @@ private:
     void importDialog();
     void addPaths(const QStringList& paths);
     void importManifest(const QString& path);
+    void onImportPrepared(const QString& path, const ImportSource::Prepared& prepared, bool cancelled);
     void startProbing(const QStringList& files);
+    void processPendingPaths();
 
     // 按清单逐条还原（添加文件 / 恢复会话 / 导入共用）
     enum class LoadPurpose { AddFiles, Restore, Import };
@@ -72,6 +77,10 @@ private:
     // 转换
     void startConversion(QList<int> rows);
     void connectConverter();
+
+    // 导出
+    void startExport(int mode);
+    void connectExporter();
 
     // 截取 / 裁切
     void openEditor(int row);
@@ -105,11 +114,11 @@ private:
     QList<int> selectedRows() const;
 
     static QStringList scanFolder(const QString& dir);
-    static QString findManifestIn(const QString& dir);
 
     AppSettings m_settings;
     TaskListModel* m_model = nullptr;
     BatchConverter* m_converter = nullptr;
+    Exporter* m_exporter = nullptr;
     ThumbnailService* m_thumbs = nullptr;
     ProxyCache* m_proxies = nullptr;
     SessionStore* m_session = nullptr;
@@ -141,7 +150,9 @@ private:
     int m_loadAdded = 0;
     int m_loadFailed = 0;
     int m_loadMissing = 0;
-    QStringList m_pendingPaths; // 恢复会话期间收到的启动参数，恢复后再添加
+    int m_loadProxies = 0;
+    bool m_restorePending = true; // 启动后会话恢复尚未开始
+    QStringList m_pendingPaths;   // 恢复 / 导入期间收到的文件，结束后再添加
     std::shared_ptr<std::atomic_bool> m_cancel;
     QThreadPool m_workers;
     QString m_lastDir;
