@@ -139,3 +139,13 @@ QSlider::sub-page:horizontal { background: #2aabee; border-radius: 2px; }
 QSlider::handle:horizontal { width: 14px; height: 14px; margin: -5px 0; border-radius: 7px; background: #e6e8ee; }
 QSlider:disabled::sub-page:horizontal { background: #3a4050; }
 QDoubleSpinBox { background: #1a1d24; border: 1px solid #323744; border-radius: 6px; padding: 4px 6px; }
+
+/* 关键词弹窗 */
+#DialogTitle { font-size: 16px; font-weight: 600; }
+#ChipBox { background: #1a1d24; border: 1px solid #2c313c; border-radius: 10px; }
+#Chip { background: rgba(42, 171, 238, 0.16); border: 1px solid rgba(42, 171, 238, 0.45); border-radius: 13px; }
+#Chip QLabel { color: #cfe9fb; }
+QToolButton#ChipClose { color: #8fb8d4; font-size: 10px; padding: 0 4px; border-radius: 8px; }
+QToolButton#ChipClose:hover { background: rgba(255, 255, 255, 0.12); color: white; }
+#Counter { color: #8b93a7; font-family: Consolas, monospace; }
+#Counter[full="true"] { color: #f5a623; font-weight: 600; }

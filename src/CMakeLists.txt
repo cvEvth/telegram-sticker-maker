@@ -7,6 +7,7 @@ qt_add_library(tsm_core STATIC
     core/CropMath.cpp       core/CropMath.h
     core/EncodePlan.cpp     core/EncodePlan.h
     core/Format.cpp         core/Format.h
+    core/Keywords.cpp       core/Keywords.h
     core/MediaInfo.h
     core/MediaKinds.cpp     core/MediaKinds.h
     core/OutputNaming.cpp   core/OutputNaming.h
@@ -35,15 +36,18 @@ target_link_libraries(tsm_core
         libzip::zip
         FFmpeg::avformat FFmpeg::avcodec FFmpeg::avfilter FFmpeg::avutil FFmpeg::swscale FFmpeg::swresample)
 
-qt_add_executable(TelegramStickerMaker WIN32
-    main.cpp
+# 界面库：主程序与界面交互测试共用
+qt_add_library(tsm_ui STATIC
     ui/DropOverlay.cpp   ui/DropOverlay.h
     ui/DropZone.cpp      ui/DropZone.h
+    ui/FlowLayout.cpp    ui/FlowLayout.h
     ui/HeaderBar.cpp     ui/HeaderBar.h
+    ui/KeywordDialog.cpp ui/KeywordDialog.h
     ui/LogPanel.cpp      ui/LogPanel.h
     ui/MainWindow.cpp    ui/MainWindow.h
     ui/SettingsPanel.cpp ui/SettingsPanel.h
     ui/TaskTableDelegates.cpp ui/TaskTableDelegates.h
+    ui/TaskTableView.cpp ui/TaskTableView.h
     ui/Theme.cpp         ui/Theme.h
     ui/editor/ClipEditorDialog.cpp     ui/editor/ClipEditorDialog.h
     ui/editor/ClipListPanel.cpp        ui/editor/ClipListPanel.h
@@ -51,11 +55,14 @@ qt_add_executable(TelegramStickerMaker WIN32
     ui/editor/PreviewCanvas.cpp        ui/editor/PreviewCanvas.h
     ui/editor/TimelineWidgets.cpp      ui/editor/TimelineWidgets.h
 )
-qt_add_resources(TelegramStickerMaker "app_resources"
+qt_add_resources(tsm_ui "app_resources"
     PREFIX "/"
     BASE "${PROJECT_SOURCE_DIR}/resources"
     FILES "${PROJECT_SOURCE_DIR}/resources/styles/dark.qss")
-target_link_libraries(TelegramStickerMaker PRIVATE tsm_core Qt6::Widgets Qt6::Multimedia Qt6::Network)
+target_link_libraries(tsm_ui PUBLIC tsm_core Qt6::Widgets Qt6::Multimedia Qt6::Network)
+
+qt_add_executable(TelegramStickerMaker WIN32 main.cpp)
+target_link_libraries(TelegramStickerMaker PRIVATE tsm_ui)
 target_compile_definitions(TelegramStickerMaker PRIVATE APP_VERSION="${PROJECT_VERSION}")
 
 # 构建后把 FFmpeg 与 Qt 运行库部署到程序目录，双击即可运行

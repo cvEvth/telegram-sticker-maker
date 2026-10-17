@@ -20,6 +20,24 @@ private:
     ThumbnailService* m_thumbs;
 };
 
+// 关键词列：按钮样式。无关键词时 "+ 设置关键词"，否则 "第一个词 +N" 与数量角标；点击打开关键词弹窗。
+class KeywordsDelegate : public QStyledItemDelegate {
+    Q_OBJECT
+
+public:
+    KeywordsDelegate(TaskListModel* model, QObject* parent = nullptr);
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+    bool editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index) override;
+
+signals:
+    void clicked(int row);
+
+private:
+    static QRect buttonRect(const QStyleOptionViewItem& option);
+
+    TaskListModel* m_model;
+};
+
 // 操作列：✂️ 裁切/截取、📂 打开所在文件夹（仅成功后）、🗑️ 移除
 class ActionsDelegate : public QStyledItemDelegate {
     Q_OBJECT

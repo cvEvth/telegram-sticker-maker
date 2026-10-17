@@ -10,7 +10,6 @@
 
 class QPushButton;
 class QStackedWidget;
-class QTableView;
 
 namespace tsm {
 
@@ -22,6 +21,7 @@ class LogPanel;
 class ProxyCache;
 class SettingsPanel;
 class TaskListModel;
+class TaskTableView;
 class ThumbnailService;
 
 class MainWindow : public QMainWindow {
@@ -40,6 +40,7 @@ protected:
     void dragLeaveEvent(QDragLeaveEvent* event) override;
     void dropEvent(QDropEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
     enum class Busy { None, Converting, Exporting, Importing, Restoring };
@@ -73,6 +74,10 @@ private:
     void refreshCacheInfo();
     void clearPreviewCacheClicked();
 
+    // 右键菜单与关键词
+    void showRowMenu(const QPoint& globalPos);
+    void openKeywordDialog(const QList<int>& rows);
+
     // 列表操作
     void removeSelected();
     void clearList();
@@ -105,7 +110,7 @@ private:
     HeaderBar* m_header = nullptr;
     QStackedWidget* m_listStack = nullptr;
     DropZone* m_dropZone = nullptr;
-    QTableView* m_table = nullptr;
+    TaskTableView* m_table = nullptr;
     SettingsPanel* m_panel = nullptr;
     LogPanel* m_log = nullptr;
     DropOverlay* m_overlay = nullptr;

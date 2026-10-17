@@ -14,7 +14,9 @@
 #include "ui/HeaderBar.h"
 #include "ui/LogPanel.h"
 #include "ui/SettingsPanel.h"
+#include "ui/KeywordDialog.h"
 #include "ui/TaskTableDelegates.h"
+#include "ui/TaskTableView.h"
 #include "ui/editor/ClipEditorDialog.h"
 
 #include <QCloseEvent>
@@ -33,9 +35,16 @@
 #include <QMimeData>
 #include <QProcess>
 #include <QPushButton>
-#include <QShortcut>
 #include <QStackedWidget>
-#include <QTableView>
+#include <QAbstractButton>
+#include <QAbstractSlider>
+#include <QAbstractSpinBox>
+#include <QApplication>
+#include <QComboBox>
+#include <QKeyEvent>
+#include <QLineEdit>
+#include <QMenu>
+#include <QPlainTextEdit>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <algorithm>
@@ -84,6 +93,7 @@ MainWindow::MainWindow(QWidget* parent)
 
 MainWindow::~MainWindow()
 {
+    qApp->removeEventFilter(this);
     if (m_cancel)
         m_cancel->store(true);
     m_workers.waitForDone();
@@ -114,7 +124,7 @@ void MainWindow::buildUi()
     leftLayout->addWidget(buildToolbar());
 
     m_dropZone = new DropZone;
-    m_table = new QTableView;
+    m_table = new TaskTableView;
     configureTable();
     m_listStack = new QStackedWidget;
     m_listStack->addWidget(m_dropZone);
@@ -163,8 +173,7 @@ void MainWindow::configureTable()
 {
     m_table->setObjectName(QStringLiteral("TaskTable"));
     m_table->setModel(m_model);
-    m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_table->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    m_table->setButtonColumns({TaskListModel::ColKeywords, TaskListModel::ColActions});
     m_table->setEditTriggers(QAbstractItemView::DoubleClicked);
     m_table->setShowGrid(false);
     m_table->setWordWrap(true);
@@ -191,6 +200,9 @@ void MainWindow::configureTable()
     auto* actions = new ActionsDelegate(m_model, m_table);
     m_table->setItemDelegateForColumn(TaskListModel::ColActions, actions);
     connect(actions, &ActionsDelegate::triggered, this, &MainWindow::onRowAction);
+    auto* keywords = new KeywordsDelegate(m_model, m_table);
+    m_table->setItemDelegateForColumn(TaskListModel::ColKeywords, keywords);
+    connect(keywords, &KeywordsDelegate::clicked, this, [this](int row) { openKeywordDialog({row}); });
     m_table->setMouseTracking(true);
     // TODO(主列表): 再次单击已选中行取消选中、点击空白取消选择、右键菜单（需求 3.3 / 3.4）
 }
@@ -243,11 +255,9 @@ void MainWindow::connectSignals()
 
     connectConverter();
 
-    // 列表快捷键（仅表格自身有焦点时生效，行内编辑时不触发）
-    auto* deleteKey = new QShortcut(QKeySequence::Delete, m_table, nullptr, nullptr, Qt::WidgetShortcut);
-    connect(deleteKey, &QShortcut::activated, this, &MainWindow::removeSelected);
-    auto* escapeKey = new QShortcut(QKeySequence(Qt::Key_Escape), m_table, nullptr, nullptr, Qt::WidgetShortcut);
-    connect(escapeKey, &QShortcut::activated, m_table, &QTableView::clearSelection);
+    // 列表快捷键与"点击空白取消选择"在 eventFilter 里处理
+    qApp->installEventFilter(this);
+    connect(m_table, &TaskTableView::rowContextMenuRequested, this, &MainWindow::showRowMenu);
 }
 
 // ---------------------------------------------------------------- 拖放
@@ -289,6 +299,47 @@ void MainWindow::closeEvent(QCloseEvent* event)
         m_cancel->store(true);
     // TODO(会话): 关闭前强制保存一次
     event->accept();
+}
+
+bool MainWindow::eventFilter(QObject* watched, QEvent* event)
+{
+    auto* target = qobject_cast<QWidget*>(watched);
+    if (!target || target->window() != this || QApplication::activePopupWidget() || QApplication::activeModalWidget())
+        return QMainWindow::eventFilter(watched, event);
+
+    if (event->type() == QEvent::KeyPress) {
+        // 正在输入框里打字（含行内编辑 Emoji）时快捷键不生效
+        QWidget* focus = QApplication::focusWidget();
+        const bool typing = qobject_cast<QLineEdit*>(focus) || qobject_cast<QAbstractSpinBox*>(focus)
+            || qobject_cast<QComboBox*>(focus) || qobject_cast<QPlainTextEdit*>(focus);
+        if (typing)
+            return QMainWindow::eventFilter(watched, event);
+        auto* key = static_cast<QKeyEvent*>(event);
+        if (key->matches(QKeySequence::SelectAll)) {
+            m_table->selectAllRows();
+            return true;
+        }
+        if (key->key() == Qt::Key_Delete && key->modifiers() == Qt::NoModifier) {
+            removeSelected(); // 忙碌时无效
+            return true;
+        }
+        if (key->key() == Qt::Key_Escape) {
+            m_table->clearRowSelection();
+            return true;
+        }
+    } else if (event->type() == QEvent::MouseButtonPress) {
+        // 点击窗口其他非交互区域：取消选择（列表内部的点击由 TaskTableView 处理）
+        if (target == m_table || m_table->isAncestorOf(target))
+            return QMainWindow::eventFilter(watched, event);
+        for (QWidget* w = target; w && w != this; w = w->parentWidget()) {
+            if (qobject_cast<QAbstractButton*>(w) || qobject_cast<QLineEdit*>(w) || qobject_cast<QComboBox*>(w)
+                || qobject_cast<QAbstractSpinBox*>(w) || qobject_cast<QAbstractSlider*>(w) || qobject_cast<QPlainTextEdit*>(w)) {
+                return QMainWindow::eventFilter(watched, event);
+            }
+        }
+        m_table->clearRowSelection();
+    }
+    return QMainWindow::eventFilter(watched, event);
 }
 
 // ---------------------------------------------------------------- 添加素材
@@ -595,8 +646,10 @@ void MainWindow::openEditor(int row)
     const int first = m_model->replaceRows(rows, tasks);
 
     // 确认后自动选中这一组所有行
-    QItemSelection selection(m_model->index(first, 0), m_model->index(first + int(tasks.size()) - 1, TaskListModel::ColumnCount - 1));
-    m_table->selectionModel()->select(selection, QItemSelectionModel::ClearAndSelect);
+    QList<int> groupRows;
+    for (int i = 0; i < tasks.size(); ++i)
+        groupRows << first + i;
+    m_table->selectRows(groupRows);
     m_table->scrollTo(m_model->index(first, 0));
     logInfo(QStringLiteral("[%1] 已保存截取列表，共 %2 个贴纸").arg(base.info.fileName).arg(tasks.size()));
 }
@@ -698,6 +751,92 @@ void MainWindow::clearPreviewCacheClicked()
     m_thumbs->clearMemory();
     m_table->viewport()->update();
     refreshCacheInfo();
+}
+
+// ---------------------------------------------------------------- 右键菜单与关键词
+
+void MainWindow::showRowMenu(const QPoint& globalPos)
+{
+    const QList<int> rows = selectedRows();
+    if (rows.isEmpty())
+        return;
+    const int n = int(rows.size());
+    const bool single = n == 1;
+    const bool busy = m_busy != Busy::None;
+    const QString suffix = single ? QString() : QStringLiteral(" (%1)").arg(n);
+
+    QMenu menu(this);
+    QAction* convert = menu.addAction(QStringLiteral("🚀 转换选中贴纸") + suffix);
+    QAction* keywords = menu.addAction(QStringLiteral("🏷️ 设置选中贴纸的关键词") + suffix);
+    QAction* ai = menu.addAction(single ? QStringLiteral("✨ AI 识别此项 Emoji") : QStringLiteral("✨ AI 识别选中项") + suffix);
+    QAction* open = nullptr;
+    if (single && m_model->taskAt(rows.first()).status == TaskStatus::Succeeded && !m_model->taskAt(rows.first()).outputPath.isEmpty())
+        open = menu.addAction(QStringLiteral("📂 打开所在目录"));
+    menu.addSeparator();
+    QAction* all = menu.addAction(single ? QStringLiteral("全选（Ctrl+A）") : QStringLiteral("全选"));
+    QAction* invert = menu.addAction(QStringLiteral("反选"));
+    QAction* none = single ? nullptr : menu.addAction(QStringLiteral("取消选择"));
+    menu.addSeparator();
+    QAction* remove = menu.addAction(single ? QStringLiteral("🗑️ 移除此项（Del）") : QStringLiteral("🗑️ 移除选中项") + suffix);
+    // 忙碌时"转换""设置关键词"置灰；移除也不可用
+    for (QAction* a : {convert, keywords, ai, remove})
+        a->setEnabled(!busy);
+
+    QAction* chosen = menu.exec(globalPos);
+    if (!chosen)
+        return;
+    if (chosen == convert)
+        startConversion(rows);
+    else if (chosen == keywords)
+        openKeywordDialog(rows);
+    else if (chosen == ai)
+        notImplemented(QStringLiteral("AI 识别 Emoji"));
+    else if (open && chosen == open)
+        onRowAction(rows.first(), ActionsDelegate::OpenFolder);
+    else if (chosen == all)
+        m_table->selectAllRows();
+    else if (chosen == invert)
+        m_table->invertSelection();
+    else if (none && chosen == none)
+        m_table->clearRowSelection();
+    else if (chosen == remove)
+        removeSelected();
+}
+
+void MainWindow::openKeywordDialog(const QList<int>& rows)
+{
+    if (rows.isEmpty())
+        return;
+    if (m_busy != Busy::None) {
+        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("任务正在进行中，请先停止！"));
+        return;
+    }
+    QString subtitle;
+    if (rows.size() == 1) {
+        const StickerTask& t = m_model->taskAt(rows.first());
+        subtitle = (t.emoji.isEmpty() ? QString() : t.emoji + QStringLiteral(" ")) + t.info.fileName;
+    } else {
+        subtitle = QStringLiteral("已选 %1 项贴纸").arg(rows.size());
+    }
+    // 批量：所有选中项的关键词完全相同时预填，否则为空
+    QStringList initial = m_model->taskAt(rows.first()).keywords;
+    for (const int row : rows) {
+        if (m_model->taskAt(row).keywords != initial) {
+            initial.clear();
+            break;
+        }
+    }
+
+    KeywordDialog dialog(subtitle, initial, this);
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    const QStringList keywords = dialog.keywords();
+    for (const int row : rows)
+        m_model->updateTask(row, [&](StickerTask& t) { t.keywords = keywords; });
+    if (keywords.isEmpty())
+        logInfo(QStringLiteral("🏷️ 已清空 %1 项的关键词").arg(rows.size()));
+    else
+        logInfo(QStringLiteral("🏷️ 已为 %1 项设置关键词：%2").arg(rows.size()).arg(keywords.join(QStringLiteral("、"))));
 }
 
 // ---------------------------------------------------------------- 列表操作
@@ -861,11 +1000,7 @@ QString MainWindow::busyTitle() const
 
 QList<int> MainWindow::selectedRows() const
 {
-    QList<int> rows;
-    for (const QModelIndex& index : m_table->selectionModel()->selectedRows())
-        rows << index.row();
-    std::sort(rows.begin(), rows.end());
-    return rows;
+    return m_table->selectedRowList();
 }
 
 QStringList MainWindow::scanFolder(const QString& dir)

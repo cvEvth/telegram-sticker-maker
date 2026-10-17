@@ -5,6 +5,7 @@
 #include "media/ThumbnailService.h"
 
 #include <QAbstractItemView>
+#include <QApplication>
 #include <QHelpEvent>
 #include <QMouseEvent>
 #include <QPainter>
@@ -16,6 +17,19 @@ namespace tsm {
 namespace {
 constexpr QSize kThumbBox(72, 54);
 constexpr int kActionWidth = 28;
+
+// 只画单元格背景（选中 / 悬停），不画模型里的文字
+void paintBackground(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index)
+{
+    QStyleOptionViewItem opt = option;
+    opt.index = index;
+    opt.text.clear();
+    opt.icon = {};
+    opt.features &= ~QStyleOptionViewItem::HasDisplay;
+    const QWidget* widget = option.widget;
+    QStyle* style = widget ? widget->style() : QApplication::style();
+    style->drawControl(QStyle::CE_ItemViewItem, &opt, painter, widget);
+}
 } // namespace
 
 // ---------------------------------------------------------------- PreviewDelegate
@@ -76,6 +90,78 @@ void PreviewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     painter->restore();
 }
 
+// ---------------------------------------------------------------- KeywordsDelegate
+
+KeywordsDelegate::KeywordsDelegate(TaskListModel* model, QObject* parent)
+    : QStyledItemDelegate(parent)
+    , m_model(model)
+{
+}
+
+QRect KeywordsDelegate::buttonRect(const QStyleOptionViewItem& option)
+{
+    const int h = 26;
+    return QRect(option.rect.left() + 6, option.rect.center().y() - h / 2, option.rect.width() - 12, h);
+}
+
+void KeywordsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+    paintBackground(painter, option, index);
+    if (index.row() >= m_model->rowCount())
+        return;
+    const QStringList keywords = m_model->taskAt(index.row()).keywords;
+    const QRect button = buttonRect(option);
+    const bool hover = option.state & QStyle::State_MouseOver;
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing);
+    QFont f = painter->font();
+    f.setPointSizeF(f.pointSizeF() * 0.92);
+    painter->setFont(f);
+    const QFontMetrics fm(f);
+
+    if (keywords.isEmpty()) {
+        painter->setPen(QPen(QColor(hover ? 0x5a : 0x3a, hover ? 0x62 : 0x40, hover ? 0x75 : 0x4d), 1, Qt::DashLine));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(QRectF(button).adjusted(0.5, 0.5, -0.5, -0.5), 13, 13);
+        painter->setPen(QColor(0x8b, 0x93, 0xa7));
+        painter->drawText(button, Qt::AlignCenter, QStringLiteral("+ 设置关键词"));
+    } else {
+        painter->setPen(QPen(QColor(42, 171, 238, hover ? 200 : 110), 1));
+        painter->setBrush(QColor(42, 171, 238, hover ? 50 : 30));
+        painter->drawRoundedRect(QRectF(button).adjusted(0.5, 0.5, -0.5, -0.5), 13, 13);
+        // 右侧数量角标
+        const QString count = QString::number(keywords.size());
+        const int badgeW = std::max(18, fm.horizontalAdvance(count) + 10);
+        const QRect badge(button.right() - badgeW - 4, button.center().y() - 9, badgeW, 18);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(0x2a, 0xab, 0xee));
+        painter->drawRoundedRect(badge, 9, 9);
+        painter->setPen(Qt::white);
+        painter->drawText(badge, Qt::AlignCenter, count);
+
+        QString text = keywords.first();
+        if (keywords.size() > 1)
+            text += QStringLiteral(" +%1").arg(keywords.size() - 1);
+        const QRect textRect(button.left() + 10, button.top(), badge.left() - button.left() - 14, button.height());
+        painter->setPen(QColor(0xcf, 0xe9, 0xfb));
+        painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, fm.elidedText(text, Qt::ElideRight, textRect.width()));
+    }
+    painter->restore();
+}
+
+bool KeywordsDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index)
+{
+    if (event->type() == QEvent::MouseButtonRelease) {
+        auto* mouse = static_cast<QMouseEvent*>(event);
+        if (mouse->button() == Qt::LeftButton && buttonRect(option).contains(mouse->position().toPoint())) {
+            emit clicked(index.row());
+            return true;
+        }
+    }
+    return QStyledItemDelegate::editorEvent(event, model, option, index);
+}
+
 // ---------------------------------------------------------------- ActionsDelegate
 
 ActionsDelegate::ActionsDelegate(TaskListModel* model, QObject* parent)
@@ -108,9 +194,7 @@ int ActionsDelegate::actionAt(const QStyleOptionViewItem& option, int row, QPoin
 
 void ActionsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-    QStyleOptionViewItem opt = option;
-    opt.text.clear();
-    QStyledItemDelegate::paint(painter, opt, index);
+    paintBackground(painter, option, index);
     const QList<int> actions = actionsFor(index.row());
     const int total = int(actions.size()) * kActionWidth;
     int x = option.rect.center().x() - total / 2;

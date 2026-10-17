@@ -1,5 +1,6 @@
 #include "app/AppPaths.h"
 #include "core/Format.h"
+#include "core/Keywords.h"
 #include "core/OutputNaming.h"
 #include "core/StickerTask.h"
 
@@ -139,6 +140,46 @@ private slots:
 
         StickerTask unknown;
         QCOMPARE(unknown.effectiveDuration(), 3.0); // 缺失按 3 秒
+    }
+
+    void keywordSplit()
+    {
+        QCOMPARE(Keywords::split(QStringLiteral("哈哈, 笑死，绝了、好耶;ok；  yes\tno")),
+                 (QStringList{QStringLiteral("哈哈"), QStringLiteral("笑死"), QStringLiteral("绝了"), QStringLiteral("好耶"),
+                              QStringLiteral("ok"), QStringLiteral("yes"), QStringLiteral("no")}));
+        QVERIFY(Keywords::split(QStringLiteral(" ,， ")).isEmpty());
+        QCOMPARE(Keywords::charCount(QStringLiteral("😂a")), 2); // Emoji 算一个字符
+    }
+
+    void keywordAddRules()
+    {
+        QStringList list;
+        Keywords::AddResult r = Keywords::add(list, QStringLiteral("哈哈 笑死"));
+        QCOMPARE(r.added.size(), 2);
+        QVERIFY(r.error.isEmpty());
+
+        r = Keywords::add(list, QStringLiteral("哈哈，新词"));
+        QCOMPARE(r.added, QStringList{QStringLiteral("新词")});
+        QCOMPARE(r.error, QStringLiteral("「哈哈」已存在"));
+
+        // 字符上限：已用 6，剩 58
+        QStringList longList{QString(60, u'a')};
+        r = Keywords::add(longList, QStringLiteral("bbbbb cc"));
+        QCOMPARE(r.error, QStringLiteral("「bbbbb」需要 5 字符，还剩 4"));
+        QCOMPARE(r.added, QStringList{QStringLiteral("cc")}); // 更短的还能放下
+        r = Keywords::add(longList, QStringLiteral("dd ee"));
+        QCOMPARE(r.added, QStringList{QStringLiteral("dd")});
+        QCOMPARE(r.error, QStringLiteral("总长度已满 64 字符"));
+        QVERIFY(Keywords::isFull(longList));
+
+        // 数量上限
+        QStringList many;
+        for (int i = 0; i < 20; ++i)
+            many << QString::number(i);
+        r = Keywords::add(many, QStringLiteral("x"));
+        QVERIFY(r.added.isEmpty());
+        QCOMPARE(r.error, QStringLiteral("最多 20 个关键词"));
+        QVERIFY(Keywords::isFull(many));
     }
 
     void resolveDataDir()
