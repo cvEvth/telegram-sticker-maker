@@ -1,7 +1,14 @@
 cmake_minimum_required(VERSION 3.25)
 
+# 版本号：发版时 CI 用标签里的版本（环境变量 TSM_VERSION，如 v1.2.0 → 1.2.0）覆盖这里的默认值
+if(DEFINED ENV{TSM_VERSION} AND NOT "$ENV{TSM_VERSION}" STREQUAL "")
+    set(TSM_VERSION "$ENV{TSM_VERSION}")
+else()
+    set(TSM_VERSION 0.1.0)
+endif()
+
 project(TelegramStickerMaker
-    VERSION 0.1.0
+    VERSION ${TSM_VERSION}
     DESCRIPTION "Batch converter for Telegram stickers"
     LANGUAGES CXX)
 

@@ -10,10 +10,15 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
-# ---- version from CMakeLists.txt
-$cmake = Get-Content (Join-Path $root 'CMakeLists.txt') -Raw
-if ($cmake -notmatch 'VERSION\s+(\d+\.\d+\.\d+)') { throw 'Cannot find the project version in CMakeLists.txt' }
-$version = $Matches[1]
+# ---- version: TSM_VERSION (set by the release workflow from the tag), else the default in CMakeLists.txt
+if ($env:TSM_VERSION) {
+    $version = $env:TSM_VERSION
+} else {
+    $cmake = Get-Content (Join-Path $root 'CMakeLists.txt') -Raw
+    if ($cmake -notmatch 'set\(TSM_VERSION (\d+\.\d+\.\d+)\)') { throw 'Cannot find the default version in CMakeLists.txt' }
+    $version = $Matches[1]
+}
+if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid version '$version' (expected x.y.z)" }
 $name = "TelegramStickerMaker-$version-win64"
 Write-Host "[package] version $version"
 

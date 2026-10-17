@@ -1,0 +1,126 @@
+# 自动发版：推送 v1.2.3 这样的标签 → 构建、测试、打包，并创建 GitHub Release 上传安装包与便携 zip。
+# 在 Actions 页面手动运行时只构建打包，产物作为构建附件保留 7 天，不发布 Release（用来试跑）。
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 试构建用的版本号（x.y.z），只上传构建附件，不发布 Release
+        required: true
+        default: 0.0.0
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  QT_VERSION: 6.8.3
+  # 与本地开发机的 vcpkg 保持同一提交，libwebp / libzip 版本一致
+  VCPKG_COMMIT: a5f736224e85b32e25a8ffc52562333180396642
+  # BtbN 的 FFmpeg 8.1 LGPL 共享库构建（随 8.1 分支补丁版本滚动更新）
+  FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-win64-lgpl-shared-8.1.zip
+
+jobs:
+  release:
+    runs-on: windows-2022
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        shell: pwsh
+        run: |
+          $v = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '${{ inputs.version }}' }
+          if ($v -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid version '$v' (expected x.y.z)" }
+          "TSM_VERSION=$v" >> $env:GITHUB_ENV
+          Write-Host "Version $v"
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          modules: qtmultimedia qtimageformats
+          cache: true
+
+      - name: Download FFmpeg
+        shell: pwsh
+        run: |
+          curl.exe -L --fail --retry 3 -o "$env:RUNNER_TEMP\ffmpeg.zip" $env:FFMPEG_URL
+          Expand-Archive "$env:RUNNER_TEMP\ffmpeg.zip" -DestinationPath "$env:RUNNER_TEMP\ffmpeg"
+          $dir = (Get-ChildItem "$env:RUNNER_TEMP\ffmpeg" -Directory | Select-Object -First 1).FullName
+          & "$dir\bin\ffmpeg.exe" -hide_banner -version | Select-Object -First 1
+          "FFMPEG_ROOT=$dir" >> $env:GITHUB_ENV
+          "QT_ROOT=$env:QT_ROOT_DIR" >> $env:GITHUB_ENV
+
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}\vcpkg-cache
+          key: vcpkg-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Set up vcpkg
+        shell: pwsh
+        run: |
+          $root = "$env:RUNNER_TEMP\vcpkg"
+          git init -q $root
+          git -C $root fetch -q --depth 1 https://github.com/microsoft/vcpkg $env:VCPKG_COMMIT
+          git -C $root checkout -q FETCH_HEAD
+          & "$root\bootstrap-vcpkg.bat" -disableMetrics
+          New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\vcpkg-cache" | Out-Null
+          "VCPKG_ROOT=$root" >> $env:GITHUB_ENV
+          "VCPKG_DEFAULT_BINARY_CACHE=$env:RUNNER_TEMP\vcpkg-cache" >> $env:GITHUB_ENV
+
+      - name: Set up Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          if (-not (Test-Path $iscc)) { throw 'Inno Setup not found' }
+          "ISCC=$iscc" >> $env:GITHUB_ENV
+
+      - name: Build and test
+        shell: cmd
+        run: scripts\build.bat release test
+
+      - name: Package
+        shell: pwsh
+        run: scripts\package.ps1 -SkipBuild
+
+      - name: Release notes
+        shell: pwsh
+        run: |
+          $assets = Get-ChildItem dist -File | Where-Object { $_.Extension -in '.exe', '.zip' }
+          if ($assets.Count -ne 2) { throw "Expected setup.exe and .zip in dist, found: $($assets.Name -join ', ')" }
+          $sums = $assets | ForEach-Object { '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name }
+          $notes = (Get-Content packaging\release-notes.md -Raw -Encoding UTF8).Replace('{{VERSION}}', $env:TSM_VERSION)
+          $fence = '```'
+          $notes += "`n## SHA-256`n`n$fence`n" + ($sums -join "`n") + "`n$fence`n"
+          Set-Content dist\release-notes.md $notes -Encoding UTF8
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TelegramStickerMaker-${{ env.TSM_VERSION }}
+          path: |
+            dist/*.exe
+            dist/*.zip
+            dist/release-notes.md
+          retention-days: 7
+
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = (Get-ChildItem dist -File | Where-Object { $_.Extension -in '.exe', '.zip' }).FullName
+          gh release create $env:GITHUB_REF_NAME @assets --title $env:GITHUB_REF_NAME --notes-file dist\release-notes.md --verify-tag
