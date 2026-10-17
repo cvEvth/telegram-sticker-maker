@@ -385,8 +385,10 @@ QWidget* ClipEditorDialog::buildControls()
         connect(m_speed, &QComboBox::currentIndexChanged, this, [this] {
             const double rate = m_speed->currentData().toDouble();
             m_settings.setPlaybackRate(rate);
-            if (m_player)
+            if (m_player) {
+                resyncClock(m_state.playhead()); // 倍速变了，从当前位置重新计时
                 m_player->setPlaybackRate(rate);
+            }
         });
         m_muteButton = toolButton(QStringLiteral("🔊"), QStringLiteral("静音"));
         connect(m_muteButton, &QPushButton::clicked, this, [this] {
@@ -515,10 +517,12 @@ void ClipEditorDialog::setupPlayer()
     connect(m_player, &QMediaPlayer::playbackStateChanged, this, [this](QMediaPlayer::PlaybackState s) {
         const bool playing = s == QMediaPlayer::PlayingState;
         m_playButton->setText(playing ? QStringLiteral("⏸️ 暂停") : QStringLiteral("▶️ 播放"));
-        if (playing)
+        if (playing) {
+            resyncClock(m_player->position() / 1000.0);
             m_tick->start();
-        else
+        } else {
             m_tick->stop();
+        }
         if (!playing && m_playMode != PlayMode::Free) {
             m_playMode = PlayMode::Free;
             m_playIndex = -1;
@@ -548,7 +552,7 @@ void ClipEditorDialog::setupPlayer()
     });
 
     m_tick = new QTimer(this);
-    m_tick->setInterval(30);
+    m_tick->setInterval(16);
     connect(m_tick, &QTimer::timeout, this, &ClipEditorDialog::onTick);
 
     // 已有缓存直接用
@@ -926,6 +930,7 @@ void ClipEditorDialog::seek(double seconds)
     const double t = std::clamp(seconds, 0.0, m_base.info.duration);
     if (m_player)
         m_player->setPosition(qint64(std::llround(t * 1000)));
+    resyncClock(t);
     m_state.setPlayhead(t);
     refreshControls();
 }
@@ -943,9 +948,46 @@ void ClipEditorDialog::changeSpeed(int delta)
     showHint(QStringLiteral("播放倍速 %1").arg(m_speed->currentText()));
 }
 
+void ClipEditorDialog::resyncClock(double seconds)
+{
+    m_clockAnchor = seconds;
+    m_lastShown = seconds;
+    m_lastReportedMs = m_player ? m_player->position() : -1;
+    m_clock.restart();
+}
+
+double ClipEditorDialog::smoothPosition()
+{
+    constexpr double kMaxDrift = 0.25; // 偏差超过这个值（卡顿、跳转）直接对齐
+    constexpr double kMaxLead = 0.15;  // 推算值最多领先真实位置这么多，卡住时不会越跑越远
+    const double rate = m_player->playbackRate() > 0 ? m_player->playbackRate() : 1.0;
+    const qint64 reportedMs = m_player->position();
+    const double reported = reportedMs / 1000.0;
+    if (!m_clock.isValid()) {
+        resyncClock(reported);
+        return reported;
+    }
+    double estimated = m_clockAnchor + m_clock.elapsed() / 1000.0 * rate;
+    if (reportedMs != m_lastReportedMs) {
+        // 新的一帧：用真实位置校正推算值
+        m_lastReportedMs = reportedMs;
+        const double drift = reported - estimated;
+        if (std::abs(drift) > kMaxDrift) {
+            resyncClock(reported);
+            return reported;
+        }
+        m_clockAnchor += drift * 0.2;
+        estimated += drift * 0.2;
+    }
+    estimated = std::min(estimated, reported + kMaxLead);
+    estimated = std::max(estimated, m_lastShown); // 不往回走
+    m_lastShown = estimated;
+    return std::min(estimated, m_base.info.duration);
+}
+
 void ClipEditorDialog::onTick()
 {
-    const double t = m_player->position() / 1000.0;
+    const double t = smoothPosition();
     if (m_playMode != PlayMode::Free && m_playIndex >= 0 && m_playIndex < m_clips.size()) {
         const StickerTask& c = m_clips.at(m_playIndex);
         const double start = c.startTime.value_or(0);
@@ -953,6 +995,7 @@ void ClipEditorDialog::onTick()
         if (t >= end) {
             if (m_playMode == PlayMode::Loop) {
                 m_player->setPosition(qint64(start * 1000));
+                resyncClock(start);
                 m_state.setPlayhead(start);
                 return;
             }

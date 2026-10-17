@@ -6,6 +6,7 @@
 #include "ui/editor/ClipListPanel.h"
 
 #include <QDialog>
+#include <QElapsedTimer>
 #include <QHash>
 
 class QAudioOutput;
@@ -40,6 +41,8 @@ public:
     ~ClipEditorDialog() override;
 
     const QList<StickerTask>& clips() const { return m_clips; }
+    int selectedIndex() const { return m_selected; }
+    double playhead() const { return m_state.playhead(); }
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -123,6 +126,14 @@ private:
     QAudioOutput* m_audio = nullptr;
     QVideoSink* m_sink = nullptr;
     QTimer* m_tick = nullptr;
+    // 播放时的平滑时钟：播放器的位置只在每解出一帧时更新（25fps 即 40ms 跳一次），
+    // 放大时间轴后指针会明显跳动；这里用计时器连续推算，再用真实位置慢慢校正
+    QElapsedTimer m_clock;
+    double m_clockAnchor = 0;    // 计时开始时的位置（秒）
+    qint64 m_lastReportedMs = -1;
+    double m_lastShown = 0;
+    void resyncClock(double seconds);
+    double smoothPosition();
     QTimer* m_thumbTimer = nullptr;
     PlayMode m_playMode = PlayMode::Free;
     int m_playIndex = -1;

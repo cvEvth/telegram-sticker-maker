@@ -176,13 +176,15 @@ void ClipCard::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton)
         emit clicked();
-    QFrame::mousePressEvent(event);
+    // 必须接受：否则事件会传给列表容器，被当成"点击空白"而立刻取消选中
+    event->accept();
 }
 
 void ClipCard::contextMenuEvent(QContextMenuEvent* event)
 {
     emit clicked();
     emit menuRequested(event->globalPos());
+    event->accept();
 }
 
 // ---------------------------------------------------------------- ClipListPanel

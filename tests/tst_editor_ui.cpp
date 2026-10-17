@@ -8,10 +8,12 @@
 #include "media/ThumbnailService.h"
 #include "ui/Theme.h"
 #include "ui/editor/ClipEditorDialog.h"
+#include "ui/editor/ClipListPanel.h"
 #include "ui/editor/PreviewCanvas.h"
 
 #include <QApplication>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QLabel>
 #include <QPushButton>
 #include <QTemporaryDir>
@@ -216,6 +218,107 @@ private slots:
         for (QLabel* label : dialog.findChildren<QLabel*>())
             QVERIFY2(!label->text().contains(QStringLiteral("无法播放")), qPrintable(label->text()));
         snapshot(&dialog, QStringLiteral("editor_webp.png"));
+        dialog.reject();
+    }
+
+    // 用鼠标真正点击片段卡片：选中并保持选中；点卡片里的缩略图也一样；点列表空白取消选中
+    void clickingCardSelectsClip()
+    {
+        const QString src = generate(QStringLiteral("cards.mp4"),
+                                     {QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                                      QStringLiteral("testsrc2=size=320x240:rate=25:duration=6"), QStringLiteral("-c:v"),
+                                      QStringLiteral("mpeg4")});
+        StickerTask a = taskFor(src);
+        a.startTime = 0.5;
+        a.endTime = 1.5;
+        a.clipGroupId = QStringLiteral("clipgrp-t");
+        StickerTask b = a;
+        b.id = StickerTask::newId();
+        b.startTime = 3.0;
+        b.endTime = 4.0;
+        b.mirror = true;
+
+        ClipEditorDialog dialog(*m_settings, m_thumbs, m_proxies, {a, b}, 0);
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        QTest::qWait(300);
+        QCOMPARE(dialog.selectedIndex(), 0);
+
+        QList<ClipCard*> cards = dialog.findChildren<ClipCard*>();
+        QCOMPARE(cards.size(), 2);
+        std::sort(cards.begin(), cards.end(), [](ClipCard* x, ClipCard* y) { return x->y() < y->y(); });
+
+        // 点第二张卡片的空白处（右下角附近，避开输入框）
+        QTest::mouseClick(cards.at(1), Qt::LeftButton, {}, QPoint(cards.at(1)->width() - 6, cards.at(1)->height() - 4));
+        QTest::qWait(100);
+        QCOMPARE(dialog.selectedIndex(), 1);
+        QVERIFY(cards.at(1)->property("selected").toBool());
+        QVERIFY(!cards.at(0)->property("selected").toBool());
+
+        // 点第一张卡片的缩略图
+        QLabel* thumb = nullptr;
+        for (QLabel* l : cards.at(0)->findChildren<QLabel*>())
+            if (!thumb || l->width() * l->height() > thumb->width() * thumb->height())
+                thumb = l;
+        QVERIFY(thumb);
+        QTest::mouseClick(thumb, Qt::LeftButton, {}, thumb->rect().center());
+        QTest::qWait(100);
+        QCOMPARE(dialog.selectedIndex(), 0);
+
+        // 点列表空白（最后一张卡片下方）
+        auto* panel = dialog.findChild<ClipListPanel*>();
+        QWidget* host = cards.at(1)->parentWidget();
+        const QPoint below(host->width() / 2, cards.at(1)->geometry().bottom() + 20);
+        if (host->rect().contains(below)) {
+            QTest::mouseClick(host, Qt::LeftButton, {}, below);
+            QTest::qWait(100);
+            QCOMPARE(dialog.selectedIndex(), -1);
+        }
+        Q_UNUSED(panel);
+        snapshot(&dialog, QStringLiteral("editor_card_click.png"));
+        dialog.reject();
+    }
+
+    // 播放时指针连续移动：25fps 视频每帧 40ms，指针不应按帧跳，也不往回走
+    void playheadMovesSmoothly()
+    {
+        const QString src = generate(QStringLiteral("smooth.mp4"),
+                                     {QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                                      QStringLiteral("testsrc2=size=320x240:rate=25:duration=6"), QStringLiteral("-c:v"),
+                                      QStringLiteral("mpeg4")});
+        const StickerTask task = taskFor(src);
+        m_settings->setPlaybackRate(1.0);
+        ClipEditorDialog dialog(*m_settings, m_thumbs, m_proxies, {task}, 0);
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        QTest::qWait(500);
+        QPushButton* play = buttonWithText(&dialog, QStringLiteral("▶️ 播放"));
+        QVERIFY(play);
+        play->click();
+        QTRY_VERIFY_WITH_TIMEOUT(dialog.playhead() > 0.3, 5000);
+
+        QList<double> samples;
+        QElapsedTimer timer;
+        timer.start();
+        while (timer.elapsed() < 1500) {
+            QTest::qWait(16);
+            samples << dialog.playhead();
+        }
+        buttonWithText(&dialog, QStringLiteral("⏸️ 暂停"))->click();
+
+        double maxStep = 0;
+        int moved = 0;
+        for (qsizetype i = 1; i < samples.size(); ++i) {
+            const double step = samples.at(i) - samples.at(i - 1);
+            QVERIFY2(step >= -1e-9, qPrintable(QStringLiteral("往回走了 %1").arg(step)));
+            maxStep = std::max(maxStep, step);
+            moved += step > 1e-6;
+        }
+        // 按帧跳时只有约 1/2~1/3 的采样会变化、单步约 40ms；平滑后几乎每次采样都前进
+        QVERIFY2(moved > samples.size() * 0.7, qPrintable(QStringLiteral("%1 / %2").arg(moved).arg(samples.size())));
+        QVERIFY2(maxStep < 0.12, qPrintable(QString::number(maxStep)));
+        const double total = samples.last() - samples.first();
+        QVERIFY2(total > 1.0 && total < 2.0, qPrintable(QString::number(total)));
         dialog.reject();
     }
 
