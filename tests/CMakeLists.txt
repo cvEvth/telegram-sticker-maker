@@ -9,7 +9,7 @@ foreach(test_name IN ITEMS tst_core tst_plan tst_editor tst_media tst_convert ts
 endforeach()
 
 # 界面交互测试：真实打开窗口（设 TSM_SNAPSHOT_DIR 可保存截图）
-foreach(test_name IN ITEMS tst_editor_ui tst_mainlist_ui)
+foreach(test_name IN ITEMS tst_editor_ui tst_mainlist_ui tst_readme_shots)
     qt_add_executable(${test_name} ${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE tsm_ui Qt6::Test)
     add_test(NAME ${test_name} COMMAND ${test_name})

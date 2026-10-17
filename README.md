@@ -1,73 +1,109 @@
-# Telegram Sticker Maker
+<p align="center">
+  <img src="resources/icons/app_256.png" width="128" alt="Telegram Sticker Maker">
+</p>
 
-把视频 / 动图 / 图片批量转换成符合 Telegram 官方规格的贴纸（WebM VP9 / WebP）。完整需求见 [功能需求说明.md](功能需求说明.md)。
+<h1 align="center">Telegram Sticker Maker</h1>
 
-技术栈：C++20 · Qt 6.8 Widgets · FFmpeg 8.1（LGPL 共享库）· libwebp · libzip · CMake + vcpkg
+<p align="center">
+  把视频、动图、图片批量做成 Telegram 贴纸的 Windows 桌面工具<br>
+  截取片段、裁切画面、配好 Emoji 和关键词，一键转换成符合官方规格的 WebM / WebP 贴纸
+</p>
 
-## 构建（Windows）
+<p align="center">
+  <a href="https://github.com/OnonokiYotsuki/telegram-sticker-maker/releases/latest"><img src="https://img.shields.io/github/v/release/OnonokiYotsuki/telegram-sticker-maker?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC" alt="最新版本"></a>
+  <a href="https://github.com/OnonokiYotsuki/telegram-sticker-maker/releases"><img src="https://img.shields.io/github/downloads/OnonokiYotsuki/telegram-sticker-maker/total?label=%E4%B8%8B%E8%BD%BD" alt="下载次数"></a>
+  <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078d4" alt="Windows 10 / 11">
+</p>
 
-依赖：Visual Studio 2022 Build Tools（C++）、Qt 6.8 MSVC 2022 64 位（含 Multimedia）、FFmpeg 共享库、vcpkg。
-路径通过环境变量 `QT_ROOT`、`FFMPEG_ROOT`、`VCPKG_ROOT` 指定；`scripts\build.bat` 里有本机默认值。
+<p align="center">
+  <a href="https://github.com/OnonokiYotsuki/telegram-sticker-maker/releases/latest"><b>⬇️ 下载最新版</b></a>
+  ·
+  <a href="https://www.cvevth.top/sticker"><b>🌐 在线创建贴纸包</b></a>
+</p>
 
-```bat
-scripts\build.bat            :: dev（RelWithDebInfo）
-scripts\build.bat dev test   :: 构建并运行单元测试
-scripts\build.bat release
-```
+![主窗口](docs/screenshots/main-window.png)
 
-产物在 `build\<preset>\bin\`，构建后会自动部署 Qt 与 FFmpeg 运行库，`TelegramStickerMaker.exe` 可直接双击运行。
+## 功能
 
-发布打包（Release 构建 → `dist\` 下的便携 zip 与安装程序）：
+- **一键符合 Telegram 规格**：视频和动图转成 WebM（VP9）视频贴纸，图片转成 WebP 静态贴纸；尺寸、帧率、体积自动处理，不用自己调参数
+- **画质尽量高，体积一定不超限**：按时长和运动量规划码率与帧率，两遍编码；超出 256KB 自动降码率或帧率重试，偏小时上调码率把画质"填满"
+- **超过 3 秒也能用**：保留全部帧，只把文件头里的时长改写为 2.99 秒，可以通过 @Stickers 机器人的时长检查
+- **截取与裁切**：在时间轴上打点，从一段视频里截出多个片段；裁切框支持比例锁定、圆角、圆形和镜像；点击片段自动循环预览
+- **Emoji 与关键词**：双击设置 Emoji，右键批量设置 Emoji 和关键词；也可以接入兼容 OpenAI 的视觉模型，自动识别画面情绪匹配 Emoji
+- **素材格式多**：MP4、MKV、WebM、MOV、AVI、FLV、GIF、APNG、动态 WebP、PNG、JPG、WebP、BMP、TIFF、HEIC；透明视频、透明 GIF / PNG 都会保留透明
+- **自定义表情**：切换到 100×100 模式，一次做好一套自定义表情（Custom Emoji）
+- **不怕中断**：列表和所有编辑自动保存，关掉再打开会原样恢复；也能导出原片和参数清单，换台电脑继续编辑
 
-```bat
-powershell -ExecutionPolicy Bypass -File scripts\package.ps1
-```
+## 下载安装
 
-- 便携版 `TelegramStickerMaker-<版本>-win64.zip`：自带 VC++ 运行库、第三方许可证与使用说明，解压即用。
-- 安装程序 `TelegramStickerMaker-<版本>-win64-setup.exe`：需要 Inno Setup 6（默认找 `D:\apps\InnoSetup6\ISCC.exe`，可用环境变量 `ISCC` 指定），没找到时只出便携版；默认按当前用户安装，不需要管理员权限。
-- 版本号默认取 `CMakeLists.txt` 里的 `set(TSM_VERSION x.y.z)`，设置环境变量 `TSM_VERSION` 可覆盖。
+到 [Releases](https://github.com/OnonokiYotsuki/telegram-sticker-maker/releases/latest) 下载：
 
-自动发版（GitHub Actions，`.github/workflows/release.yml`）：推送 `v` 开头的版本标签即可，CI 会在 Windows 上构建、跑全部测试、打包，并创建 GitHub Release 上传安装程序与便携 zip（附 SHA-256）。版本号直接取自标签，不用改代码。
+| 文件 | 说明 |
+|---|---|
+| `TelegramStickerMaker-x.y.z-win64-setup.exe` | 安装程序，默认装到当前用户，不需要管理员权限 |
+| `TelegramStickerMaker-x.y.z-win64.zip` | 便携版，解压后双击 `TelegramStickerMaker.exe` 即可运行 |
 
-```bat
-git tag v0.2.0
-git push origin v0.2.0
-```
+系统要求：Windows 10 / 11 64 位。两个包都自带运行库，不需要另外安装任何东西。
 
-发版前在 `CHANGELOG.md` 加一节 `## vX.Y.Z` 写上这一版的改动，它会放在 Release 说明开头的「更新内容」里；没写时自动列出上一版以来的提交标题。
+## 快速上手
 
-在 Actions 页面手动运行该工作流（填一个试用版本号）只构建打包、把产物作为构建附件保留 7 天，不发布 Release。发布说明模板在 `packaging/release-notes.md`。
+1. 把视频、动图或图片**拖进窗口**，也可以点「添加文件」「添加文件夹」
+2. 需要截取片段或裁切画面时，点每一行的 ✂️ 打开编辑窗口
+3. **双击「目标文件名」**设置 Emoji；右键菜单可以批量设置 Emoji、关键词，或让 AI 匹配 Emoji
+4. 点「🚀 开始转换」，完成后会在输出目录生成 `TG_Stickers_日期_时间.zip`（贴纸 + 记录 Emoji 和关键词的 `stickers.json`）
 
-## 目录结构
+### 截取与裁切
 
-```
-src/
-  app/     配置目录 / 数据目录、持久化设置、运行日志、批量转换调度、会话保存、清单还原
-  core/    数据模型与规则：任务、主列表模型、输出命名、时间格式、Telegram 规格、画质规划、关键词、sticker_list.json
-  io/      ZIP 写入、输出打包（压缩包 / 时间戳文件夹 + stickers.json）
-  media/   FFmpeg 调用：子进程（无黑窗口）、素材解析、滤镜链、贴纸编码、WebM 时长改写、WebP 编码
-  ui/      主窗口、右侧设置面板、拖放区、日志面板、列表委托、深色主题
-  ui/editor/ 截取 / 裁切窗口：预览画布、时间轴、片段列表、窗口设置
-resources/ 样式表、程序图标
-packaging/ 安装脚本（Inno Setup）、简体中文语言文件、使用说明、第三方许可证清单
-tests/     tst_core / tst_plan / tst_editor（规则单元测试）、tst_media / tst_convert（用 ffmpeg 现场生成素材的解析与转换测试）、
-           tst_editor_ui / tst_mainlist_ui（打开真实窗口模拟操作；设 TSM_SNAPSHOT_DIR 可保存截图）
-```
+一段视频可以截出多个片段，每个片段都有自己的起止时间、裁切框、圆角、镜像和 Emoji。点片段卡片或时间轴上的色块会在片段内循环播放，`[` / `]` 打起点和终点，`空格`播放暂停。
 
-`tsm_core` 静态库不依赖 Widgets，规则测试直接链接它；界面代码在 `tsm_ui` 静态库，主程序与界面测试共用。
+![截取与裁切窗口](docs/screenshots/editor.png)
 
-## 进度
+### 创建贴纸包
 
-- [x] 工程骨架、主窗口布局、深色主题、设置持久化
-- [x] 添加文件 / 文件夹 / 拖拽，后台解析素材（ffprobe）
-- [x] 主列表：规格、目标文件名（序号自动重排）、双击改 Emoji、删除 / 清空、忙碌锁
-- [x] 解析细节：动图逐帧时长（GIF / APNG / WebP 文件头，缺省 100ms）、旋转与方向（HEIC / JPEG EXIF / 竖拍视频）、GIF 调色板与 PNG tRNS 透明、动态 WebP 经 libwebp 解码
-- [x] 主列表：缩略图（懒加载 + 缓存）、行内 ✂️ / 📂 / 🗑️ 操作
-- [x] 主列表：选择规则、快捷键、右键菜单（3.3 / 3.4），转换选中项
-- [x] 关键词弹窗（第 8 节）
-- [x] 转换核心（第 5 节）：画质规划、运动量探测、两遍编码、超限 / 偏小重试、3 秒破限、静态图逐级压缩、压缩包 / 文件夹输出
-- [x] 截取 / 裁切编辑窗口（第 6 节）：时间轴与总览条、片段列表、裁切框（比例锁定 / 圆角 / 三分线）、镜像联动、快捷键、窗口设置、缓存代理、片段组写回
-- [x] 会话自动保存与恢复（第 10 节）：250ms 防抖原子写入、启动恢复（可停止）、缺失文件跳过、解析结果缓存、切换数据目录时迁移
-- [x] 导入导出（第 9 节）：原片 + 参数清单 / 已裁切源文件两种导出（压缩包或文件夹，可停止），zip / json / 文件夹导入，zip 解压缓存复用，预览缓存随包装回
-- [x] AI 匹配 Emoji（第 7 节）：兼容 OpenAI 的视觉接口，只取最终贴纸区域（镜像 / 裁切 / 圆角，白底），多帧胶片条，逐个识别、超时与重试，可只识别选中项、可停止
-- [x] 发布打包：Release 构建、便携 zip（约 88MB）与 Inno Setup 安装程序（约 59MB），自带 VC++ 运行库与第三方许可证
+转换完成后，前往 **[www.cvevth.top/sticker](https://www.cvevth.top/sticker)** 创建你的 Telegram 贴纸包，也可以把压缩包直接发给 Telegram 机器人 **@cvEvthBot**。
+
+<p align="center"><img src="docs/screenshots/done-dialog.png" width="540" alt="转换成功"></p>
+
+## Telegram 贴纸规格
+
+工具会自动按下面的官方要求输出：
+
+| 类型 | 尺寸 | 格式 | 体积上限 |
+|---|---|---|---|
+| 视频贴纸 | 长边 512px | WebM（VP9），无音轨，≤ 3 秒 | 256 KB |
+| 静态贴纸 | 长边 512px | WebP，可透明 | 512 KB |
+| 自定义表情 | 100×100 | 视频 WebM / 静态 WebP | 64 KB |
+
+## 常见问题
+
+<details>
+<summary><b>打开时 Windows 提示"已保护你的电脑"</b></summary>
+
+程序没有购买代码签名证书，Windows SmartScreen 会提示"未知发布者"。点「更多信息」→「仍要运行」即可。每个版本都在 Release 说明里附了 SHA-256，可以核对下载的文件。
+</details>
+
+<details>
+<summary><b>AI 匹配 Emoji 怎么用</b></summary>
+
+点工具栏的「⚙️ AI 设置」，填写 API Key、Base URL 和模型名称。支持任何兼容 OpenAI Chat Completions 格式的视觉模型（如 OpenAI、DeepSeek、Moonshot、OneAPI 等中转）。Base URL 指向本机（localhost / 127.0.0.1）时可以不填 Key。识别时只看最终贴纸区域（已应用裁切、圆角、镜像），视频会取几帧拼成一张图。
+</details>
+
+<details>
+<summary><b>转换失败或提示体积超限</b></summary>
+
+画面复杂、运动剧烈的长片段即使降到最低帧率也可能压不进 256KB。可以截短一点、裁掉多余的画面；如果「编码预设」选的是「⚡ 快速导出」，换回默认的「✨ 高画质」（两遍编码加轻度降噪，同样体积画质更好）。失败原因会写在状态栏和运行日志里。
+</details>
+
+<details>
+<summary><b>设置和缓存保存在哪里</b></summary>
+
+默认在 `%LOCALAPPDATA%\TelegramStickerMaker`（设置、自动保存的列表、预览缓存）。可以在右侧「数据目录」里改到别的盘，「清除预览缓存」可以释放空间。卸载程序时会保留这些数据，重新安装后可以继续使用。
+</details>
+
+## 开发
+
+C++20 · Qt 6.8 · FFmpeg 8.1 · libwebp · libzip · CMake + vcpkg。构建、测试、打包和发版流程见 [docs/development.md](docs/development.md)，版本改动见 [CHANGELOG.md](CHANGELOG.md)。
+
+## 致谢
+
+本程序使用了 [Qt](https://www.qt.io/)（LGPL v3）、[FFmpeg](https://ffmpeg.org/)（LGPL）、[libwebp](https://chromium.googlesource.com/webm/libwebp)、[libzip](https://libzip.org/) 等开源组件，许可证随安装包附带，见 `THIRD_PARTY_NOTICES.txt`。
