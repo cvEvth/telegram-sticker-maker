@@ -7,18 +7,26 @@
 #include "core/MediaKinds.h"
 #include "core/TaskListModel.h"
 #include "media/FFmpegTools.h"
+#include "media/ProxyCache.h"
+#include "media/ThumbnailService.h"
 #include "ui/DropOverlay.h"
 #include "ui/DropZone.h"
 #include "ui/HeaderBar.h"
 #include "ui/LogPanel.h"
 #include "ui/SettingsPanel.h"
+#include "ui/TaskTableDelegates.h"
+#include "ui/editor/ClipEditorDialog.h"
 
 #include <QCloseEvent>
 #include <QCollator>
+#include <QDateTime>
 #include <QDesktopServices>
 #include <QDirIterator>
 #include <QDragEnterEvent>
 #include <QFileDialog>
+#include <QFutureWatcher>
+#include <QItemSelectionModel>
+#include <QtConcurrent>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QMessageBox>
@@ -52,6 +60,8 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , m_model(new TaskListModel(this))
     , m_converter(new BatchConverter(this))
+    , m_thumbs(new ThumbnailService(this))
+    , m_proxies(new ProxyCache(this))
 {
     setWindowTitle(QStringLiteral("Telegram Sticker Maker"));
     resize(1500, 820);
@@ -59,10 +69,12 @@ MainWindow::MainWindow(QWidget* parent)
     setAcceptDrops(true);
     m_workers.setMaxThreadCount(1);
 
+    applyDataDir();
     buildUi();
     connectSignals();
     m_model->setOutputLocation(m_settings.outputDir(), m_settings.saveBesideSource());
     refreshUi();
+    refreshCacheInfo();
 
     logInfo(QStringLiteral("✅ 启动就绪"));
     if (FFmpegTools::ffmpegPath().isEmpty() || FFmpegTools::ffprobePath().isEmpty())
@@ -174,6 +186,12 @@ void MainWindow::configureTable()
     };
     for (const auto& [column, width] : widths)
         m_table->setColumnWidth(column, width);
+
+    m_table->setItemDelegateForColumn(TaskListModel::ColPreview, new PreviewDelegate(m_model, m_thumbs, m_table));
+    auto* actions = new ActionsDelegate(m_model, m_table);
+    m_table->setItemDelegateForColumn(TaskListModel::ColActions, actions);
+    connect(actions, &ActionsDelegate::triggered, this, &MainWindow::onRowAction);
+    m_table->setMouseTracking(true);
     // TODO(主列表): 再次单击已选中行取消选中、点击空白取消选择、右键菜单（需求 3.3 / 3.4）
 }
 
@@ -185,7 +203,8 @@ void MainWindow::connectSignals()
     connect(m_btnAddFiles, &QPushButton::clicked, this, &MainWindow::addFilesDialog);
     connect(m_btnAddFolder, &QPushButton::clicked, this, &MainWindow::addFolderDialog);
     connect(m_btnImport, &QPushButton::clicked, this, &MainWindow::importDialog);
-    connect(m_btnClip, &QPushButton::clicked, this, [this] { notImplemented(QStringLiteral("截取视频片段")); });
+    connect(m_btnClip, &QPushButton::clicked, this, &MainWindow::openClipTool);
+    connect(m_thumbs, &ThumbnailService::ready, m_table->viewport(), qOverload<>(&QWidget::update));
     connect(m_btnAi, &QPushButton::clicked, this, [this] { notImplemented(QStringLiteral("AI 匹配 Emoji")); });
     connect(m_btnAiSettings, &QPushButton::clicked, this, [this] { notImplemented(QStringLiteral("AI 设置")); });
     connect(m_btnClear, &QPushButton::clicked, this, &MainWindow::clearList);
@@ -212,11 +231,13 @@ void MainWindow::connectSignals()
     connect(m_panel, &SettingsPanel::stopRequested, this, &MainWindow::requestStop);
     connect(m_panel, &SettingsPanel::openOutputRequested, this, &MainWindow::openOutputDir);
     connect(m_panel, &SettingsPanel::openDataDirRequested, this, &MainWindow::openDataDir);
-    connect(m_panel, &SettingsPanel::clearCacheRequested, this, [this] { notImplemented(QStringLiteral("清除预览缓存")); });
+    connect(m_panel, &SettingsPanel::clearCacheRequested, this, &MainWindow::clearPreviewCacheClicked);
     connect(m_panel, &SettingsPanel::outputLocationChanged, this,
             [this] { m_model->setOutputLocation(m_settings.outputDir(), m_settings.saveBesideSource()); });
-    connect(m_panel, &SettingsPanel::dataDirChanged, this, [](const QString&, const QString& newDir) {
+    connect(m_panel, &SettingsPanel::dataDirChanged, this, [this](const QString&, const QString& newDir) {
         // TODO(会话): 新目录没有会话文件时，把旧目录的会话复制过去
+        applyDataDir();
+        refreshCacheInfo();
         logInfo(QStringLiteral("💾 数据目录已切换为 %1").arg(QDir::toNativeSeparators(newDir)));
     });
 
@@ -491,6 +512,192 @@ void MainWindow::connectConverter()
                 else
                     logInfo(QStringLiteral("🎉 批量转换已全部完成！（%1 成功，%2 失败）").arg(succeeded).arg(failed));
             });
+}
+
+// ---------------------------------------------------------------- 截取 / 裁切
+
+void MainWindow::openEditor(int row)
+{
+    if (row < 0 || row >= m_model->rowCount() || m_editorOpen)
+        return;
+    if (m_busy != Busy::None) {
+        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("任务正在进行中，请先停止！"));
+        return;
+    }
+    const QString path = m_model->taskAt(row).inputPath;
+    if (!QFileInfo::exists(path)) {
+        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("源文件不存在：%1").arg(QDir::toNativeSeparators(path)));
+        return;
+    }
+
+    // 属于片段组时一次加载整组，并聚焦到点击的那个
+    const QList<int> rows = m_model->clipGroupRows(row);
+    QList<StickerTask> clips;
+    int focus = 0;
+    for (int i = 0; i < rows.size(); ++i) {
+        clips << m_model->taskAt(rows.at(i));
+        if (rows.at(i) == row)
+            focus = i;
+    }
+
+    m_editorOpen = true;
+    ClipEditorDialog dialog(m_settings, m_thumbs, m_proxies, clips, focus, this);
+    const bool accepted = dialog.exec() == QDialog::Accepted;
+    m_editorOpen = false;
+    refreshCacheInfo();
+    if (!accepted)
+        return;
+
+    const QList<StickerTask> edited = dialog.clips();
+    const StickerTask& base = clips.first();
+    if (!base.info.isVideo) {
+        const StickerTask e = edited.first();
+        m_model->updateTask(row, [&](StickerTask& t) {
+            t.crop = e.crop;
+            t.cropRadius = e.cropRadius;
+            t.mirror = e.mirror;
+            t.emoji = e.emoji;
+            t.resetRuntimeState();
+        });
+        logInfo(QStringLiteral("[%1] 已保存裁切样式").arg(base.info.fileName));
+        return;
+    }
+
+    // 同一视频的所有片段组成片段组，占据原来的位置；已有片段按 ID 更新原行，新增的插入，删除的移除
+    QHash<QString, StickerTask> existing;
+    for (const StickerTask& t : clips)
+        existing.insert(t.clipId, t);
+    QString groupId = base.clipGroupId;
+    if (groupId.isEmpty())
+        groupId = QStringLiteral("clipgrp-%1").arg(QDateTime::currentMSecsSinceEpoch());
+
+    QList<StickerTask> tasks;
+    for (const StickerTask& e : edited) {
+        StickerTask t;
+        if (existing.contains(e.clipId)) {
+            t = existing.value(e.clipId);
+        } else {
+            t = base;
+            t.id = StickerTask::newId();
+            t.keywords.clear();
+        }
+        t.clipId = e.clipId;
+        t.clipGroupId = groupId;
+        t.startTime = e.startTime;
+        t.endTime = e.endTime;
+        t.crop = e.crop;
+        t.cropRadius = e.cropRadius;
+        t.mirror = e.mirror;
+        t.emoji = e.emoji;
+        t.resetRuntimeState();
+        tasks << t;
+    }
+    const int first = m_model->replaceRows(rows, tasks);
+
+    // 确认后自动选中这一组所有行
+    QItemSelection selection(m_model->index(first, 0), m_model->index(first + int(tasks.size()) - 1, TaskListModel::ColumnCount - 1));
+    m_table->selectionModel()->select(selection, QItemSelectionModel::ClearAndSelect);
+    m_table->scrollTo(m_model->index(first, 0));
+    logInfo(QStringLiteral("[%1] 已保存截取列表，共 %2 个贴纸").arg(base.info.fileName).arg(tasks.size()));
+}
+
+void MainWindow::openClipTool()
+{
+    // 当前选中的是视频就直接打开
+    const QList<int> rows = selectedRows();
+    if (!rows.isEmpty() && m_model->taskAt(rows.first()).info.isVideo) {
+        openEditor(rows.first());
+        return;
+    }
+    if (m_busy != Busy::None) {
+        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("任务正在进行中，请先停止！"));
+        return;
+    }
+    const QString file = QFileDialog::getOpenFileName(this, QStringLiteral("选择要截取的视频"), m_lastDir, MediaKinds::openFileFilter());
+    if (file.isEmpty())
+        return;
+    m_lastDir = QFileInfo(file).absolutePath();
+    const MediaKind kind = MediaKinds::classify(file);
+    if (kind != MediaKind::Video && kind != MediaKind::AnimatedImage) {
+        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("所选文件不是视频格式！"));
+        return;
+    }
+
+    // 先在后台解析，加入列表后再打开
+    auto* watcher = new QFutureWatcher<ProbeResult>(this);
+    connect(watcher, &QFutureWatcher<ProbeResult>::finished, this, [this, watcher, file] {
+        const ProbeResult result = watcher->result();
+        watcher->deleteLater();
+        if (!result.ok) {
+            logInfo(QStringLiteral("❌ [%1] 解析失败: %2").arg(QFileInfo(file).fileName(), result.error));
+            return;
+        }
+        m_model->appendTasks({StickerTask::fromMedia(file, result.info)});
+        logInfo(QStringLiteral("➕ 已添加 1 项"));
+        openEditor(m_model->rowCount() - 1);
+    });
+    watcher->setFuture(QtConcurrent::run([file] { return MediaProbe::probe(file); }));
+}
+
+void MainWindow::onRowAction(int row, int action)
+{
+    if (row < 0 || row >= m_model->rowCount())
+        return;
+    switch (action) {
+    case ActionsDelegate::Edit:
+        openEditor(row);
+        break;
+    case ActionsDelegate::OpenFolder: {
+        const QString path = m_model->taskAt(row).outputPath;
+#ifdef Q_OS_WIN
+        QProcess::startDetached(QStringLiteral("explorer.exe"), {QStringLiteral("/select,"), QDir::toNativeSeparators(path)});
+#else
+        QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(path).absolutePath()));
+#endif
+        break;
+    }
+    case ActionsDelegate::Remove:
+        if (m_busy != Busy::None)
+            return;
+        logInfo(QStringLiteral("🗑️ 已移除 %1").arg(m_model->taskAt(row).info.fileName));
+        m_model->removeTaskRows({row});
+        break;
+    default:
+        break;
+    }
+}
+
+// ---------------------------------------------------------------- 数据目录与预览缓存
+
+void MainWindow::applyDataDir()
+{
+    const QString preview = AppPaths::previewCacheDir(m_settings.resolvedDataDir());
+    m_thumbs->setCacheDir(QDir(preview).filePath(QStringLiteral("thumbs")));
+    m_proxies->setCacheDir(QDir(preview).filePath(QStringLiteral("proxies")));
+}
+
+void MainWindow::refreshCacheInfo()
+{
+    if (m_panel)
+        m_panel->setCacheInfo(measurePreviewCache(AppPaths::previewCacheDir(m_settings.resolvedDataDir())).text());
+}
+
+void MainWindow::clearPreviewCacheClicked()
+{
+    if (m_busy != Busy::None || m_editorOpen) {
+        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("任务正在进行中，请先停止！"));
+        return;
+    }
+    m_proxies->cancelAll();
+    const QString dir = AppPaths::previewCacheDir(m_settings.resolvedDataDir());
+    const CacheUsage before = measurePreviewCache(dir);
+    if (clearPreviewCache(dir))
+        logInfo(QStringLiteral("🧹 已清除预览缓存（%1）").arg(before.text()));
+    else
+        logInfo(QStringLiteral("⚠️ 部分预览缓存无法删除（可能正在使用）"));
+    m_thumbs->clearMemory();
+    m_table->viewport()->update();
+    refreshCacheInfo();
 }
 
 // ---------------------------------------------------------------- 列表操作

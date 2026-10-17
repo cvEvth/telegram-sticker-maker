@@ -19,8 +19,10 @@ class DropOverlay;
 class DropZone;
 class HeaderBar;
 class LogPanel;
+class ProxyCache;
 class SettingsPanel;
 class TaskListModel;
+class ThumbnailService;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -28,6 +30,9 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
+
+    // 启动参数里的文件 / 文件夹（拖到程序图标上打开）
+    void openPaths(const QStringList& paths) { addPaths(paths); }
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
@@ -58,6 +63,16 @@ private:
     void startConversion(QList<int> rows);
     void connectConverter();
 
+    // 截取 / 裁切
+    void openEditor(int row);
+    void openClipTool();
+    void onRowAction(int row, int action);
+
+    // 数据目录与预览缓存
+    void applyDataDir();
+    void refreshCacheInfo();
+    void clearPreviewCacheClicked();
+
     // 列表操作
     void removeSelected();
     void clearList();
@@ -81,6 +96,9 @@ private:
     AppSettings m_settings;
     TaskListModel* m_model = nullptr;
     BatchConverter* m_converter = nullptr;
+    ThumbnailService* m_thumbs = nullptr;
+    ProxyCache* m_proxies = nullptr;
+    bool m_editorOpen = false;
     QHash<QString, QString> m_stageText; // taskId → 最近一次写入日志的阶段说明
     QString m_lastOutput;                // 最近一次生成的压缩包或文件夹
 

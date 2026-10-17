@@ -115,3 +115,27 @@ QPlainTextEdit#LogView {
     background: #121418; border: none; border-top: 1px solid #262a33; color: #c3c9d6;
     selection-background-color: #2aabee;
 }
+
+/* 截取 / 裁切编辑窗口 */
+QDialog { background: #14161b; }
+#TimelineBox, #CropBar { background: #1b1e25; border: 1px solid #262a33; border-radius: 10px; }
+#TimeLabel { font-family: Consolas, monospace; font-size: 13px; font-weight: 600; color: #6cc6f5; }
+#Hint[warning="true"] { color: #f5a623; }
+QPushButton#ProxyButton[state="ok"] { color: #3ecf8e; border-color: #2c5a45; }
+QPushButton#ProxyButton[state="error"] { color: #ff8a8b; border-color: #5a2f33; }
+QPushButton:checked { background: rgba(42, 171, 238, 0.18); border-color: #2aabee; color: #8fd3f7; }
+
+#ClipPanel { background: #181b21; border: 1px solid #262a33; border-radius: 10px; }
+#ClipCard { background: #1e2129; border: 1px solid #2a2f3a; border-radius: 10px; }
+#ClipCard:hover { border-color: #3a4152; }
+#ClipCard[selected="true"] { border: 1px solid #2aabee; background: #1d2a38; }
+#ClipIndex { color: white; border-radius: 11px; font-weight: 600; font-size: 11px; }
+#ClipThumb { background: #12141a; border-radius: 6px; }
+#ClipDuration { color: #9aa3b8; font-size: 11px; }
+#ClipDuration[missing="true"] { color: #f5a623; }
+
+QSlider::groove:horizontal { height: 4px; background: #2c313c; border-radius: 2px; }
+QSlider::sub-page:horizontal { background: #2aabee; border-radius: 2px; }
+QSlider::handle:horizontal { width: 14px; height: 14px; margin: -5px 0; border-radius: 7px; background: #e6e8ee; }
+QSlider:disabled::sub-page:horizontal { background: #3a4050; }
+QDoubleSpinBox { background: #1a1d24; border: 1px solid #323744; border-radius: 6px; padding: 4px 6px; }

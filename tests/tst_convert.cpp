@@ -3,6 +3,7 @@
 #include "media/FFmpegTools.h"
 #include "media/MediaProbe.h"
 #include "media/ProcessRunner.h"
+#include "media/ProxyCache.h"
 #include "media/StickerEncoder.h"
 #include "media/WebmDuration.h"
 
@@ -11,6 +12,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
 
@@ -218,6 +220,38 @@ private slots:
         const EncodeResult r = encoder.run();
         QVERIFY(r.cancelled);
         QCOMPARE(r.statusText, QStringLiteral("已取消"));
+    }
+
+    void proxyCacheGeneratesPreview()
+    {
+        const QString src = generate(QStringLiteral("proxy_src.mkv"),
+                                     {QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                                      QStringLiteral("testsrc2=size=1280x720:rate=30:duration=3"), QStringLiteral("-c:v"),
+                                      QStringLiteral("mpeg4"), QStringLiteral("-q:v"), QStringLiteral("3")});
+        QVERIFY(ProxyCache::needsProxy(src));
+        QVERIFY(!ProxyCache::needsProxy(QStringLiteral("a.mp4")));
+        ProxyCache cache;
+        cache.setCacheDir(m_dir.filePath(QStringLiteral("proxies")));
+        QVERIFY(cache.cached(src).isEmpty());
+        QSignalSpy finished(&cache, &ProxyCache::finished);
+        QSignalSpy progress(&cache, &ProxyCache::progress);
+        cache.generate(src, 3.0);
+        QVERIFY(cache.isGenerating(src));
+        QVERIFY(finished.wait(60000));
+        QVERIFY2(finished.first().at(1).toBool(), qPrintable(finished.first().at(3).toString()));
+        const QString proxy = finished.first().at(2).toString();
+        QCOMPARE(cache.cached(src), proxy);
+        const ProbeResult p = MediaProbe::probe(proxy);
+        QVERIFY2(p.ok, qPrintable(p.error));
+        QCOMPARE(p.info.height, 480);
+        QCOMPARE(p.info.width, 854);
+        QVERIFY(qAbs(p.info.duration - 3.0) < 0.2);
+        QVERIFY(!progress.isEmpty());
+
+        const CacheUsage usage = measurePreviewCache(m_dir.filePath(QStringLiteral("proxies")));
+        QCOMPARE(usage.files, 1);
+        QVERIFY(clearPreviewCache(m_dir.filePath(QStringLiteral("proxies"))));
+        QVERIFY(cache.cached(src).isEmpty());
     }
 
     void packageZipAndFolders()

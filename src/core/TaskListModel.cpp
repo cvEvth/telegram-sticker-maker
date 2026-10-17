@@ -215,6 +215,44 @@ void TaskListModel::appendTasks(const QList<StickerTask>& tasks)
     emit contentChanged();
 }
 
+int TaskListModel::replaceRows(QList<int> rows, const QList<StickerTask>& tasks)
+{
+    std::sort(rows.begin(), rows.end());
+    rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
+    rows.removeIf([this](int r) { return r < 0 || r >= m_tasks.size(); });
+    const int insertAt = rows.isEmpty() ? int(m_tasks.size()) : rows.first();
+
+    for (auto it = rows.crbegin(); it != rows.crend(); ++it) {
+        beginRemoveRows({}, *it, *it);
+        m_tasks.removeAt(*it);
+        endRemoveRows();
+    }
+    if (!tasks.isEmpty()) {
+        beginInsertRows({}, insertAt, insertAt + int(tasks.size()) - 1);
+        for (int i = 0; i < tasks.size(); ++i)
+            m_tasks.insert(insertAt + i, tasks.at(i));
+        endInsertRows();
+    }
+    emitTargetColumnChanged(insertAt); // 重新编号
+    emit contentChanged();
+    return insertAt;
+}
+
+QList<int> TaskListModel::clipGroupRows(int row) const
+{
+    if (row < 0 || row >= m_tasks.size())
+        return {};
+    const QString group = m_tasks.at(row).clipGroupId;
+    if (group.isEmpty())
+        return {row};
+    QList<int> rows;
+    for (int i = 0; i < m_tasks.size(); ++i) {
+        if (m_tasks.at(i).clipGroupId == group)
+            rows << i;
+    }
+    return rows;
+}
+
 void TaskListModel::removeTaskRows(QList<int> rows)
 {
     std::sort(rows.begin(), rows.end(), std::greater<int>());

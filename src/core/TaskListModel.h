@@ -29,6 +29,10 @@ public:
     int rowOfId(const QString& id) const;
 
     void appendTasks(const QList<StickerTask>& tasks);
+    // 用 tasks 替换 rows（片段组写回）：在原来最靠前的位置连续插入，返回插入起点
+    int replaceRows(QList<int> rows, const QList<StickerTask>& tasks);
+    // 同一片段组的所有行（按列表顺序）；clipGroupId 为空时只有该行
+    QList<int> clipGroupRows(int row) const;
     void removeTaskRows(QList<int> rows);
     void clearTasks();
     // persistent = false 用于进度等运行时状态，不触发会话保存

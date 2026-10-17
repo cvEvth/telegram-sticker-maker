@@ -1,18 +1,13 @@
 #include "media/FilterGraph.h"
 
+#include "core/CropMath.h"
+
 #include <QStringList>
 #include <algorithm>
 
 namespace tsm::FilterGraph {
 
 namespace {
-constexpr int kMinCrop = 16;
-
-int floorEven(int v)
-{
-    return v - (v & 1);
-}
-
 QString fpsValue(double fps)
 {
     QString s = QString::number(fps, 'f', 3);
@@ -26,13 +21,7 @@ QString fpsValue(double fps)
 
 QRect evenCrop(const QRect& crop, QSize frame)
 {
-    const int maxW = floorEven(frame.width());
-    const int maxH = floorEven(frame.height());
-    int w = std::clamp(floorEven(crop.width()), std::min(kMinCrop, maxW), maxW);
-    int h = std::clamp(floorEven(crop.height()), std::min(kMinCrop, maxH), maxH);
-    int x = std::clamp(floorEven(crop.x()), 0, floorEven(frame.width() - w));
-    int y = std::clamp(floorEven(crop.y()), 0, floorEven(frame.height() - h));
-    return {x, y, w, h};
+    return CropMath::evenAligned(QRectF(crop), frame);
 }
 
 QString presetFilter(EncodePreset preset)

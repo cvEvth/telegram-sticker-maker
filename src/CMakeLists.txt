@@ -4,6 +4,7 @@ qt_add_library(tsm_core STATIC
     app/AppSettings.cpp     app/AppSettings.h
     app/BatchConverter.cpp  app/BatchConverter.h
     app/Logger.cpp          app/Logger.h
+    core/CropMath.cpp       core/CropMath.h
     core/EncodePlan.cpp     core/EncodePlan.h
     core/Format.cpp         core/Format.h
     core/MediaInfo.h
@@ -12,13 +13,16 @@ qt_add_library(tsm_core STATIC
     core/Spec.h
     core/StickerTask.cpp    core/StickerTask.h
     core/TaskListModel.cpp  core/TaskListModel.h
+    core/TimelineState.cpp  core/TimelineState.h
     io/OutputPackager.cpp   io/OutputPackager.h
     io/ZipWriter.cpp        io/ZipWriter.h
     media/FFmpegTools.cpp   media/FFmpegTools.h
     media/FilterGraph.cpp   media/FilterGraph.h
     media/MediaProbe.cpp    media/MediaProbe.h
     media/ProcessRunner.cpp media/ProcessRunner.h
+    media/ProxyCache.cpp    media/ProxyCache.h
     media/StickerEncoder.cpp media/StickerEncoder.h
+    media/ThumbnailService.cpp media/ThumbnailService.h
     media/WebmDuration.cpp  media/WebmDuration.h
     media/WebpEncoder.cpp   media/WebpEncoder.h
 )
@@ -39,7 +43,13 @@ qt_add_executable(TelegramStickerMaker WIN32
     ui/LogPanel.cpp      ui/LogPanel.h
     ui/MainWindow.cpp    ui/MainWindow.h
     ui/SettingsPanel.cpp ui/SettingsPanel.h
+    ui/TaskTableDelegates.cpp ui/TaskTableDelegates.h
     ui/Theme.cpp         ui/Theme.h
+    ui/editor/ClipEditorDialog.cpp     ui/editor/ClipEditorDialog.h
+    ui/editor/ClipListPanel.cpp        ui/editor/ClipListPanel.h
+    ui/editor/EditorSettingsDialog.cpp ui/editor/EditorSettingsDialog.h
+    ui/editor/PreviewCanvas.cpp        ui/editor/PreviewCanvas.h
+    ui/editor/TimelineWidgets.cpp      ui/editor/TimelineWidgets.h
 )
 qt_add_resources(TelegramStickerMaker "app_resources"
     PREFIX "/"
