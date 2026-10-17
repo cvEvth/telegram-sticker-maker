@@ -1,5 +1,6 @@
 # 核心库：不依赖 Widgets，单元测试直接链接它
 qt_add_library(tsm_core STATIC
+    app/AiMatcher.cpp       app/AiMatcher.h
     app/AppPaths.cpp        app/AppPaths.h
     app/AppSettings.cpp     app/AppSettings.h
     app/BatchConverter.cpp  app/BatchConverter.h
@@ -8,6 +9,7 @@ qt_add_library(tsm_core STATIC
     app/ListLoader.cpp      app/ListLoader.h
     app/Logger.cpp          app/Logger.h
     app/SessionStore.cpp    app/SessionStore.h
+    core/AiEmoji.cpp        core/AiEmoji.h
     core/CropMath.cpp       core/CropMath.h
     core/EncodePlan.cpp     core/EncodePlan.h
     core/Format.cpp         core/Format.h
@@ -23,6 +25,7 @@ qt_add_library(tsm_core STATIC
     io/OutputPackager.cpp   io/OutputPackager.h
     io/ZipReader.cpp        io/ZipReader.h
     io/ZipWriter.cpp        io/ZipWriter.h
+    media/AiFrameGrabber.cpp media/AiFrameGrabber.h
     media/FFmpegTools.cpp   media/FFmpegTools.h
     media/FfmpegRun.cpp     media/FfmpegRun.h
     media/FilterGraph.cpp   media/FilterGraph.h
@@ -38,7 +41,7 @@ qt_add_library(tsm_core STATIC
 target_include_directories(tsm_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(tsm_core
     PUBLIC
-        Qt6::Core Qt6::Gui Qt6::Concurrent
+        Qt6::Core Qt6::Gui Qt6::Concurrent Qt6::Network
     PRIVATE
         WebP::webp WebP::webpdemux
         libzip::zip
@@ -46,6 +49,7 @@ target_link_libraries(tsm_core
 
 # 界面库：主程序与界面交互测试共用
 qt_add_library(tsm_ui STATIC
+    ui/AiSettingsDialog.cpp ui/AiSettingsDialog.h
     ui/DropOverlay.cpp   ui/DropOverlay.h
     ui/DropZone.cpp      ui/DropZone.h
     ui/FlowLayout.cpp    ui/FlowLayout.h

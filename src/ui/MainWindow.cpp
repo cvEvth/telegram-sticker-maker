@@ -1,5 +1,6 @@
 #include "ui/MainWindow.h"
 
+#include "app/AiMatcher.h"
 #include "app/AppPaths.h"
 #include "app/BatchConverter.h"
 #include "app/Exporter.h"
@@ -11,6 +12,7 @@
 #include "media/FFmpegTools.h"
 #include "media/ProxyCache.h"
 #include "media/ThumbnailService.h"
+#include "ui/AiSettingsDialog.h"
 #include "ui/DropOverlay.h"
 #include "ui/DropZone.h"
 #include "ui/HeaderBar.h"
@@ -73,6 +75,7 @@ MainWindow::MainWindow(QWidget* parent)
     , m_model(new TaskListModel(this))
     , m_converter(new BatchConverter(this))
     , m_exporter(new Exporter(this))
+    , m_aiMatcher(new AiMatcher(this))
     , m_thumbs(new ThumbnailService(this))
     , m_proxies(new ProxyCache(this))
     , m_session(new SessionStore(m_model, this))
@@ -228,8 +231,9 @@ void MainWindow::connectSignals()
     connect(m_btnImport, &QPushButton::clicked, this, &MainWindow::importDialog);
     connect(m_btnClip, &QPushButton::clicked, this, &MainWindow::openClipTool);
     connect(m_thumbs, &ThumbnailService::ready, m_table->viewport(), qOverload<>(&QWidget::update));
-    connect(m_btnAi, &QPushButton::clicked, this, [this] { notImplemented(QStringLiteral("AI 匹配 Emoji")); });
-    connect(m_btnAiSettings, &QPushButton::clicked, this, [this] { notImplemented(QStringLiteral("AI 设置")); });
+    // 有选中项时只识别选中项
+    connect(m_btnAi, &QPushButton::clicked, this, [this] { startAiMatch(selectedRows()); });
+    connect(m_btnAiSettings, &QPushButton::clicked, this, &MainWindow::openAiSettings);
     connect(m_btnClear, &QPushButton::clicked, this, &MainWindow::clearList);
 
     // 空列表拖放区
@@ -267,6 +271,7 @@ void MainWindow::connectSignals()
 
     connectConverter();
     connectExporter();
+    connectAiMatcher();
 
     // 列表快捷键与"点击空白取消选择"在 eventFilter 里处理
     qApp->installEventFilter(this);
@@ -315,6 +320,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
         m_cancel->store(true);
     m_converter->cancel();
     m_exporter->cancel();
+    m_aiMatcher->cancel();
     event->accept();
 }
 
@@ -851,6 +857,82 @@ void MainWindow::connectExporter()
     });
 }
 
+// ---------------------------------------------------------------- AI 匹配 Emoji
+
+void MainWindow::openAiSettings()
+{
+    AiSettingsDialog dialog(m_settings, this);
+    dialog.exec();
+}
+
+void MainWindow::startAiMatch(QList<int> rows)
+{
+    if (m_busy != Busy::None)
+        return;
+    if (rows.isEmpty()) {
+        for (int i = 0; i < m_model->rowCount(); ++i)
+            rows << i;
+    }
+    if (rows.isEmpty()) {
+        logInfo(QStringLiteral("⚠️ 列表为空，请先添加素材"));
+        return;
+    }
+    AiConfig config;
+    config.baseUrl = m_settings.aiBaseUrl();
+    config.model = m_settings.aiModel();
+    config.apiKey = m_settings.aiApiKey();
+    if (const QString problem = AiMatcher::validate(config); !problem.isEmpty()) {
+        logInfo(QStringLiteral("⚠️ ") + problem);
+        openAiSettings();
+        return;
+    }
+
+    QList<StickerTask> tasks;
+    for (const int row : rows)
+        tasks << m_model->taskAt(row);
+    setBusy(Busy::AiMatching, int(tasks.size()));
+    logInfo(QStringLiteral("✨ 开始 AI 匹配 Emoji：%1 项（%2）").arg(tasks.size()).arg(config.model));
+    m_aiMatcher->start(tasks, config, QDir(m_settings.resolvedDataDir()).filePath(QStringLiteral("work")));
+}
+
+void MainWindow::connectAiMatcher()
+{
+    const auto nameOf = [this](const QString& id) {
+        const int row = m_model->rowOfId(id);
+        return row >= 0 ? m_model->taskAt(row).info.fileName : QString();
+    };
+
+    connect(m_aiMatcher, &AiMatcher::itemStarted, this, [this, nameOf](const QString& id) {
+        m_busyHint = QStringLiteral("正在识别 ") + nameOf(id);
+        refreshUi();
+    });
+
+    connect(m_aiMatcher, &AiMatcher::itemFinished, this,
+            [this, nameOf](const QString& id, const QString& emoji, const QString& error) {
+                ++m_busyDone;
+                const QString name = nameOf(id);
+                if (!error.isEmpty()) {
+                    logInfo(QStringLiteral("❌ [AI Emoji] %1: %2").arg(name, error));
+                } else if (emoji.isEmpty()) {
+                    logInfo(QStringLiteral("[AI Emoji] %1 -> 无匹配").arg(name));
+                } else {
+                    // 覆盖该行的 Emoji，文件名随之更新
+                    m_model->updateTask(m_model->rowOfId(id), [&](StickerTask& t) { t.emoji = emoji; });
+                    logInfo(QStringLiteral("[AI Emoji] %1 -> %2").arg(name, emoji));
+                }
+                refreshUi();
+            });
+
+    connect(m_aiMatcher, &AiMatcher::finished, this, [this](int matched, int empty, int failed, bool cancelled) {
+        setBusy(Busy::None, 0);
+        if (cancelled) {
+            logInfo(QStringLiteral("🛑 已停止 AI 匹配：%1 项已匹配").arg(matched));
+            return;
+        }
+        logInfo(QStringLiteral("✨ AI Emoji 智能匹配已完成！（%1 项匹配，%2 项无匹配，%3 项失败）").arg(matched).arg(empty).arg(failed));
+    });
+}
+
 // ---------------------------------------------------------------- 截取 / 裁切
 
 void MainWindow::openEditor(int row)
@@ -1076,7 +1158,7 @@ void MainWindow::showRowMenu(const QPoint& globalPos)
     else if (chosen == keywords)
         openKeywordDialog(rows);
     else if (chosen == ai)
-        notImplemented(QStringLiteral("AI 识别 Emoji"));
+        startAiMatch(rows);
     else if (open && chosen == open)
         onRowAction(rows.first(), ActionsDelegate::OpenFolder);
     else if (chosen == all)
@@ -1158,6 +1240,8 @@ void MainWindow::requestStop()
         m_converter->cancel();
     else if (m_busy == Busy::Exporting)
         m_exporter->cancel();
+    else if (m_busy == Busy::AiMatching)
+        m_aiMatcher->cancel();
     else if (m_cancel)
         m_cancel->store(true);
     logInfo(QStringLiteral("🛑 正在停止..."));
@@ -1182,11 +1266,6 @@ void MainWindow::openDataDir()
     const QString dir = m_settings.resolvedDataDir();
     QDir().mkpath(dir);
     QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
-}
-
-void MainWindow::notImplemented(const QString& feature)
-{
-    logInfo(QStringLiteral("🚧 %1：功能尚未实现").arg(feature));
 }
 
 // ---------------------------------------------------------------- 状态刷新
@@ -1281,6 +1360,7 @@ QString MainWindow::busyTitle() const
     case Busy::Exporting: return QStringLiteral("正在导出");
     case Busy::Importing: return QStringLiteral("正在导入");
     case Busy::Restoring: return QStringLiteral("正在恢复");
+    case Busy::AiMatching: return QStringLiteral("AI 识别中");
     case Busy::None: break;
     }
     return {};

@@ -15,6 +15,7 @@ class QStackedWidget;
 
 namespace tsm {
 
+class AiMatcher;
 class BatchConverter;
 class DropOverlay;
 class DropZone;
@@ -48,7 +49,7 @@ protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
-    enum class Busy { None, Converting, Exporting, Importing, Restoring };
+    enum class Busy { None, Converting, Exporting, Importing, Restoring, AiMatching };
 
     void buildUi();
     QWidget* buildToolbar();
@@ -82,6 +83,11 @@ private:
     void startExport(int mode);
     void connectExporter();
 
+    // AI 匹配 Emoji
+    void startAiMatch(QList<int> rows);
+    void connectAiMatcher();
+    void openAiSettings();
+
     // 截取 / 裁切
     void openEditor(int row);
     void openClipTool();
@@ -102,7 +108,6 @@ private:
     void requestStop();
     void openOutputDir();
     void openDataDir();
-    void notImplemented(const QString& feature);
 
     // 状态刷新
     void setBusy(Busy kind, int total);
@@ -119,6 +124,7 @@ private:
     TaskListModel* m_model = nullptr;
     BatchConverter* m_converter = nullptr;
     Exporter* m_exporter = nullptr;
+    AiMatcher* m_aiMatcher = nullptr;
     ThumbnailService* m_thumbs = nullptr;
     ProxyCache* m_proxies = nullptr;
     SessionStore* m_session = nullptr;

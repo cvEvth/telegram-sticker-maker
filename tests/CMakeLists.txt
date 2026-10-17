@@ -1,7 +1,7 @@
 # 测试程序与主程序同目录（共享已部署的 FFmpeg）；额外把 Qt 的 bin 加进 PATH 以找到 Qt6Test.dll
 get_filename_component(QT_BIN_DIR "${Qt6_DIR}/../../../bin" ABSOLUTE)
 
-foreach(test_name IN ITEMS tst_core tst_plan tst_editor tst_media tst_convert tst_export)
+foreach(test_name IN ITEMS tst_core tst_plan tst_editor tst_media tst_convert tst_export tst_ai)
     qt_add_executable(${test_name} ${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE tsm_core Qt6::Test)
     add_test(NAME ${test_name} COMMAND ${test_name})
@@ -21,5 +21,6 @@ endforeach()
 add_dependencies(tst_media TelegramStickerMaker)
 add_dependencies(tst_convert TelegramStickerMaker)
 add_dependencies(tst_export TelegramStickerMaker)
+add_dependencies(tst_ai TelegramStickerMaker)
 set_tests_properties(tst_convert PROPERTIES TIMEOUT 600)
 set_tests_properties(tst_export PROPERTIES TIMEOUT 600)

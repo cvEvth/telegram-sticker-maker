@@ -9,6 +9,7 @@
 #include "media/FFmpegTools.h"
 #include "media/ProcessRunner.h"
 #include "media/ProxyCache.h"
+#include "ui/AiSettingsDialog.h"
 #include "ui/KeywordDialog.h"
 #include "ui/MainWindow.h"
 #include "ui/SettingsPanel.h"
@@ -24,6 +25,8 @@
 #include <QPushButton>
 #include <QSignalSpy>
 #include <QStandardPaths>
+#include <QTcpServer>
+#include <QTcpSocket>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QTimer>
@@ -404,6 +407,82 @@ private slots:
         QCOMPARE(model->taskAt(1).status, TaskStatus::Succeeded);
         QTest::qWait(300);
         snapshot(&window, QStringLiteral("export_done.png"));
+        disconnect(conn);
+        window.close();
+    }
+
+    // AI 设置保存后自动关闭；AI 匹配覆盖 Emoji 并同步文件名（本机假接口，不填 Key）
+    void aiSettingsAndMatching()
+    {
+        if (FFmpegTools::ffmpegPath().isEmpty())
+            QSKIP("ffmpeg not found");
+        QTcpServer server;
+        QVERIFY(server.listen(QHostAddress::LocalHost, 0));
+        int requests = 0;
+        connect(&server, &QTcpServer::newConnection, this, [&] {
+            QTcpSocket* socket = server.nextPendingConnection();
+            auto received = std::make_shared<QByteArray>();
+            connect(socket, &QTcpSocket::readyRead, socket, [socket, received, &requests] {
+                *received += socket->readAll();
+                const qsizetype headEnd = received->indexOf("\r\n\r\n");
+                if (headEnd < 0)
+                    return;
+                const qsizetype at = received->toLower().indexOf("content-length:");
+                const qsizetype length = received->mid(at + 15, received->indexOf('\r', at) - at - 15).trimmed().toLongLong();
+                if (received->size() < headEnd + 4 + length)
+                    return;
+                ++requests;
+                const QByteArray body = R"({"choices":[{"message":{"content":"😂🤣"}}]})";
+                socket->write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nConnection: close\r\nContent-Length: "
+                              + QByteArray::number(body.size()) + "\r\n\r\n" + body);
+                socket->disconnectFromHost();
+            });
+            connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
+        });
+
+        // 设置弹窗
+        {
+            AppSettings settings;
+            AiSettingsDialog dialog(settings);
+            dialog.show();
+            QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+            dialog.findChild<QLineEdit*>(QStringLiteral("AiBaseUrl"))->setText(QStringLiteral("http://127.0.0.1:%1/v1").arg(server.serverPort()));
+            dialog.findChild<QLineEdit*>(QStringLiteral("AiModel"))->setText(QStringLiteral("local-vision"));
+            dialog.findChild<QLineEdit*>(QStringLiteral("AiApiKey"))->clear();
+            snapshot(&dialog, QStringLiteral("ai_settings.png"));
+            for (QPushButton* b : dialog.findChildren<QPushButton*>())
+                if (b->text() == QStringLiteral("保存"))
+                    b->click();
+            QTRY_VERIFY_WITH_TIMEOUT(!dialog.isVisible(), 3000); // ✓ 后自动关闭
+            QCOMPARE(dialog.result(), int(QDialog::Accepted));
+            QCOMPARE(settings.aiModel(), QStringLiteral("local-vision"));
+        }
+
+        const QString video = m_dir.filePath(QStringLiteral("ai_src.mp4"));
+        ProcessRunner::run(FFmpegTools::ffmpegPath(),
+                           {QStringLiteral("-hide_banner"), QStringLiteral("-loglevel"), QStringLiteral("error"), QStringLiteral("-y"),
+                            QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                            QStringLiteral("testsrc2=size=320x240:rate=25:duration=2"), QStringLiteral("-c:v"),
+                            QStringLiteral("mpeg4"), video});
+        QStringList logs;
+        auto conn = connect(&Logger::instance(), &Logger::lineAdded, this, [&logs](const QString& line) { logs << line; });
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        window.openPaths({video});
+        auto* table = window.findChild<TaskTableView*>();
+        auto* model = qobject_cast<TaskListModel*>(table->model());
+        QTRY_COMPARE_WITH_TIMEOUT(model->rowCount(), 1, 15000);
+        QTRY_VERIFY_WITH_TIMEOUT(logs.join(u'\n').contains(QStringLiteral("已添加 1 项")), 5000);
+        for (QPushButton* b : window.findChildren<QPushButton*>())
+            if (b->text().startsWith(QStringLiteral("✨ AI 匹配")))
+                b->click();
+        QTRY_VERIFY_WITH_TIMEOUT(logs.join(u'\n').contains(QStringLiteral("AI Emoji 智能匹配已完成")), 30000);
+        QVERIFY2(logs.join(u'\n').contains(QStringLiteral("[AI Emoji] ai_src.mp4 -> 😂🤣")), qPrintable(logs.join(u'\n')));
+        QCOMPARE(requests, 1);
+        QCOMPARE(model->taskAt(0).emoji, QStringLiteral("😂🤣"));
+        QCOMPARE(model->targetFileName(0), QStringLiteral("001_😂🤣.webm"));
+        snapshot(&window, QStringLiteral("ai_done.png"));
         disconnect(conn);
         window.close();
     }
