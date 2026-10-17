@@ -37,7 +37,7 @@ AiSettingsDialog::AiSettingsDialog(AppSettings& settings, QWidget* parent)
     m_baseUrl->setPlaceholderText(QStringLiteral("https://api.openai.com/v1"));
     m_model = new QLineEdit(settings.aiModel());
     m_model->setObjectName(QStringLiteral("AiModel"));
-    m_model->setPlaceholderText(QStringLiteral("gpt-4o-mini"));
+    m_model->setPlaceholderText(QStringLiteral("gemini-3.5-flash-lite"));
 
     auto* form = new QFormLayout;
     form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
@@ -84,7 +84,7 @@ void AiSettingsDialog::save()
         config.baseUrl = QStringLiteral("https://api.openai.com/v1");
     config.model = m_model->text().trimmed();
     if (config.model.isEmpty())
-        config.model = QStringLiteral("gpt-4o-mini");
+        config.model = QStringLiteral("gemini-3.5-flash-lite");
     config.apiKey = m_key->text().trimmed();
     // Key 留空也允许保存（之后识别时再提示），这里只拦明显无效的地址
     const QString problem = AiMatcher::validate(config);

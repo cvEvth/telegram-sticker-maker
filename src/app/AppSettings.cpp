@@ -105,7 +105,7 @@ QString AppSettings::aiBaseUrl() const
 }
 
 void AppSettings::setAiBaseUrl(const QString& url) { setValue(key::AiBaseUrl, url); }
-QString AppSettings::aiModel() const { return value(key::AiModel, QStringLiteral("gpt-4o-mini")).toString(); }
+QString AppSettings::aiModel() const { return value(key::AiModel, QStringLiteral("gemini-3.5-flash-lite")).toString(); }
 void AppSettings::setAiModel(const QString& model) { setValue(key::AiModel, model); }
 QString AppSettings::aiApiKey() const { return value(key::AiApiKey, QString()).toString(); }
 void AppSettings::setAiApiKey(const QString& apiKey) { setValue(key::AiApiKey, apiKey); }
