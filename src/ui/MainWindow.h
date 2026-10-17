@@ -14,6 +14,7 @@ class QTableView;
 
 namespace tsm {
 
+class BatchConverter;
 class DropOverlay;
 class DropZone;
 class HeaderBar;
@@ -53,6 +54,10 @@ private:
     void onProbed(const QString& path, const ProbeResult& result);
     void onProbingFinished(bool cancelled);
 
+    // 转换
+    void startConversion(QList<int> rows);
+    void connectConverter();
+
     // 列表操作
     void removeSelected();
     void clearList();
@@ -75,6 +80,9 @@ private:
 
     AppSettings m_settings;
     TaskListModel* m_model = nullptr;
+    BatchConverter* m_converter = nullptr;
+    QHash<QString, QString> m_stageText; // taskId → 最近一次写入日志的阶段说明
+    QString m_lastOutput;                // 最近一次生成的压缩包或文件夹
 
     HeaderBar* m_header = nullptr;
     QStackedWidget* m_listStack = nullptr;

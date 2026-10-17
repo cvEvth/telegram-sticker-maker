@@ -2,7 +2,9 @@
 qt_add_library(tsm_core STATIC
     app/AppPaths.cpp        app/AppPaths.h
     app/AppSettings.cpp     app/AppSettings.h
+    app/BatchConverter.cpp  app/BatchConverter.h
     app/Logger.cpp          app/Logger.h
+    core/EncodePlan.cpp     core/EncodePlan.h
     core/Format.cpp         core/Format.h
     core/MediaInfo.h
     core/MediaKinds.cpp     core/MediaKinds.h
@@ -10,9 +12,15 @@ qt_add_library(tsm_core STATIC
     core/Spec.h
     core/StickerTask.cpp    core/StickerTask.h
     core/TaskListModel.cpp  core/TaskListModel.h
+    io/OutputPackager.cpp   io/OutputPackager.h
+    io/ZipWriter.cpp        io/ZipWriter.h
     media/FFmpegTools.cpp   media/FFmpegTools.h
+    media/FilterGraph.cpp   media/FilterGraph.h
     media/MediaProbe.cpp    media/MediaProbe.h
     media/ProcessRunner.cpp media/ProcessRunner.h
+    media/StickerEncoder.cpp media/StickerEncoder.h
+    media/WebmDuration.cpp  media/WebmDuration.h
+    media/WebpEncoder.cpp   media/WebpEncoder.h
 )
 target_include_directories(tsm_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(tsm_core

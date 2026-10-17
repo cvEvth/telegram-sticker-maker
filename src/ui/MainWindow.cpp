@@ -1,7 +1,9 @@
 #include "ui/MainWindow.h"
 
 #include "app/AppPaths.h"
+#include "app/BatchConverter.h"
 #include "app/Logger.h"
+#include "core/Format.h"
 #include "core/MediaKinds.h"
 #include "core/TaskListModel.h"
 #include "media/FFmpegTools.h"
@@ -21,6 +23,7 @@
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QProcess>
 #include <QPushButton>
 #include <QShortcut>
 #include <QStackedWidget>
@@ -48,6 +51,7 @@ QStringList localPathsFrom(const QMimeData* mime)
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , m_model(new TaskListModel(this))
+    , m_converter(new BatchConverter(this))
 {
     setWindowTitle(QStringLiteral("Telegram Sticker Maker"));
     resize(1500, 820);
@@ -203,7 +207,7 @@ void MainWindow::connectSignals()
     // TODO(会话): contentChanged → 250ms 防抖后原子写入会话文件
 
     // 右侧面板
-    connect(m_panel, &SettingsPanel::startRequested, this, [this] { notImplemented(QStringLiteral("批量转换")); });
+    connect(m_panel, &SettingsPanel::startRequested, this, [this] { startConversion({}); });
     connect(m_panel, &SettingsPanel::exportRequested, this, [this] { notImplemented(QStringLiteral("导出")); });
     connect(m_panel, &SettingsPanel::stopRequested, this, &MainWindow::requestStop);
     connect(m_panel, &SettingsPanel::openOutputRequested, this, &MainWindow::openOutputDir);
@@ -215,6 +219,8 @@ void MainWindow::connectSignals()
         // TODO(会话): 新目录没有会话文件时，把旧目录的会话复制过去
         logInfo(QStringLiteral("💾 数据目录已切换为 %1").arg(QDir::toNativeSeparators(newDir)));
     });
+
+    connectConverter();
 
     // 列表快捷键（仅表格自身有焦点时生效，行内编辑时不触发）
     auto* deleteKey = new QShortcut(QKeySequence::Delete, m_table, nullptr, nullptr, Qt::WidgetShortcut);
@@ -382,6 +388,111 @@ void MainWindow::onProbingFinished(bool cancelled)
     }
 }
 
+// ---------------------------------------------------------------- 转换
+
+void MainWindow::startConversion(QList<int> rows)
+{
+    if (m_busy != Busy::None)
+        return;
+    if (rows.isEmpty()) {
+        for (int i = 0; i < m_model->rowCount(); ++i)
+            rows << i;
+    }
+    if (rows.isEmpty()) {
+        logInfo(QStringLiteral("⚠️ 列表为空，请先添加素材"));
+        return;
+    }
+
+    QList<ConvertJob> jobs;
+    for (const int row : rows) {
+        m_model->updateTask(row, [](StickerTask& t) { t.resetRuntimeState(); }, false);
+        jobs << ConvertJob{m_model->taskAt(row), m_model->targetFileName(row), m_model->targetDirectory(row)};
+    }
+
+    ConvertSettings settings;
+    settings.mode = m_settings.outputMode();
+    settings.preset = m_settings.encodePreset();
+    settings.asZip = m_settings.outputAsZip();
+    settings.zipDir = m_settings.outputDir();
+    settings.workRoot = QDir(m_settings.resolvedDataDir()).filePath(QStringLiteral("work"));
+
+    m_stageText.clear();
+    setBusy(Busy::Converting, int(jobs.size()));
+    const QString mode = settings.mode == OutputMode::Emoji ? QStringLiteral("自定义表情 100px") : QStringLiteral("标准贴纸 512px");
+    logInfo(QStringLiteral("🚀 开始转换 %1 项（%2）").arg(jobs.size()).arg(mode));
+    m_converter->start(jobs, settings);
+}
+
+void MainWindow::connectConverter()
+{
+    const auto nameOf = [this](const QString& id) {
+        const int row = m_model->rowOfId(id);
+        return row >= 0 ? m_model->taskAt(row).info.fileName : QString();
+    };
+
+    connect(m_converter, &BatchConverter::taskStarted, this, [this, nameOf](const QString& id) {
+        m_model->updateTask(m_model->rowOfId(id), [](StickerTask& t) {
+            t.status = TaskStatus::Running;
+            t.statusText = defaultStatusText(TaskStatus::Running);
+            t.progress = 0;
+        }, false);
+        logInfo(QStringLiteral("▶️ [%1] 开始转换").arg(nameOf(id)));
+        refreshUi();
+    });
+
+    connect(m_converter, &BatchConverter::taskProgress, this, [this, nameOf](const QString& id, int percent, const QString& text) {
+        m_model->updateTask(m_model->rowOfId(id), [&](StickerTask& t) {
+            t.progress = percent;
+            t.statusText = text;
+        }, false);
+        // 阶段说明变化时写日志（进度百分比不写）
+        if (m_stageText.value(id) != text) {
+            m_stageText.insert(id, text);
+            logInfo(QStringLiteral("[%1] %2").arg(nameOf(id), text));
+        }
+        m_busyHint = QStringLiteral("[%1] %2").arg(nameOf(id), text);
+        refreshUi();
+    });
+
+    connect(m_converter, &BatchConverter::taskFinished, this,
+            [this, nameOf](const QString& id, TaskStatus status, const QString& text, qint64 size) {
+                m_model->updateTask(m_model->rowOfId(id), [&](StickerTask& t) {
+                    t.status = status;
+                    t.statusText = text;
+                    t.progress = status == TaskStatus::Succeeded ? 100 : t.progress;
+                    t.outputSize = size;
+                }, false);
+                ++m_busyDone;
+                if (status == TaskStatus::Succeeded)
+                    logInfo(QStringLiteral("✅ [%1] 转换成功 (%2)").arg(nameOf(id), formatBytes(size)));
+                else if (status == TaskStatus::Failed)
+                    logInfo(QStringLiteral("❌ [%1] %2").arg(nameOf(id), text));
+                refreshUi();
+            });
+
+    connect(m_converter, &BatchConverter::packaging, this, [this] {
+        m_busyHint = QStringLiteral("正在写出贴纸文件...");
+        refreshUi();
+    });
+
+    connect(m_converter, &BatchConverter::finished, this,
+            [this](const OutputPackager::Result& result, int succeeded, int failed, int cancelled) {
+                for (auto it = result.finalPaths.cbegin(); it != result.finalPaths.cend(); ++it) {
+                    const QString path = it.value();
+                    m_model->updateTask(m_model->rowOfId(it.key()), [&](StickerTask& t) { t.outputPath = path; }, false);
+                }
+                for (const QString& line : result.logLines)
+                    logInfo(line);
+                if (!result.locations.isEmpty())
+                    m_lastOutput = result.locations.first();
+                setBusy(Busy::None, 0);
+                if (cancelled > 0)
+                    logInfo(QStringLiteral("🛑 已停止：%1 成功，%2 失败，%3 已取消").arg(succeeded).arg(failed).arg(cancelled));
+                else
+                    logInfo(QStringLiteral("🎉 批量转换已全部完成！（%1 成功，%2 失败）").arg(succeeded).arg(failed));
+            });
+}
+
 // ---------------------------------------------------------------- 列表操作
 
 void MainWindow::removeSelected()
@@ -409,15 +520,24 @@ void MainWindow::clearList()
 
 void MainWindow::requestStop()
 {
-    if (m_busy == Busy::None || !m_cancel)
+    if (m_busy == Busy::None)
         return;
-    m_cancel->store(true);
+    if (m_busy == Busy::Converting)
+        m_converter->cancel();
+    else if (m_cancel)
+        m_cancel->store(true);
     logInfo(QStringLiteral("🛑 正在停止..."));
 }
 
 void MainWindow::openOutputDir()
 {
-    // TODO(转换): 优先打开最近一次生成的压缩包或文件夹所在位置
+    // 优先打开最近一次生成的压缩包或文件夹所在位置
+    if (!m_lastOutput.isEmpty() && QFileInfo::exists(m_lastOutput)) {
+#ifdef Q_OS_WIN
+        QProcess::startDetached(QStringLiteral("explorer.exe"), {QStringLiteral("/select,"), QDir::toNativeSeparators(m_lastOutput)});
+        return;
+#endif
+    }
     const QString dir = m_settings.outputDir();
     QDir().mkpath(dir);
     QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
