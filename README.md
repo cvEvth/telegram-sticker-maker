@@ -25,7 +25,16 @@ powershell -ExecutionPolicy Bypass -File scripts\package.ps1
 
 - 便携版 `TelegramStickerMaker-<版本>-win64.zip`：自带 VC++ 运行库、第三方许可证与使用说明，解压即用。
 - 安装程序 `TelegramStickerMaker-<版本>-win64-setup.exe`：需要 Inno Setup 6（默认找 `D:\apps\InnoSetup6\ISCC.exe`，可用环境变量 `ISCC` 指定），没找到时只出便携版；默认按当前用户安装，不需要管理员权限。
-- 版本号取自根目录 `CMakeLists.txt` 的 `project(... VERSION x.y.z)`。
+- 版本号默认取 `CMakeLists.txt` 里的 `set(TSM_VERSION x.y.z)`，设置环境变量 `TSM_VERSION` 可覆盖。
+
+自动发版（GitHub Actions，`.github/workflows/release.yml`）：推送 `v` 开头的版本标签即可，CI 会在 Windows 上构建、跑全部测试、打包，并创建 GitHub Release 上传安装程序与便携 zip（附 SHA-256）。版本号直接取自标签，不用改代码。
+
+```bat
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+在 Actions 页面手动运行该工作流（填一个试用版本号）只构建打包、把产物作为构建附件保留 7 天，不发布 Release。发布说明模板在 `packaging/release-notes.md`。
 
 ## 目录结构
 
