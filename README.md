@@ -1,0 +1,44 @@
+# Telegram Sticker Maker
+
+把视频 / 动图 / 图片批量转换成符合 Telegram 官方规格的贴纸（WebM VP9 / WebP）。完整需求见 [功能需求说明.md](功能需求说明.md)。
+
+技术栈：C++20 · Qt 6.8 Widgets · FFmpeg 8.1（LGPL 共享库）· libwebp · libzip · CMake + vcpkg
+
+## 构建（Windows）
+
+依赖：Visual Studio 2022 Build Tools（C++）、Qt 6.8 MSVC 2022 64 位（含 Multimedia）、FFmpeg 共享库、vcpkg。
+路径通过环境变量 `QT_ROOT`、`FFMPEG_ROOT`、`VCPKG_ROOT` 指定；`scripts\build.bat` 里有本机默认值。
+
+```bat
+scripts\build.bat            :: dev（RelWithDebInfo）
+scripts\build.bat dev test   :: 构建并运行单元测试
+scripts\build.bat release
+```
+
+产物在 `build\<preset>\bin\`，构建后会自动部署 Qt 与 FFmpeg 运行库，`TelegramStickerMaker.exe` 可直接双击运行。
+
+## 目录结构
+
+```
+src/
+  app/     配置目录 / 数据目录、持久化设置、运行日志
+  core/    数据模型与规则：任务、主列表模型、输出命名、时间格式、Telegram 规格常量
+  media/   FFmpeg 调用：子进程（无黑窗口）、素材解析（ffprobe）
+  ui/      主窗口、右侧设置面板、拖放区、日志面板、深色主题
+resources/ 样式表
+tests/     tst_core（规则单元测试）、tst_media（用 ffmpeg 现场生成素材的解析测试）
+```
+
+`tsm_core` 静态库不依赖 Widgets，测试直接链接它。
+
+## 进度
+
+- [x] 工程骨架、主窗口布局、深色主题、设置持久化
+- [x] 添加文件 / 文件夹 / 拖拽，后台解析素材（ffprobe）
+- [x] 主列表：规格、目标文件名（序号自动重排）、双击改 Emoji、删除 / 清空、忙碌锁
+- [ ] 解析细节：动图逐帧时长、HEIC 方向、调色板透明
+- [ ] 主列表：缩略图、操作按钮、右键菜单、完整选择逻辑
+- [ ] 转换核心（第 5 节画质规划）
+- [ ] 截取 / 裁切编辑窗口（第 6 节）
+- [ ] 关键词弹窗、导入导出、会话自动保存与恢复、AI 匹配 Emoji
+- [ ] 发布打包

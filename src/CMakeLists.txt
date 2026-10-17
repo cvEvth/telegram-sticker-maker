@@ -1,0 +1,65 @@
+# 核心库：不依赖 Widgets，单元测试直接链接它
+qt_add_library(tsm_core STATIC
+    app/AppPaths.cpp        app/AppPaths.h
+    app/AppSettings.cpp     app/AppSettings.h
+    app/Logger.cpp          app/Logger.h
+    core/Format.cpp         core/Format.h
+    core/MediaInfo.h
+    core/MediaKinds.cpp     core/MediaKinds.h
+    core/OutputNaming.cpp   core/OutputNaming.h
+    core/Spec.h
+    core/StickerTask.cpp    core/StickerTask.h
+    core/TaskListModel.cpp  core/TaskListModel.h
+    media/FFmpegTools.cpp   media/FFmpegTools.h
+    media/MediaProbe.cpp    media/MediaProbe.h
+    media/ProcessRunner.cpp media/ProcessRunner.h
+)
+target_include_directories(tsm_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(tsm_core
+    PUBLIC
+        Qt6::Core Qt6::Gui Qt6::Concurrent
+    PRIVATE
+        WebP::webp WebP::webpdemux
+        libzip::zip
+        FFmpeg::avformat FFmpeg::avcodec FFmpeg::avfilter FFmpeg::avutil FFmpeg::swscale FFmpeg::swresample)
+
+qt_add_executable(TelegramStickerMaker WIN32
+    main.cpp
+    ui/DropOverlay.cpp   ui/DropOverlay.h
+    ui/DropZone.cpp      ui/DropZone.h
+    ui/HeaderBar.cpp     ui/HeaderBar.h
+    ui/LogPanel.cpp      ui/LogPanel.h
+    ui/MainWindow.cpp    ui/MainWindow.h
+    ui/SettingsPanel.cpp ui/SettingsPanel.h
+    ui/Theme.cpp         ui/Theme.h
+)
+qt_add_resources(TelegramStickerMaker "app_resources"
+    PREFIX "/"
+    BASE "${PROJECT_SOURCE_DIR}/resources"
+    FILES "${PROJECT_SOURCE_DIR}/resources/styles/dark.qss")
+target_link_libraries(TelegramStickerMaker PRIVATE tsm_core Qt6::Widgets Qt6::Multimedia Qt6::Network)
+target_compile_definitions(TelegramStickerMaker PRIVATE APP_VERSION="${PROJECT_VERSION}")
+
+# 构建后把 FFmpeg 与 Qt 运行库部署到程序目录，双击即可运行
+add_custom_command(TARGET TelegramStickerMaker POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${FFMPEG_RUNTIME_FILES} "$<TARGET_FILE_DIR:TelegramStickerMaker>"
+    COMMENT "Copying FFmpeg runtime"
+    VERBATIM)
+if(TARGET Qt6::windeployqt AND TARGET Qt6::qtpaths)
+    # windeployqt 默认从 PATH 找 qtpaths，这里显式指定，构建时不依赖 PATH。
+    # 它合并翻译需要 qttools 的 lconvert，所以关掉翻译部署，改为下面直接复制 .qm。
+    get_filename_component(QT_TRANSLATIONS_DIR "${Qt6_DIR}/../../../translations" ABSOLUTE)
+    add_custom_command(TARGET TelegramStickerMaker POST_BUILD
+        COMMAND "$<TARGET_FILE:Qt6::windeployqt>"
+            --qtpaths "$<TARGET_FILE:Qt6::qtpaths>"
+            --no-compiler-runtime --no-system-d3d-compiler --no-opengl-sw --no-quick-import
+            --no-translations --verbose 0
+            "$<TARGET_FILE:TelegramStickerMaker>"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:TelegramStickerMaker>/translations"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${QT_TRANSLATIONS_DIR}/qtbase_zh_CN.qm"
+            "${QT_TRANSLATIONS_DIR}/qtmultimedia_zh_CN.qm"
+            "$<TARGET_FILE_DIR:TelegramStickerMaker>/translations"
+        COMMENT "Deploying Qt runtime"
+        VERBATIM)
+endif()

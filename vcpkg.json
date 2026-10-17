@@ -1,0 +1,8 @@
+{
+  "name": "telegram-sticker-maker",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "libwebp",
+    { "name": "libzip", "default-features": false }
+  ]
+}
