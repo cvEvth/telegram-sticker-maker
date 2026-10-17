@@ -3,6 +3,7 @@
 #include "ui/Theme.h"
 
 #include <QApplication>
+#include <QIcon>
 #include <QLibraryInfo>
 #include <QLocale>
 #include <QTranslator>
@@ -12,6 +13,8 @@ int main(int argc, char* argv[])
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("TelegramStickerMaker"));
     QApplication::setApplicationVersion(QStringLiteral(APP_VERSION));
+    // 窗口与弹窗标题栏图标（多尺寸 .ico：大尺寸为完整人物，16~32px 只取甜甜圈和脸）
+    QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/app.ico")));
 
     // Qt 自带对话框 / 按钮的中文翻译：优先程序目录下的 translations（部署后），其次 Qt 安装目录
     QTranslator qtTranslator;

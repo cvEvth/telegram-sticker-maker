@@ -72,10 +72,15 @@ qt_add_library(tsm_ui STATIC
 qt_add_resources(tsm_ui "app_resources"
     PREFIX "/"
     BASE "${PROJECT_SOURCE_DIR}/resources"
-    FILES "${PROJECT_SOURCE_DIR}/resources/styles/dark.qss")
+    FILES "${PROJECT_SOURCE_DIR}/resources/styles/dark.qss"
+          "${PROJECT_SOURCE_DIR}/resources/icons/app.ico")
 target_link_libraries(tsm_ui PUBLIC tsm_core Qt6::Widgets Qt6::Multimedia Qt6::Network)
 
 qt_add_executable(TelegramStickerMaker WIN32 main.cpp)
+if(WIN32)
+    # exe 文件图标（资源管理器、任务栏、快捷方式）
+    target_sources(TelegramStickerMaker PRIVATE "${PROJECT_SOURCE_DIR}/resources/icons/app.rc")
+endif()
 target_link_libraries(TelegramStickerMaker PRIVATE tsm_ui)
 target_compile_definitions(TelegramStickerMaker PRIVATE APP_VERSION="${PROJECT_VERSION}")
 

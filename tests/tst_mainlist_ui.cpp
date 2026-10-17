@@ -19,6 +19,7 @@
 #include <QApplication>
 #include <QContextMenuEvent>
 #include <QDir>
+#include <QIcon>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
@@ -72,6 +73,16 @@ private slots:
         QStandardPaths::setTestModeEnabled(true); // 不碰真实配置目录
         QVERIFY(m_dir.isValid());
         applyDarkTheme(*qApp);
+    }
+
+    // 窗口图标：多尺寸 .ico 能从资源读出全部尺寸
+    void appIconLoads()
+    {
+        const QIcon icon(QStringLiteral(":/icons/app.ico"));
+        QVERIFY(!icon.isNull());
+        const QList<QSize> sizes = icon.availableSizes();
+        for (const int s : {16, 24, 32, 48, 64, 128, 256})
+            QVERIFY2(sizes.contains(QSize(s, s)), qPrintable(QStringLiteral("缺少 %1px").arg(s)));
     }
 
     // 每个主窗口测试从空会话开始
