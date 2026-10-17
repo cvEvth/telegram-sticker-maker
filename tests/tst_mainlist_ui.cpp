@@ -1,5 +1,8 @@
 // 主列表交互（需求 3.3 / 3.4）与关键词弹窗（第 8 节）的界面测试。
 // 设置环境变量 TSM_SNAPSHOT_DIR 时保存截图。
+#include "app/AppPaths.h"
+#include "app/Logger.h"
+#include "core/StickerList.h"
 #include "core/TaskListModel.h"
 #include "media/FFmpegTools.h"
 #include "media/ProcessRunner.h"
@@ -62,6 +65,12 @@ private slots:
         QStandardPaths::setTestModeEnabled(true); // 不碰真实配置目录
         QVERIFY(m_dir.isValid());
         applyDarkTheme(*qApp);
+    }
+
+    // 每个主窗口测试从空会话开始
+    void init()
+    {
+        QDir(AppPaths::configDir()).removeRecursively();
     }
 
     void selectionRules()
@@ -231,6 +240,95 @@ private slots:
         QTest::keyClick(table, Qt::Key_Delete);
         QCOMPARE(model->rowCount(), 2);
         QCOMPARE(model->targetFileName(0), QStringLiteral("001.webp")); // 删除后重新编号
+    }
+
+    void sessionSaveAndRestore()
+    {
+        if (FFmpegTools::ffmpegPath().isEmpty())
+            QSKIP("ffmpeg not found");
+        const QString dir = m_dir.filePath(QStringLiteral("session_src"));
+        QDir().mkpath(dir);
+        QStringList files;
+        for (int i = 1; i <= 3; ++i) {
+            const QString out = QDir(dir).filePath(QStringLiteral("片段%1.mp4").arg(i));
+            ProcessRunner::run(FFmpegTools::ffmpegPath(),
+                               {QStringLiteral("-hide_banner"), QStringLiteral("-loglevel"), QStringLiteral("error"), QStringLiteral("-y"),
+                                QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                                QStringLiteral("testsrc2=size=320x240:rate=25:duration=%1").arg(i + 1), QStringLiteral("-c:v"),
+                                QStringLiteral("mpeg4"), out});
+            files << out;
+        }
+        const QString sessionFile = AppPaths::sessionFile(AppPaths::configDir());
+
+        // 第一次运行：添加、编辑，等自动保存
+        {
+            MainWindow window;
+            window.show();
+            QVERIFY(QTest::qWaitForWindowExposed(&window));
+            window.openPaths(files);
+            auto* table = window.findChild<TaskTableView*>();
+            auto* model = qobject_cast<TaskListModel*>(table->model());
+            QTRY_COMPARE_WITH_TIMEOUT(model->rowCount(), 3, 15000);
+            model->updateTask(1, [](StickerTask& t) {
+                t.emoji = QStringLiteral("😂");
+                t.keywords = {QStringLiteral("哈哈")};
+                t.startTime = 0.5;
+                t.endTime = 2.0;
+                t.crop = QRect(40, 0, 240, 240);
+                t.cropRadius = 0.5;
+                t.mirror = true;
+                t.clipGroupId = QStringLiteral("clipgrp-1");
+                t.clipId = QStringLiteral("clip-1");
+            });
+            // 250ms 防抖后写入
+            QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(sessionFile), 3000);
+            QTRY_VERIFY_WITH_TIMEOUT(QFileInfo(sessionFile).size() > 0, 3000);
+            QFile f(sessionFile);
+            QVERIFY(f.open(QIODevice::ReadOnly));
+            const StickerList::ParseResult saved = StickerList::parse(f.readAll());
+            QVERIFY(saved.ok);
+            QTRY_COMPARE_WITH_TIMEOUT(saved.entries.size(), 3, 3000);
+            QCOMPARE(saved.entries.at(1).task.emoji, QStringLiteral("😂"));
+            QVERIFY(saved.entries.at(0).hasMedia); // 附带解析结果缓存
+            window.close();
+        }
+
+        // 第二次运行前删掉一个源文件
+        QVERIFY(QFile::remove(files.at(2)));
+        QStringList logs;
+        auto conn = connect(&Logger::instance(), &Logger::lineAdded, this, [&logs](const QString& line) { logs << line; });
+        {
+            MainWindow window;
+            window.show();
+            QVERIFY(QTest::qWaitForWindowExposed(&window));
+            auto* table = window.findChild<TaskTableView*>();
+            auto* model = qobject_cast<TaskListModel*>(table->model());
+            QTRY_COMPARE_WITH_TIMEOUT(model->rowCount(), 2, 15000);
+            QTRY_VERIFY_WITH_TIMEOUT(logs.join(u'\n').contains(QStringLiteral("已恢复上次进度：2 项")), 5000);
+            QVERIFY(logs.join(u'\n').contains(QStringLiteral("有 1 个源文件找不到，已跳过")));
+
+            const StickerTask& t = model->taskAt(1);
+            QCOMPARE(t.emoji, QStringLiteral("😂"));
+            QCOMPARE(t.keywords, QStringList{QStringLiteral("哈哈")});
+            QCOMPARE(*t.startTime, 0.5);
+            QCOMPARE(*t.endTime, 2.0);
+            QCOMPARE(*t.crop, QRect(40, 0, 240, 240));
+            QCOMPARE(t.cropRadius, 0.5);
+            QVERIFY(t.mirror);
+            QCOMPARE(t.clipGroupId, QStringLiteral("clipgrp-1"));
+            QCOMPARE(t.status, TaskStatus::Pending); // 不保存转换状态
+            QVERIFY(t.info.isVideo);
+            QCOMPARE(t.info.width, 320);
+            QTest::qWait(500);
+            snapshot(&window, QStringLiteral("session_restored.png"));
+            window.close();
+        }
+        disconnect(conn);
+
+        // 恢复结束后保存一次：缺失的条目已从会话中移除
+        QFile f(sessionFile);
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        QCOMPARE(StickerList::parse(f.readAll()).entries.size(), 2);
     }
 };
 

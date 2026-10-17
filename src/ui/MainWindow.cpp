@@ -3,6 +3,7 @@
 #include "app/AppPaths.h"
 #include "app/BatchConverter.h"
 #include "app/Logger.h"
+#include "app/SessionStore.h"
 #include "core/Format.h"
 #include "core/MediaKinds.h"
 #include "core/TaskListModel.h"
@@ -22,6 +23,7 @@
 #include <QCloseEvent>
 #include <QCollator>
 #include <QDateTime>
+#include <QTimer>
 #include <QDesktopServices>
 #include <QDirIterator>
 #include <QDragEnterEvent>
@@ -71,6 +73,7 @@ MainWindow::MainWindow(QWidget* parent)
     , m_converter(new BatchConverter(this))
     , m_thumbs(new ThumbnailService(this))
     , m_proxies(new ProxyCache(this))
+    , m_session(new SessionStore(m_model, this))
 {
     setWindowTitle(QStringLiteral("Telegram Sticker Maker"));
     resize(1500, 820);
@@ -88,7 +91,13 @@ MainWindow::MainWindow(QWidget* parent)
     logInfo(QStringLiteral("✅ 启动就绪"));
     if (FFmpegTools::ffmpegPath().isEmpty() || FFmpegTools::ffprobePath().isEmpty())
         logInfo(QStringLiteral("⚠️ 未找到 ffmpeg / ffprobe，请确认它们与程序位于同一目录"));
-    // TODO(会话): 启动时从数据目录恢复上次进度（需求第 10 节）
+
+    // 启动时恢复上次进度；恢复结束前不触发保存
+    m_session->setSuspended(true);
+    m_session->setPath(AppPaths::sessionFile(m_settings.resolvedDataDir()));
+    connect(m_session, &SessionStore::saveFailed, this,
+            [](const QString& error) { logInfo(QStringLiteral("⚠️ 会话保存失败: %1").arg(error)); });
+    QTimer::singleShot(0, this, &MainWindow::restoreSession);
 }
 
 MainWindow::~MainWindow()
@@ -235,7 +244,6 @@ void MainWindow::connectSignals()
         updateBadge();
         updateAiButton();
     });
-    // TODO(会话): contentChanged → 250ms 防抖后原子写入会话文件
 
     // 右侧面板
     connect(m_panel, &SettingsPanel::startRequested, this, [this] { startConversion({}); });
@@ -247,7 +255,9 @@ void MainWindow::connectSignals()
     connect(m_panel, &SettingsPanel::outputLocationChanged, this,
             [this] { m_model->setOutputLocation(m_settings.outputDir(), m_settings.saveBesideSource()); });
     connect(m_panel, &SettingsPanel::dataDirChanged, this, [this](const QString&, const QString& newDir) {
-        // TODO(会话): 新目录没有会话文件时，把旧目录的会话复制过去
+        // 新目录还没有会话文件时，把旧目录的会话复制过去
+        m_session->moveTo(AppPaths::sessionFile(newDir));
+        m_session->saveNow();
         applyDataDir();
         refreshCacheInfo();
         logInfo(QStringLiteral("💾 数据目录已切换为 %1").arg(QDir::toNativeSeparators(newDir)));
@@ -295,9 +305,12 @@ void MainWindow::dropEvent(QDropEvent* event)
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
+    // 关闭前强制保存一次（恢复尚未完成时不保存，以免丢掉还没恢复的条目）
+    if (m_busy != Busy::Restoring)
+        m_session->saveNow();
     if (m_cancel)
         m_cancel->store(true);
-    // TODO(会话): 关闭前强制保存一次
+    m_converter->cancel();
     event->accept();
 }
 
@@ -409,55 +422,134 @@ void MainWindow::importManifest(const QString& path)
 
 void MainWindow::startProbing(const QStringList& files)
 {
+    QList<StickerList::Entry> entries;
+    for (const QString& file : files) {
+        StickerList::Entry e;
+        e.task.inputPath = file;
+        e.task.info.fileName = QFileInfo(file).fileName();
+        entries << e;
+    }
+    startLoading(entries, {}, LoadPurpose::AddFiles);
+}
+
+void MainWindow::startLoading(const QList<StickerList::Entry>& entries, const QString& baseDir, LoadPurpose purpose)
+{
     if (m_busy != Busy::None) {
+        if (m_busy == Busy::Restoring && purpose == LoadPurpose::AddFiles) {
+            for (const auto& e : entries)
+                m_pendingPaths << e.task.inputPath; // 恢复完再添加
+            return;
+        }
         logInfo(QStringLiteral("⚠️ 任务正在进行中，请先停止或等待完成"));
         return;
     }
-    m_probeAdded = 0;
-    m_probeFailed = 0;
+    m_loadPurpose = purpose;
+    m_loadAdded = m_loadFailed = m_loadMissing = 0;
     m_cancel = std::make_shared<std::atomic_bool>(false);
-    setBusy(Busy::Importing, int(files.size()));
+    setBusy(purpose == LoadPurpose::Restore ? Busy::Restoring : Busy::Importing, int(entries.size()));
 
     const auto cancel = m_cancel;
-    m_workers.start([this, files, cancel] {
-        for (const QString& path : files) {
+    m_workers.start([this, entries, baseDir, cancel] {
+        for (const StickerList::Entry& entry : entries) {
             if (cancel->load())
                 break;
-            QMetaObject::invokeMethod(this, [this, path] {
-                m_busyHint = QStringLiteral("正在解析 ") + QFileInfo(path).fileName();
+            const QString name = entry.task.info.fileName.isEmpty() ? QFileInfo(entry.task.inputPath).fileName()
+                                                                    : entry.task.info.fileName;
+            QMetaObject::invokeMethod(this, [this, name] {
+                m_busyHint = QStringLiteral("正在解析 ") + name;
                 refreshUi();
             }, Qt::QueuedConnection);
-            const ProbeResult result = MediaProbe::probe(path);
-            QMetaObject::invokeMethod(this, [this, path, result] { onProbed(path, result); }, Qt::QueuedConnection);
+            const ListLoader::Result result = ListLoader::load(entry, baseDir);
+            QMetaObject::invokeMethod(this, [this, result, name] { onEntryLoaded(result, name); }, Qt::QueuedConnection);
         }
         const bool cancelled = cancel->load();
-        QMetaObject::invokeMethod(this, [this, cancelled] { onProbingFinished(cancelled); }, Qt::QueuedConnection);
+        QMetaObject::invokeMethod(this, [this, cancelled] { onLoadingFinished(cancelled); }, Qt::QueuedConnection);
     });
 }
 
-void MainWindow::onProbed(const QString& path, const ProbeResult& result)
+void MainWindow::onEntryLoaded(const ListLoader::Result& result, const QString& name)
 {
     ++m_busyDone;
-    if (result.ok) {
-        m_model->appendTasks({StickerTask::fromMedia(path, result.info)});
-        ++m_probeAdded;
-    } else {
-        ++m_probeFailed;
-        logInfo(QStringLiteral("❌ [%1] 解析失败: %2").arg(QFileInfo(path).fileName(), result.error));
+    switch (result.outcome) {
+    case ListLoader::Outcome::Loaded:
+        m_model->appendTasks({result.task});
+        ++m_loadAdded;
+        break;
+    case ListLoader::Outcome::Missing:
+        ++m_loadMissing;
+        break;
+    case ListLoader::Outcome::Failed:
+        ++m_loadFailed;
+        logInfo(QStringLiteral("❌ [%1] 解析失败: %2").arg(name, result.error));
+        break;
     }
     refreshUi();
 }
 
-void MainWindow::onProbingFinished(bool cancelled)
+void MainWindow::onLoadingFinished(bool cancelled)
 {
+    const LoadPurpose purpose = m_loadPurpose;
     setBusy(Busy::None, 0);
-    if (cancelled) {
-        logInfo(QStringLiteral("🛑 已取消导入，已加入 %1 项").arg(m_probeAdded));
-    } else if (m_probeFailed > 0) {
-        logInfo(QStringLiteral("➕ 已添加 %1 项，%2 项解析失败").arg(m_probeAdded).arg(m_probeFailed));
-    } else {
-        logInfo(QStringLiteral("➕ 已添加 %1 项").arg(m_probeAdded));
+    const QString failed = m_loadFailed > 0 ? QStringLiteral("，%1 项解析失败").arg(m_loadFailed) : QString();
+
+    switch (purpose) {
+    case LoadPurpose::Restore:
+        if (cancelled)
+            logInfo(QStringLiteral("🛑 已停止恢复，已恢复 %1 项").arg(m_loadAdded));
+        else
+            logInfo(QStringLiteral("📂 已恢复上次进度：%1 项%2").arg(m_loadAdded).arg(failed));
+        if (m_loadMissing > 0)
+            logInfo(QStringLiteral("⚠️ 有 %1 个源文件找不到，已跳过（可能被移动或删除）").arg(m_loadMissing));
+        // 恢复期间不保存，结束后保存一次
+        m_session->setSuspended(false);
+        m_session->saveNow();
+        if (!m_pendingPaths.isEmpty())
+            addPaths(std::exchange(m_pendingPaths, {}));
+        break;
+    case LoadPurpose::Import:
+        if (cancelled)
+            logInfo(QStringLiteral("🛑 已取消导入，已加入 %1 项").arg(m_loadAdded));
+        else
+            logInfo(QStringLiteral("📥 已导入 %1 项%2").arg(m_loadAdded).arg(failed));
+        if (m_loadMissing > 0)
+            logInfo(QStringLiteral("⚠️ 有 %1 个源文件缺失，已跳过").arg(m_loadMissing));
+        break;
+    case LoadPurpose::AddFiles:
+        if (cancelled)
+            logInfo(QStringLiteral("🛑 已取消导入，已加入 %1 项").arg(m_loadAdded));
+        else
+            logInfo(QStringLiteral("➕ 已添加 %1 项%2").arg(m_loadAdded).arg(failed));
+        break;
     }
+}
+
+// ---------------------------------------------------------------- 会话
+
+void MainWindow::restoreSession()
+{
+    const QString path = m_session->path();
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        m_session->setSuspended(false);
+        return;
+    }
+    const StickerList::ParseResult parsed = StickerList::parse(file.readAll());
+    file.close();
+    if (!parsed.ok || parsed.kind != StickerList::Kind::StickerList) {
+        // 损坏的会话改名备份，不覆盖
+        const QString backup = path + QStringLiteral(".broken");
+        QFile::remove(backup);
+        QFile::rename(path, backup);
+        logInfo(QStringLiteral("⚠️ 会话文件无法读取，已备份为 %1").arg(QDir::toNativeSeparators(backup)));
+        m_session->setPath(path);
+        m_session->setSuspended(false);
+        return;
+    }
+    if (parsed.entries.isEmpty()) {
+        m_session->setSuspended(false);
+        return;
+    }
+    startLoading(parsed.entries, QFileInfo(path).absolutePath(), LoadPurpose::Restore);
 }
 
 // ---------------------------------------------------------------- 转换

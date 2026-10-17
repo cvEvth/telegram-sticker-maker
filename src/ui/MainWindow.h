@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/AppSettings.h"
+#include "app/ListLoader.h"
 #include "media/MediaProbe.h"
 
 #include <QMainWindow>
@@ -19,6 +20,7 @@ class DropZone;
 class HeaderBar;
 class LogPanel;
 class ProxyCache;
+class SessionStore;
 class SettingsPanel;
 class TaskListModel;
 class TaskTableView;
@@ -57,8 +59,15 @@ private:
     void addPaths(const QStringList& paths);
     void importManifest(const QString& path);
     void startProbing(const QStringList& files);
-    void onProbed(const QString& path, const ProbeResult& result);
-    void onProbingFinished(bool cancelled);
+
+    // 按清单逐条还原（添加文件 / 恢复会话 / 导入共用）
+    enum class LoadPurpose { AddFiles, Restore, Import };
+    void startLoading(const QList<StickerList::Entry>& entries, const QString& baseDir, LoadPurpose purpose);
+    void onEntryLoaded(const ListLoader::Result& result, const QString& name);
+    void onLoadingFinished(bool cancelled);
+
+    // 会话
+    void restoreSession();
 
     // 转换
     void startConversion(QList<int> rows);
@@ -103,6 +112,7 @@ private:
     BatchConverter* m_converter = nullptr;
     ThumbnailService* m_thumbs = nullptr;
     ProxyCache* m_proxies = nullptr;
+    SessionStore* m_session = nullptr;
     bool m_editorOpen = false;
     QHash<QString, QString> m_stageText; // taskId → 最近一次写入日志的阶段说明
     QString m_lastOutput;                // 最近一次生成的压缩包或文件夹
@@ -127,8 +137,11 @@ private:
     int m_busyDone = 0;
     int m_busyTotal = 0;
     QString m_busyHint;
-    int m_probeAdded = 0;
-    int m_probeFailed = 0;
+    LoadPurpose m_loadPurpose = LoadPurpose::AddFiles;
+    int m_loadAdded = 0;
+    int m_loadFailed = 0;
+    int m_loadMissing = 0;
+    QStringList m_pendingPaths; // 恢复会话期间收到的启动参数，恢复后再添加
     std::shared_ptr<std::atomic_bool> m_cancel;
     QThreadPool m_workers;
     QString m_lastDir;

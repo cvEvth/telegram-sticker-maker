@@ -1,4 +1,6 @@
 #include "app/AppPaths.h"
+#include "app/ListLoader.h"
+#include "core/StickerList.h"
 #include "core/Format.h"
 #include "core/Keywords.h"
 #include "core/OutputNaming.h"
@@ -6,6 +8,9 @@
 
 #include <QDir>
 #include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QTemporaryDir>
 #include <QTest>
 
@@ -180,6 +185,109 @@ private slots:
         QVERIFY(r.added.isEmpty());
         QCOMPARE(r.error, QStringLiteral("最多 20 个关键词"));
         QVERIFY(Keywords::isFull(many));
+    }
+
+    void stickerListRoundTrip()
+    {
+        StickerTask video;
+        video.inputPath = QStringLiteral("C:/media/clip.mp4");
+        video.info.fileName = QStringLiteral("clip.mp4");
+        video.info.isVideo = true;
+        video.info.width = 1920;
+        video.info.height = 1080;
+        video.emoji = QStringLiteral("😂");
+        video.keywords = {QStringLiteral("哈哈"), QStringLiteral("笑死")};
+        video.startTime = 1.2;
+        video.endTime = 3.7;
+        video.crop = QRect(100, 0, 512, 512);
+        video.cropRadius = 0.3;
+        video.mirror = true;
+        video.clipGroupId = QStringLiteral("clipgrp-3");
+        video.clipId = QStringLiteral("clip-1700000000000");
+
+        StickerTask still;
+        still.inputPath = QStringLiteral("C:/media/a.png");
+        still.info.fileName = QStringLiteral("a.png");
+
+        StickerList::WriteOptions options;
+        options.exportMode = QStringLiteral("sources");
+        options.exportedAt = QDateTime(QDate(2026, 10, 17), QTime(14, 30));
+        options.pathFor = [](const StickerTask& t) { return QStringLiteral("sources/") + t.info.fileName; };
+        const QByteArray json = StickerList::write({video, still}, options);
+
+        // 格式（需求 9.3）
+        const QJsonObject root = QJsonDocument::fromJson(json).object();
+        QCOMPARE(root.value(u"kind").toString(), QStringLiteral("sticker_maker_list"));
+        QCOMPARE(root.value(u"version").toInt(), 1);
+        QCOMPARE(root.value(u"export_mode").toString(), QStringLiteral("sources"));
+        QCOMPARE(root.value(u"exported_at").toString(), QStringLiteral("2026-10-17T14:30:00"));
+        const QJsonObject first = root.value(u"stickers").toArray().at(0).toObject();
+        QCOMPARE(first.value(u"input_path").toString(), QStringLiteral("sources/clip.mp4"));
+        QCOMPARE(first.value(u"keywords").toString(), QStringLiteral("哈哈, 笑死"));
+        QCOMPARE(first.value(u"crop").toArray(), (QJsonArray{100, 0, 512, 512}));
+        QCOMPARE(first.value(u"clip_label").toString(), QStringLiteral("[1.200s - 3.700s]"));
+        // 空值 / 默认值的可选字段省略
+        const QJsonObject second = root.value(u"stickers").toArray().at(1).toObject();
+        for (const char* key : {"emoji", "keywords", "start_time", "crop", "crop_radius", "mirror", "clip_group_id", "media"})
+            QVERIFY2(!second.contains(QLatin1StringView(key)), key);
+
+        const StickerList::ParseResult parsed = StickerList::parse(json);
+        QVERIFY(parsed.ok);
+        QCOMPARE(parsed.kind, StickerList::Kind::StickerList);
+        QCOMPARE(parsed.entries.size(), 2);
+        const StickerTask& t = parsed.entries.at(0).task;
+        QCOMPARE(t.inputPath, QStringLiteral("sources/clip.mp4"));
+        QCOMPARE(t.emoji, video.emoji);
+        QCOMPARE(t.keywords, video.keywords);
+        QCOMPARE(*t.startTime, 1.2);
+        QCOMPARE(*t.endTime, 3.7);
+        QCOMPARE(*t.crop, *video.crop);
+        QCOMPARE(t.cropRadius, 0.3);
+        QVERIFY(t.mirror);
+        QCOMPARE(t.clipGroupId, video.clipGroupId);
+        QCOMPARE(t.clipId, video.clipId);
+        QVERIFY(!parsed.entries.at(1).task.startTime.has_value());
+    }
+
+    void stickerListParsesOutputJsonAndRejectsGarbage()
+    {
+        const QByteArray out = R"({"stickers":[{"file":"001_😂.webm","emoji":"😂","keywords":["哈哈","笑死"],"crop_radius":0.3,"shape":"圆角 30%"}]})";
+        const StickerList::ParseResult parsed = StickerList::parse(out);
+        QVERIFY(parsed.ok);
+        QCOMPARE(parsed.kind, StickerList::Kind::StickersJson);
+        QCOMPARE(parsed.entries.first().task.inputPath, QStringLiteral("001_😂.webm"));
+        QCOMPARE(parsed.entries.first().task.keywords, (QStringList{QStringLiteral("哈哈"), QStringLiteral("笑死")}));
+        QCOMPARE(parsed.entries.first().task.cropRadius, 0.3);
+
+        for (const QByteArray& bad : {QByteArray("not json"), QByteArray("[]"), QByteArray(R"({"kind":"x"})")}) {
+            const StickerList::ParseResult r = StickerList::parse(bad);
+            QVERIFY(!r.ok);
+            QCOMPARE(r.error, QStringLiteral("列表文件格式无效"));
+        }
+    }
+
+    void resolvePathOrder()
+    {
+        QTemporaryDir tmp;
+        QDir dir(tmp.path());
+        QVERIFY(dir.mkpath(QStringLiteral("sources")));
+        const auto touch = [](const QString& p) {
+            QFile f(p);
+            return f.open(QIODevice::WriteOnly);
+        };
+        const QString abs = dir.filePath(QStringLiteral("abs.mp4"));
+        const QString rel = dir.filePath(QStringLiteral("sources/rel.mp4"));
+        const QString flat = dir.filePath(QStringLiteral("flat.mp4"));
+        QVERIFY(touch(abs) && touch(rel) && touch(flat));
+
+        // 1. 绝对路径
+        QCOMPARE(ListLoader::resolvePath(abs, QStringLiteral("D:/elsewhere"), QString()), abs);
+        // 2. 清单所在目录的相对路径
+        QCOMPARE(ListLoader::resolvePath(QStringLiteral("sources/rel.mp4"), tmp.path(), QString()), rel);
+        // 3. 清单同目录按文件名
+        QCOMPARE(ListLoader::resolvePath(QStringLiteral("D:/old/machine/flat.mp4"), tmp.path(), QStringLiteral("flat.mp4")), flat);
+        // 都找不到
+        QVERIFY(ListLoader::resolvePath(QStringLiteral("D:/gone/x.mp4"), tmp.path(), QStringLiteral("x.mp4")).isEmpty());
     }
 
     void resolveDataDir()
