@@ -13,6 +13,7 @@ qt_add_library(tsm_core STATIC
     core/CropMath.cpp       core/CropMath.h
     core/EncodePlan.cpp     core/EncodePlan.h
     core/Format.cpp         core/Format.h
+    core/ImageHeaders.cpp   core/ImageHeaders.h
     core/Keywords.cpp       core/Keywords.h
     core/MediaInfo.h
     core/MediaKinds.cpp     core/MediaKinds.h
@@ -32,6 +33,7 @@ qt_add_library(tsm_core STATIC
     media/MediaProbe.cpp    media/MediaProbe.h
     media/ProcessRunner.cpp media/ProcessRunner.h
     media/ProxyCache.cpp    media/ProxyCache.h
+    media/SourceInput.cpp   media/SourceInput.h
     media/SourceTrimmer.cpp media/SourceTrimmer.h
     media/StickerEncoder.cpp media/StickerEncoder.h
     media/ThumbnailService.cpp media/ThumbnailService.h

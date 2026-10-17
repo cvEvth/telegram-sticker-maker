@@ -62,6 +62,7 @@ private:
     CancelFlag m_cancel;
     ProgressFn m_progress;
     QString m_maskPath;
+    QString m_input; // ffmpeg 实际读取的文件（动态 WebP 为解码后的中间文件）
     double m_start = 0;
     double m_duration = 0;
 };

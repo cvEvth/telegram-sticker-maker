@@ -3,6 +3,7 @@
 #include "core/AiEmoji.h"
 #include "media/FfmpegRun.h"
 #include "media/FilterGraph.h"
+#include "media/SourceInput.h"
 
 #include <QBuffer>
 #include <QDir>
@@ -121,7 +122,7 @@ Result grab(const StickerTask& task, const QString& workDir, const std::shared_p
             args << QStringLiteral("-c:v") << QStringLiteral("libvpx-vp9");
         else if (task.info.hasAlpha && task.info.videoCodec == u"vp8")
             args << QStringLiteral("-c:v") << QStringLiteral("libvpx");
-        args << QStringLiteral("-i") << QDir::toNativeSeparators(task.inputPath);
+        args << QStringLiteral("-i") << QDir::toNativeSeparators(SourceInput::resolve(task.inputPath));
         if (!mask.isEmpty())
             args << QStringLiteral("-i") << QDir::toNativeSeparators(mask);
         args << QStringLiteral("-filter_complex") << graph << QStringLiteral("-map") << QStringLiteral("[out]")

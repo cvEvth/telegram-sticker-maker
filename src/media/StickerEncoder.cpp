@@ -4,6 +4,7 @@
 #include "media/FFmpegTools.h"
 #include "media/FilterGraph.h"
 #include "media/ProcessRunner.h"
+#include "media/SourceInput.h"
 #include "media/WebmDuration.h"
 #include "media/WebpEncoder.h"
 
@@ -60,6 +61,7 @@ EncodeResult StickerEncoder::run()
         return result;
     }
     QDir().mkpath(m_req.workDir);
+    m_input = SourceInput::resolve(m_req.task.inputPath);
     if (m_req.task.cropRadius > 0) {
         const QSize content = m_req.task.info.isVideo ? EncodePlan::videoContentSize(sourceSize(), m_req.mode)
                                                       : EncodePlan::staticContentSize(sourceSize(), m_req.mode);
@@ -199,7 +201,7 @@ QStringList StickerEncoder::inputArgs(bool withMask) const
         args << QStringLiteral("-c:v") << QStringLiteral("libvpx-vp9");
     else if (info.hasAlpha && info.videoCodec == u"vp8")
         args << QStringLiteral("-c:v") << QStringLiteral("libvpx");
-    args << QStringLiteral("-i") << native(m_req.task.inputPath);
+    args << QStringLiteral("-i") << native(m_input.isEmpty() ? m_req.task.inputPath : m_input);
     if (withMask)
         args << QStringLiteral("-i") << native(m_maskPath);
     return args;
@@ -255,7 +257,7 @@ std::optional<double> StickerEncoder::measureMotion(double start, double duratio
     const MediaInfo& info = m_req.task.info;
     if (info.hasAlpha && info.videoCodec == u"vp9")
         args << QStringLiteral("-c:v") << QStringLiteral("libvpx-vp9");
-    args << QStringLiteral("-i") << native(m_req.task.inputPath) << QStringLiteral("-t") << seconds(duration)
+    args << QStringLiteral("-i") << native(m_input.isEmpty() ? m_req.task.inputPath : m_input) << QStringLiteral("-t") << seconds(duration)
          << QStringLiteral("-vf")
          << QStringLiteral("fps=%1,scale=%2:%2:flags=area,format=gray").arg(sampleRate, 0, 'f', 4).arg(kMotionSide)
          << QStringLiteral("-frames:v") << QString::number(kMotionSamples)
@@ -289,7 +291,7 @@ EncodeResult StickerEncoder::encodeStatic()
     const qint64 limit = EncodePlan::staticLimitBytes(m_req.mode);
     const QString failText = QStringLiteral("静态转换失败或体积超出 %1KB").arg(limit / 1024);
 
-    // TODO(解析素材): HEIC/HEIF 按 EXIF 方向摆正后再处理
+    // HEIC / JPEG 的方向由 ffmpeg 解码时自动摆正，与解析出的宽高一致
     const QString frameFile = QDir(m_req.workDir).filePath(QStringLiteral("frame.png"));
     QStringList args = inputArgs(!m_maskPath.isEmpty());
     args << QStringLiteral("-filter_complex") << filterGraph(content, canvas, 0, true)

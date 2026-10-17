@@ -1,8 +1,10 @@
 #include "media/ProxyCache.h"
 
 #include "core/Format.h"
+#include "core/MediaKinds.h"
 #include "media/FFmpegTools.h"
 #include "media/ProcessRunner.h"
+#include "media/SourceInput.h"
 
 #include <QCryptographicHash>
 #include <QDateTime>
@@ -43,6 +45,12 @@ bool ProxyCache::needsProxy(const QString& path)
     return !native.contains(ext);
 }
 
+bool ProxyCache::playerCannotDecode(const QString& path)
+{
+    return MediaKinds::classify(path) == MediaKind::AnimatedImage
+        && QFileInfo(path).suffix().compare(u"webp", Qt::CaseInsensitive) == 0;
+}
+
 QString ProxyCache::pathIn(const QString& dir, const QString& source)
 {
     const QFileInfo fi(source);
@@ -77,7 +85,7 @@ void ProxyCache::generate(const QString& source, double duration)
         const QString temp = target + QStringLiteral(".part.mp4");
         QStringList args{QStringLiteral("-hide_banner"), QStringLiteral("-nostdin"), QStringLiteral("-y"),
                          QStringLiteral("-loglevel"), QStringLiteral("error"), QStringLiteral("-progress"), QStringLiteral("pipe:1"),
-                         QStringLiteral("-nostats"), QStringLiteral("-i"), QDir::toNativeSeparators(source),
+                         QStringLiteral("-nostats"), QStringLiteral("-i"), QDir::toNativeSeparators(SourceInput::resolve(source)),
                          QStringLiteral("-map"), QStringLiteral("0:v:0"), QStringLiteral("-map"), QStringLiteral("0:a:0?"),
                          QStringLiteral("-vf"), QStringLiteral("scale=-2:'min(%1,ih)':flags=bicubic,format=yuv420p").arg(kProxyHeight),
                          // 关键帧间隔小，拖动流畅

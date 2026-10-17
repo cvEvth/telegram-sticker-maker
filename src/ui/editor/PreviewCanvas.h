@@ -18,6 +18,7 @@ public:
 
     void setSourceSize(QSize size);
     void setImage(const QImage& image);
+    const QImage& image() const { return m_image; }
     void setMirror(bool mirror);
     void setCropVisible(bool visible);
     void setCrop(std::optional<QRect> crop);

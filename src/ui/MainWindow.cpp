@@ -11,6 +11,7 @@
 #include "core/TaskListModel.h"
 #include "media/FFmpegTools.h"
 #include "media/ProxyCache.h"
+#include "media/SourceInput.h"
 #include "media/ThumbnailService.h"
 #include "ui/AiSettingsDialog.h"
 #include "ui/DropOverlay.h"
@@ -1095,6 +1096,7 @@ void MainWindow::applyDataDir()
     const QString preview = AppPaths::previewCacheDir(m_settings.resolvedDataDir());
     m_thumbs->setCacheDir(QDir(preview).filePath(QStringLiteral("thumbs")));
     m_proxies->setCacheDir(QDir(preview).filePath(QStringLiteral("proxies")));
+    SourceInput::setCacheDir(QDir(preview).filePath(QStringLiteral("decoded")));
 }
 
 void MainWindow::refreshCacheInfo()

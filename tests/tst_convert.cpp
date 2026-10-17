@@ -4,6 +4,7 @@
 #include "media/MediaProbe.h"
 #include "media/ProcessRunner.h"
 #include "media/ProxyCache.h"
+#include "media/SourceInput.h"
 #include "media/StickerEncoder.h"
 #include "media/WebmDuration.h"
 
@@ -160,6 +161,28 @@ private slots:
         const ProbeResult p = MediaProbe::probe(out);
         QVERIFY(p.info.hasAlpha);
         QCOMPARE(p.info.width, 512);
+    }
+
+    // 动态 WebP（FFmpeg 不能直接解码）：经 libwebp 中间文件转成带透明的 WebM 贴纸
+    void animatedWebpSticker()
+    {
+        SourceInput::setCacheDir(m_dir.filePath(QStringLiteral("decoded")));
+        const QString src = generate(QStringLiteral("anim_src.webp"),
+                                     {QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                                      QStringLiteral("testsrc2=size=200x200:rate=10:duration=1.5,format=rgba,"
+                                                     "geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lt(X,100),255,0)'"),
+                                      QStringLiteral("-c:v"), QStringLiteral("libwebp_anim"), QStringLiteral("-loop"), QStringLiteral("0")});
+        const StickerTask task = taskFor(src);
+        QVERIFY(task.info.isAnimatedImage);
+        QVERIFY(task.info.hasAlpha);
+        QString out;
+        const EncodeResult r = convert(task, OutputMode::Sticker, EncodePreset::Fast, &out);
+        QVERIFY2(r.ok, qPrintable(r.statusText));
+        const ProbeResult p = MediaProbe::probe(out);
+        QVERIFY2(p.ok, qPrintable(p.error));
+        QCOMPARE(p.info.width, 512);
+        QVERIFY(p.info.hasAlpha);
+        QVERIFY(p.info.duration > 1.3 && p.info.duration < 1.7);
     }
 
     void staticImageLossless()

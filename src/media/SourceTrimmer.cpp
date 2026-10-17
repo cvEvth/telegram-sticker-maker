@@ -2,6 +2,7 @@
 
 #include "media/FfmpegRun.h"
 #include "media/FilterGraph.h"
+#include "media/SourceInput.h"
 #include "media/WebpEncoder.h"
 
 #include <QDir>
@@ -68,7 +69,7 @@ Result streamCut(const StickerTask& task, const QString& outputBase, const QStri
     const double duration = task.effectiveDuration();
     const QString output = outputBase + u'.' + extension;
     const auto attempt = [&](const QStringList& maps, int from, int to) {
-        QStringList args{QStringLiteral("-ss"), seconds(start), QStringLiteral("-i"), native(task.inputPath),
+        QStringList args{QStringLiteral("-ss"), seconds(start), QStringLiteral("-i"), native(SourceInput::resolve(task.inputPath)),
                          QStringLiteral("-t"), seconds(duration)};
         args << maps << QStringLiteral("-c") << QStringLiteral("copy")
              << QStringLiteral("-avoid_negative_ts") << QStringLiteral("make_zero") << native(output);
@@ -132,7 +133,7 @@ Result reencodeVideo(const StickerTask& task, const QString& workDir, const QStr
     QStringList args;
     if (start > 0)
         args << QStringLiteral("-ss") << seconds(start);
-    args << decoderArgs(task) << QStringLiteral("-i") << native(task.inputPath);
+    args << decoderArgs(task) << QStringLiteral("-i") << native(SourceInput::resolve(task.inputPath));
     if (!mask.isEmpty())
         args << QStringLiteral("-i") << native(mask);
     args << QStringLiteral("-filter_complex") << FilterGraph::build(spec) << QStringLiteral("-map") << QStringLiteral("[out]")

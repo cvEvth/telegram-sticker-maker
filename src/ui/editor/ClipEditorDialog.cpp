@@ -223,8 +223,11 @@ QWidget* ClipEditorDialog::buildTopBar()
             refreshProxyButton();
         });
         connect(m_proxies, &ProxyCache::progress, this, [this](const QString& source, int percent) {
-            if (source == m_base.inputPath)
-                m_proxyButton->setText(QStringLiteral("缓存中 %1%").arg(percent));
+            if (source != m_base.inputPath)
+                return;
+            m_proxyButton->setText(QStringLiteral("缓存中 %1%").arg(percent));
+            if (!m_usingProxy && ProxyCache::playerCannotDecode(source))
+                m_canvas->setPlaceholder(QStringLiteral("正在生成预览副本 %1%").arg(percent));
         });
         connect(m_proxies, &ProxyCache::finished, this, [this](const QString& source, bool ok, const QString& path, const QString& error) {
             if (source != m_base.inputPath)
@@ -232,6 +235,8 @@ QWidget* ClipEditorDialog::buildTopBar()
             m_proxyError = ok ? QString() : error;
             if (ok)
                 switchToProxy(path);
+            else if (!m_usingProxy && ProxyCache::playerCannotDecode(source))
+                m_canvas->setPlaceholder(QStringLiteral("无法生成预览：%1").arg(error));
             refreshProxyButton();
         });
         layout->addWidget(m_proxyButton);
@@ -553,6 +558,14 @@ void ClipEditorDialog::setupPlayer()
             source = cached;
             m_usingProxy = true;
         }
+    }
+    // 动态 WebP 播放器解不了：不直接打开原文件，自动生成预览副本，完成后切过去
+    if (!m_usingProxy && m_proxies && ProxyCache::playerCannotDecode(source)) {
+        m_canvas->setPlaceholder(QStringLiteral("正在生成预览副本..."));
+        if (!m_proxies->isGenerating(source))
+            m_proxies->generate(source, m_base.info.duration);
+        refreshProxyButton();
+        return;
     }
     m_player->setSource(QUrl::fromLocalFile(source));
     refreshProxyButton();

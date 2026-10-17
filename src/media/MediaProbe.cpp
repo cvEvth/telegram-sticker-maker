@@ -1,6 +1,7 @@
 #include "media/MediaProbe.h"
 
 #include "core/Format.h"
+#include "core/ImageHeaders.h"
 #include "core/MediaKinds.h"
 #include "media/FFmpegTools.h"
 #include "media/ProcessRunner.h"
@@ -10,6 +11,8 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <cmath>
+#include <optional>
 
 namespace tsm {
 
@@ -44,6 +47,55 @@ bool usableFps(double fps)
 {
     return fps > 0 && fps <= 240;
 }
+
+// 旋转角度：视频流的显示矩阵，或首帧的显示矩阵（JPEG / HEIC 的方向信息在帧上）
+int rotationOf(const QJsonObject& stream, const QJsonArray& frames)
+{
+    const auto fromList = [](const QJsonArray& list) -> std::optional<int> {
+        for (const QJsonValue& v : list) {
+            const QJsonObject o = v.toObject();
+            if (o.contains(u"rotation"))
+                return int(std::lround(o.value(u"rotation").toDouble()));
+        }
+        return std::nullopt;
+    };
+    if (const auto r = fromList(stream.value(u"side_data_list").toArray()))
+        return *r;
+    const int index = stream.value(u"index").toInt();
+    for (const QJsonValue& v : frames) {
+        const QJsonObject frame = v.toObject();
+        if (frame.value(u"media_type").toString() != u"video" || frame.value(u"stream_index").toInt() != index)
+            continue;
+        if (const auto r = fromList(frame.value(u"side_data_list").toArray()))
+            return *r;
+    }
+    return 0;
+}
+
+// FFmpeg 不能解码动态 WebP：直接读文件头（解码时走 SourceInput 的中间文件）
+ProbeResult probeAnimatedWebp(const QString& path, MediaInfo info)
+{
+    ProbeResult result;
+    const ImageHeaders::Info header = ImageHeaders::scanFile(path);
+    if (!header.parsed || !header.animated) {
+        result.error = QStringLiteral("无法解析动态 WebP");
+        return result;
+    }
+    info.isVideo = true;
+    info.isAnimatedImage = true;
+    info.width = header.width;
+    info.height = header.height;
+    info.hasAlpha = header.hasAlpha;
+    info.duration = header.durationSeconds();
+    info.fps = normalizeFrameRate(header.fps());
+    info.container = QStringLiteral("webp");
+    info.videoCodec = QStringLiteral("webp");
+    result.info = info;
+    result.ok = info.isValid();
+    if (!result.ok)
+        result.error = QStringLiteral("无法读取画面尺寸");
+    return result;
+}
 } // namespace
 
 ProbeResult MediaProbe::probe(const QString& path)
@@ -63,6 +115,10 @@ ProbeResult MediaProbe::probe(const QString& path)
         result.error = QStringLiteral("不支持的文件格式");
         return result;
     }
+    const bool webp = fileInfo.suffix().compare(u"webp", Qt::CaseInsensitive) == 0;
+    if (kind == MediaKind::AnimatedImage && webp)
+        return probeAnimatedWebp(path, info);
+
     const QString ffprobe = FFmpegTools::ffprobePath();
     if (ffprobe.isEmpty()) {
         result.error = QStringLiteral("找不到 ffprobe");
@@ -73,6 +129,8 @@ ProbeResult MediaProbe::probe(const QString& path)
         ffprobe,
         {QStringLiteral("-v"), QStringLiteral("error"), QStringLiteral("-print_format"), QStringLiteral("json"),
          QStringLiteral("-show_format"), QStringLiteral("-show_streams"),
+         // 首帧的附加信息里有 JPEG / HEIC 的方向
+         QStringLiteral("-show_frames"), QStringLiteral("-read_intervals"), QStringLiteral("%+#1"),
          QDir::toNativeSeparators(fileInfo.absoluteFilePath())},
         30000);
     if (!run.ok()) {
@@ -127,8 +185,21 @@ ProbeResult MediaProbe::probe(const QString& path)
             fps = frames / info.duration;
         info.fps = normalizeFrameRate(fps);
     }
-    // TODO(解析素材): 动图时长按逐帧时长累加（单帧缺省 100ms）；HEIC/HEIF 按 EXIF 方向摆正宽高；
-    //                 GIF / PNG 调色板透明精确检测（目前按像素格式判断）
+
+    // 旋转 90° / 270° 时 ffmpeg 解码会自动摆正，宽高按摆正后的画面记录（HEIC / JPEG 方向、手机竖拍视频）
+    const int rotation = ((rotationOf(video, root.value(u"frames").toArray()) % 360) + 360) % 360;
+    if (rotation == 90 || rotation == 270)
+        std::swap(info.width, info.height);
+
+    // GIF / PNG / WebP 的透明与动图时长以文件头为准：FFmpeg 的 GIF 解码器总是输出 BGRA，
+    // 调色板 PNG 的 tRNS 透明也看不出来
+    if (const ImageHeaders::Info header = ImageHeaders::scanFile(path); header.parsed) {
+        info.hasAlpha = header.hasAlpha;
+        if (info.isAnimatedImage && header.animated && header.durationMs > 0) {
+            info.duration = header.durationSeconds();
+            info.fps = normalizeFrameRate(header.fps());
+        }
+    }
 
     if (!info.isValid()) {
         result.error = QStringLiteral("无法读取画面尺寸");

@@ -24,6 +24,8 @@ public:
 
     // 浏览器式播放器能直接流畅拖动的格式
     static bool needsProxy(const QString& path);
+    // 播放器根本解不了、必须先生成副本的格式（动态 WebP）
+    static bool playerCannotDecode(const QString& path);
 
     QString proxyPathFor(const QString& source) const { return pathIn(m_dir, source); }
     // 缓存目录 dir 下 source 对应的副本路径（文件不一定存在）

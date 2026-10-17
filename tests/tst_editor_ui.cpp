@@ -8,9 +8,11 @@
 #include "media/ThumbnailService.h"
 #include "ui/Theme.h"
 #include "ui/editor/ClipEditorDialog.h"
+#include "ui/editor/PreviewCanvas.h"
 
 #include <QApplication>
 #include <QDir>
+#include <QLabel>
 #include <QPushButton>
 #include <QTemporaryDir>
 #include <QTest>
@@ -169,6 +171,52 @@ private slots:
         buttonWithText(&dialog, QStringLiteral("✔ 确认并添加"))->click();
         QCOMPARE(dialog.result(), int(QDialog::Rejected));
         QVERIFY(dialog.isVisible());
+    }
+
+    // 手机竖拍视频（旋转 90°）：解析出的宽高与预览画面都按摆正后的方向
+    void rotatedVideoIsUpright()
+    {
+        const QString raw = generate(QStringLiteral("landscape.mp4"),
+                                     {QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                                      QStringLiteral("testsrc2=size=320x240:rate=25:duration=2"), QStringLiteral("-pix_fmt"),
+                                      QStringLiteral("yuv420p"), QStringLiteral("-c:v"), QStringLiteral("mpeg4")});
+        const QString src = generate(QStringLiteral("portrait.mp4"),
+                                     {QStringLiteral("-display_rotation"), QStringLiteral("90"), QStringLiteral("-i"), raw,
+                                      QStringLiteral("-c"), QStringLiteral("copy")});
+        const StickerTask task = taskFor(src);
+        QCOMPARE(task.info.width, 240);
+        QCOMPARE(task.info.height, 320);
+
+        ClipEditorDialog dialog(*m_settings, m_thumbs, m_proxies, {task}, 0);
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        auto* canvas = dialog.findChild<PreviewCanvas*>();
+        QVERIFY(canvas);
+        QTRY_VERIFY_WITH_TIMEOUT(!canvas->image().isNull(), 5000);
+        QCOMPARE(canvas->image().size(), QSize(240, 320));
+        snapshot(&dialog, QStringLiteral("editor_rotated.png"));
+        dialog.reject();
+    }
+
+    // 动态 WebP：播放器解不了，打开时自动生成预览副本并切换过去，不报错
+    void animatedWebpPreviews()
+    {
+        const QString src = generate(QStringLiteral("anim.webp"),
+                                     {QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                                      QStringLiteral("testsrc2=size=160x120:rate=10:duration=1"), QStringLiteral("-c:v"),
+                                      QStringLiteral("libwebp_anim"), QStringLiteral("-loop"), QStringLiteral("0")});
+        const StickerTask task = taskFor(src);
+        QVERIFY(task.info.isAnimatedImage);
+        ClipEditorDialog dialog(*m_settings, m_thumbs, m_proxies, {task}, 0);
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        auto* canvas = dialog.findChild<PreviewCanvas*>();
+        QTRY_VERIFY_WITH_TIMEOUT(!canvas->image().isNull(), 15000);
+        QCOMPARE(canvas->image().size(), QSize(160, 120));
+        for (QLabel* label : dialog.findChildren<QLabel*>())
+            QVERIFY2(!label->text().contains(QStringLiteral("无法播放")), qPrintable(label->text()));
+        snapshot(&dialog, QStringLiteral("editor_webp.png"));
+        dialog.reject();
     }
 
     void imageCropMode()

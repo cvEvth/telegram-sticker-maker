@@ -3,6 +3,7 @@
 #include "core/CropMath.h"
 #include "media/FFmpegTools.h"
 #include "media/ProcessRunner.h"
+#include "media/SourceInput.h"
 
 #include <QCryptographicHash>
 #include <QDateTime>
@@ -130,7 +131,7 @@ QImage ThumbnailService::render(const Request& r, QString* error)
         args << QStringLiteral("-ss") << QString::number(r.time, 'f', 3);
     if (r.sourceAlpha && r.videoCodec == u"vp9")
         args << QStringLiteral("-c:v") << QStringLiteral("libvpx-vp9");
-    args << QStringLiteral("-i") << QDir::toNativeSeparators(r.path) << QStringLiteral("-frames:v") << QStringLiteral("1")
+    args << QStringLiteral("-i") << QDir::toNativeSeparators(SourceInput::resolve(r.path)) << QStringLiteral("-frames:v") << QStringLiteral("1")
          << QStringLiteral("-vf") << filters.join(u',') << QStringLiteral("-f") << QStringLiteral("image2pipe")
          << QStringLiteral("-c:v") << QStringLiteral("png") << QStringLiteral("-");
 
