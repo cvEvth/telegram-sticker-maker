@@ -61,6 +61,7 @@ public:
     QString filePath() const { return m_settings.fileName(); }
 
 private:
+    void migrate(); // 旧版设置项改名 / 合并
     QVariant value(const char* key, const QVariant& fallback) const;
     void setValue(const char* key, const QVariant& value);
 

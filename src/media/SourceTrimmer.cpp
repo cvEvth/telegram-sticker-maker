@@ -124,7 +124,7 @@ Result reencodeVideo(const StickerTask& task, const QString& workDir, const QStr
     spec.mirror = task.mirror;
     spec.crop = crop;
     spec.scale = content;
-    spec.preset = EncodePreset::Fast; // 不加锐化 / 降噪，保持原画
+    spec.preset = EncodePreset::Fast; // 不加降噪，保持原画
     spec.roundMask = !mask.isEmpty();
     spec.sourceAlpha = task.info.hasAlpha;
     spec.alphaOutput = alpha;

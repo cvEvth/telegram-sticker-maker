@@ -59,7 +59,7 @@ private slots:
         const Plan p = plan(input({1920, 1080}, 30, 3.0));
         QCOMPARE(p.fps, 30.0);
         QVERIFY(p.constantQuality); // ≤4 秒且 bpp ≥ 0.10
-        QCOMPARE(p.crf, 15);
+        QCOMPARE(p.crf, 18);
         QVERIFY(p.twoPass);
     }
 
@@ -119,10 +119,11 @@ private slots:
 
     void constantQualityByPreset()
     {
-        QCOMPARE(constantQualityFor(EncodePreset::Anime, OutputMode::Sticker), 15);
-        QCOMPARE(constantQualityFor(EncodePreset::LiveAction, OutputMode::Sticker), 18);
+        QCOMPARE(constantQualityFor(EncodePreset::Quality, OutputMode::Sticker), 18);
+        QCOMPARE(constantQualityFor(EncodePreset::Quality, OutputMode::Emoji), 24);
         QCOMPARE(constantQualityFor(EncodePreset::Fast, OutputMode::Emoji), 26);
         Input in = input({1920, 1080}, 30, 3.0);
+        QVERIFY(plan(in).twoPass);
         in.preset = EncodePreset::Fast;
         QVERIFY(!plan(in).twoPass);
     }
@@ -192,7 +193,7 @@ private slots:
         QCOMPARE(p.canvas, QSize(100, 100));
         QCOMPARE(p.targetBytes, qint64(60 * 1024));
         QCOMPARE(p.limitBytes, qint64(64 * 1024));
-        QCOMPARE(p.crf, 22);
+        QCOMPARE(p.crf, 24);
     }
 
     void evenCrop()
@@ -216,10 +217,10 @@ private slots:
         const qsizetype hflip = g.indexOf(QStringLiteral("hflip"));
         const qsizetype crop = g.indexOf(QStringLiteral("crop=512:512:100:0"));
         const qsizetype scale = g.indexOf(QStringLiteral("scale=512:512:flags=lanczos"));
-        const qsizetype sharpen = g.indexOf(QStringLiteral("unsharp"));
+        const qsizetype denoise = g.indexOf(QStringLiteral("atadenoise"));
         const qsizetype fps = g.indexOf(QStringLiteral("fps=24"));
         const qsizetype merge = g.indexOf(QStringLiteral("alphamerge"));
-        QVERIFY(hflip >= 0 && hflip < crop && crop < scale && scale < sharpen && sharpen < fps && fps < merge);
+        QVERIFY(hflip >= 0 && hflip < crop && crop < scale && scale < denoise && denoise < fps && fps < merge);
         QVERIFY(g.contains(QStringLiteral("out_color_matrix=bt709:out_range=tv")));
         QVERIFY(g.contains(QStringLiteral("format=yuva420p")));
         QVERIFY(!g.contains(QStringLiteral("blend")));

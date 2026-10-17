@@ -1,4 +1,5 @@
 #include "app/AppPaths.h"
+#include "app/AppSettings.h"
 #include "app/ListLoader.h"
 #include "core/StickerList.h"
 #include "core/Format.h"
@@ -303,6 +304,36 @@ private slots:
         QCOMPARE(AppPaths::resolveDataDir(tmp.path()), QDir(tmp.path()).absolutePath());
 
         QVERIFY(!AppPaths::resolveDataDir(QString()).isEmpty());
+    }
+
+    void legacyEncodePresetMigrates()
+    {
+        QTemporaryDir tmp;
+        QVERIFY(tmp.isValid());
+        const QList<std::pair<int, EncodePreset>> cases{
+            {0, EncodePreset::Quality}, // 动漫
+            {1, EncodePreset::Quality}, // 实拍
+            {2, EncodePreset::Fast},
+        };
+        for (const auto& [legacy, expected] : cases) {
+            const QString ini = QDir(tmp.path()).filePath(QStringLiteral("legacy_%1.ini").arg(legacy));
+            {
+                QSettings old(ini, QSettings::IniFormat);
+                old.setValue(QStringLiteral("output/preset"), legacy);
+            }
+            {
+                AppSettings settings(ini);
+                QCOMPARE(settings.encodePreset(), expected);
+            }
+            QSettings after(ini, QSettings::IniFormat);
+            QVERIFY(!after.contains(QStringLiteral("output/preset")));
+            QCOMPARE(AppSettings(ini).encodePreset(), expected);
+        }
+
+        AppSettings fresh(QDir(tmp.path()).filePath(QStringLiteral("fresh.ini")));
+        QCOMPARE(fresh.encodePreset(), EncodePreset::Quality);
+        fresh.setEncodePreset(EncodePreset::Fast);
+        QCOMPARE(fresh.encodePreset(), EncodePreset::Fast);
     }
 };
 

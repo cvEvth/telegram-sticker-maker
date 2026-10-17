@@ -89,8 +89,7 @@ int constantQualityFor(EncodePreset preset, OutputMode mode)
 {
     const bool emoji = mode == OutputMode::Emoji;
     switch (preset) {
-    case EncodePreset::Anime: return emoji ? 22 : 15;
-    case EncodePreset::LiveAction: return emoji ? 24 : 18;
+    case EncodePreset::Quality: return emoji ? 24 : 18;
     case EncodePreset::Fast: return emoji ? 26 : 20;
     }
     return 20;

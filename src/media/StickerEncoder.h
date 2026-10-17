@@ -12,7 +12,7 @@ namespace tsm {
 struct EncodeRequest {
     StickerTask task;
     OutputMode mode = OutputMode::Sticker;
-    EncodePreset preset = EncodePreset::Anime;
+    EncodePreset preset = EncodePreset::Quality;
     QString workDir;    // 该任务独占的临时目录
     QString outputFile; // 成功时写到这里
 };

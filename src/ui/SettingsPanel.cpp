@@ -87,8 +87,7 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
 
     // 2. 编码预设
     m_preset = new QComboBox;
-    m_preset->addItem(QStringLiteral("🎨 动漫 / 插画（轻度锐化）"), int(EncodePreset::Anime));
-    m_preset->addItem(QStringLiteral("🎬 真人实拍（平滑降噪）"), int(EncodePreset::LiveAction));
+    m_preset->addItem(QStringLiteral("✨ 高画质（两遍编码 + 轻度降噪）"), int(EncodePreset::Quality));
     m_preset->addItem(QStringLiteral("⚡ 快速导出（单遍编码）"), int(EncodePreset::Fast));
     m_preset->setCurrentIndex(qMax(0, m_preset->findData(int(m_s.encodePreset()))));
     connect(m_preset, &QComboBox::currentIndexChanged, this,

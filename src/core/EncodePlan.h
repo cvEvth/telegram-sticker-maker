@@ -44,7 +44,7 @@ struct Input {
     double sourceFps = 0;  // 已按 29.97→30 规整
     double duration = 0;   // 片段长度
     OutputMode mode = OutputMode::Sticker;
-    EncodePreset preset = EncodePreset::Anime;
+    EncodePreset preset = EncodePreset::Quality;
     std::optional<double> motion; // 仅片段 > 4 秒时探测
 };
 

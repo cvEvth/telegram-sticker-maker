@@ -8,7 +8,8 @@ namespace tsm {
 
 namespace key {
 constexpr auto OutputMode = "output/mode";
-constexpr auto EncodePreset = "output/preset";
+constexpr auto EncodePreset = "output/encode_preset";
+constexpr auto LegacyEncodePreset = "output/preset"; // 0.1.x：0 动漫 / 1 实拍 / 2 快速
 constexpr auto SaveBesideSource = "output/beside_source";
 constexpr auto OutputDir = "output/dir";
 constexpr auto OutputAsZip = "output/as_zip";
@@ -33,6 +34,19 @@ AppSettings::AppSettings()
 AppSettings::AppSettings(const QString& iniPath)
     : m_settings(iniPath, QSettings::IniFormat)
 {
+    migrate();
+}
+
+void AppSettings::migrate()
+{
+    // 0.1.x 的三个预设合并为两个：动漫 / 实拍 → 高画质，快速保持快速
+    const QLatin1StringView legacy(key::LegacyEncodePreset);
+    if (m_settings.contains(legacy)) {
+        if (!m_settings.contains(QLatin1StringView(key::EncodePreset)))
+            setEncodePreset(m_settings.value(legacy).toInt() == 2 ? EncodePreset::Fast : EncodePreset::Quality);
+        m_settings.remove(legacy);
+        m_settings.sync();
+    }
 }
 
 QVariant AppSettings::value(const char* name, const QVariant& fallback) const
@@ -55,11 +69,13 @@ void AppSettings::setOutputMode(OutputMode mode) { setValue(key::OutputMode, int
 
 EncodePreset AppSettings::encodePreset() const
 {
-    const int v = value(key::EncodePreset, 0).toInt();
-    return v >= 0 && v <= int(EncodePreset::Fast) ? EncodePreset(v) : EncodePreset::Anime;
+    return value(key::EncodePreset, QString()).toString() == QLatin1StringView("fast") ? EncodePreset::Fast : EncodePreset::Quality;
 }
 
-void AppSettings::setEncodePreset(EncodePreset preset) { setValue(key::EncodePreset, int(preset)); }
+void AppSettings::setEncodePreset(EncodePreset preset)
+{
+    setValue(key::EncodePreset, preset == EncodePreset::Fast ? QStringLiteral("fast") : QStringLiteral("quality"));
+}
 
 bool AppSettings::saveBesideSource() const { return value(key::SaveBesideSource, false).toBool(); }
 void AppSettings::setSaveBesideSource(bool on) { setValue(key::SaveBesideSource, on); }

@@ -12,7 +12,7 @@ namespace tsm {
 
 struct ConvertSettings {
     OutputMode mode = OutputMode::Sticker;
-    EncodePreset preset = EncodePreset::Anime;
+    EncodePreset preset = EncodePreset::Quality;
     bool asZip = true;
     QString zipDir;   // 压缩包所在目录（输出目录，为空时用默认目录）
     QString workRoot; // 临时文件根目录

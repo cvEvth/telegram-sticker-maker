@@ -30,9 +30,8 @@ QRect evenCrop(const QRect& crop, QSize frame)
 QString presetFilter(EncodePreset preset)
 {
     switch (preset) {
-    case EncodePreset::Anime: return QStringLiteral("unsharp=5:5:0.5:5:5:0.0");
     // hqdn3d 是 GPL 滤镜（LGPL 版 FFmpeg 没有），atadenoise 可保留透明通道
-    case EncodePreset::LiveAction: return QStringLiteral("atadenoise=0a=0.02:0b=0.04:1a=0.02:1b=0.04:2a=0.02:2b=0.04:s=5");
+    case EncodePreset::Quality: return QStringLiteral("atadenoise=0a=0.02:0b=0.04:1a=0.02:1b=0.04:2a=0.02:2b=0.04:s=5");
     case EncodePreset::Fast: return {};
     }
     return {};

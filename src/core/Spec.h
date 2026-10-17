@@ -5,7 +5,8 @@
 namespace tsm {
 
 enum class OutputMode { Sticker = 0, Emoji = 1 };
-enum class EncodePreset { Anime = 0, LiveAction = 1, Fast = 2 };
+// 高画质：两遍编码 + 轻度降噪；快速：单遍、不加滤镜
+enum class EncodePreset { Quality = 0, Fast = 1 };
 enum class CropAspect { Square = 0, Free, Original, Landscape16x9, Classic4x3, Portrait9x16 };
 
 // Telegram 官方规格与本工具的规划常量（见需求第 1、5 节）

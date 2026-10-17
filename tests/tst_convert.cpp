@@ -84,7 +84,7 @@ private slots:
         const QString src = testsrc(QStringLiteral("short.mp4"), QStringLiteral("1280x720"), 2.5);
         QString out;
         QStringList stages;
-        const EncodeResult r = convert(taskFor(src), OutputMode::Sticker, EncodePreset::Anime, &out, &stages);
+        const EncodeResult r = convert(taskFor(src), OutputMode::Sticker, EncodePreset::Quality, &out, &stages);
         QVERIFY2(r.ok, qPrintable(r.statusText));
         QVERIFY(r.size > 0 && r.size <= 256 * 1024);
         QVERIFY(r.statusText.startsWith(QStringLiteral("转换完成，体积: ")));
@@ -136,7 +136,7 @@ private slots:
         task.cropRadius = 1.0;
         task.mirror = true;
         QString out;
-        const EncodeResult r = convert(task, OutputMode::Emoji, EncodePreset::LiveAction, &out);
+        const EncodeResult r = convert(task, OutputMode::Emoji, EncodePreset::Quality, &out);
         QVERIFY2(r.ok, qPrintable(r.statusText));
         QVERIFY(r.size <= 64 * 1024);
         const ProbeResult p = MediaProbe::probe(out);
@@ -156,7 +156,7 @@ private slots:
         QVERIFY(task.info.hasAlpha);
         task.cropRadius = 0.3;
         QString out;
-        const EncodeResult r = convert(task, OutputMode::Sticker, EncodePreset::Anime, &out);
+        const EncodeResult r = convert(task, OutputMode::Sticker, EncodePreset::Quality, &out);
         QVERIFY2(r.ok, qPrintable(r.statusText));
         const ProbeResult p = MediaProbe::probe(out);
         QVERIFY(p.info.hasAlpha);
@@ -193,7 +193,7 @@ private slots:
         StickerTask task = taskFor(src);
         task.cropRadius = 0.5;
         QString out;
-        const EncodeResult r = convert(task, OutputMode::Sticker, EncodePreset::Anime, &out);
+        const EncodeResult r = convert(task, OutputMode::Sticker, EncodePreset::Quality, &out);
         QVERIFY2(r.ok, qPrintable(r.statusText));
         QVERIFY(r.statusText.startsWith(QStringLiteral("转换完成（纯无损）")));
         const QImage img(out);
@@ -211,7 +211,7 @@ private slots:
                                      {QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
                                       QStringLiteral("nullsrc=size=1024x1024,geq=random(1)*255:128:128"), QStringLiteral("-frames:v"), QStringLiteral("1")});
         QString out;
-        const EncodeResult r = convert(taskFor(src), OutputMode::Emoji, EncodePreset::Anime, &out);
+        const EncodeResult r = convert(taskFor(src), OutputMode::Emoji, EncodePreset::Quality, &out);
         QVERIFY2(r.ok, qPrintable(r.statusText));
         QVERIFY(r.size <= 64 * 1024);
         QCOMPARE(QImage(out).size(), QSize(100, 100));
@@ -223,7 +223,7 @@ private slots:
         task.inputPath = m_dir.filePath(QStringLiteral("gone.mp4"));
         task.info.isVideo = true;
         QString out;
-        const EncodeResult r = convert(task, OutputMode::Sticker, EncodePreset::Anime, &out);
+        const EncodeResult r = convert(task, OutputMode::Sticker, EncodePreset::Quality, &out);
         QVERIFY(!r.ok);
         QCOMPARE(r.statusText, QStringLiteral("源文件不存在"));
     }
