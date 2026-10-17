@@ -362,6 +362,10 @@ private slots:
             const double t = dialog.playhead();
             QVERIFY2(t >= 3.0 - 0.05 && t <= 3.8 + 0.1, qPrintable(QString::number(t)));
             maxSeen = std::max(maxSeen, t);
+            // 实际显示的画面不能是片段外的（终点 3.8s 及之后）
+            const double shown = dialog.lastFrameTime();
+            if (timer.elapsed() > 200 && shown >= 0)
+                QVERIFY2(shown >= 3.0 - 0.05 && shown < 3.8, qPrintable(QStringLiteral("显示了 %1s 的画面").arg(shown)));
         }
         QVERIFY(maxSeen > 3.5);
 

@@ -44,6 +44,8 @@ public:
     int selectedIndex() const { return m_selected; }
     double playhead() const { return m_state.playhead(); }
     bool isLooping() const { return m_playMode == PlayMode::Loop; }
+    // 最近一次显示到预览上的画面时间戳（秒），-1 表示未知；供测试检查循环不越界
+    double lastFrameTime() const { return m_lastFrameTime; }
     bool isPlaying() const;
 
 protected:
@@ -137,6 +139,10 @@ private:
     qint64 m_lastReportedMs = -1;
     double m_lastShown = 0;
     void resyncClock(double seconds);
+    // 片段播放 / 循环到达终点：循环则跳回起点，单次播放则停在最后一帧
+    void onClipEnd();
+    bool m_loopRestartPending = false; // 已跳回起点，等待起点附近的新画面
+    double m_lastFrameTime = -1;
     double smoothPosition();
     QTimer* m_thumbTimer = nullptr;
     PlayMode m_playMode = PlayMode::Free;

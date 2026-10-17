@@ -519,8 +519,28 @@ void ClipEditorDialog::setupPlayer()
     m_player->setVideoSink(m_sink);
     m_player->setPlaybackRate(m_settings.playbackRate());
     connect(m_sink, &QVideoSink::videoFrameChanged, this, [this](const QVideoFrame& frame) {
-        if (frame.isValid())
-            m_canvas->setImage(frame.toImage());
+        if (!frame.isValid())
+            return;
+        const double frameTime = frame.startTime() >= 0 ? frame.startTime() / 1e6 : -1.0;
+        // 片段播放 / 循环时按画面时间戳把关：终点之后的画面不显示（跳回起点是异步的，
+        // 跳转生效前播放器还会送来几帧片段外的画面）
+        if (m_playMode != PlayMode::Free && m_playIndex >= 0 && m_playIndex < m_clips.size() && frameTime >= 0) {
+            const StickerTask& c = m_clips.at(m_playIndex);
+            const double start = c.startTime.value_or(0);
+            const double end = c.endTime.value_or(m_base.info.duration);
+            if (frameTime >= end - 1e-3) {
+                if (!m_loopRestartPending)
+                    onClipEnd();
+                return;
+            }
+            if (m_loopRestartPending) {
+                if (frameTime < start - 0.05)
+                    return;
+                m_loopRestartPending = false;
+            }
+        }
+        m_lastFrameTime = frameTime;
+        m_canvas->setImage(frame.toImage());
     });
     connect(m_player, &QMediaPlayer::positionChanged, this, [this](qint64 ms) {
         if (m_player->playbackState() != QMediaPlayer::PlayingState)
@@ -916,6 +936,7 @@ void ClipEditorDialog::togglePlay()
 
 void ClipEditorDialog::playClip(int index, PlayMode mode)
 {
+    m_loopRestartPending = false;
     const StickerTask& c = m_clips.at(index);
     if (!c.endTime)
         return showHint(QStringLiteral("请先为片段设置终点"), true);
@@ -933,6 +954,7 @@ bool ClipEditorDialog::isPlaying() const
 
 void ClipEditorDialog::loopClip(int index, bool fromStart)
 {
+    m_loopRestartPending = false;
     if (!m_player || index < 0 || index >= m_clips.size())
         return;
     const StickerTask& c = m_clips.at(index);
@@ -1022,24 +1044,40 @@ double ClipEditorDialog::smoothPosition()
     return std::min(estimated, m_base.info.duration);
 }
 
+void ClipEditorDialog::onClipEnd()
+{
+    if (m_playIndex < 0 || m_playIndex >= m_clips.size())
+        return;
+    const StickerTask& c = m_clips.at(m_playIndex);
+    const double start = c.startTime.value_or(0);
+    const double end = c.endTime.value_or(m_base.info.duration);
+    if (m_playMode == PlayMode::Loop) {
+        m_loopRestartPending = true;
+        m_player->setPosition(qint64(std::llround(start * 1000)));
+        resyncClock(start);
+        m_state.setPlayhead(start);
+        return;
+    }
+    // 播到终点自动停，停在片段最后一帧（终点那一帧已不属于片段）
+    const double frame = m_base.info.fps > 0 ? 1.0 / m_base.info.fps : 0.04;
+    m_player->pause();
+    seek(std::max(start, end - frame));
+}
+
 void ClipEditorDialog::onTick()
 {
-    const double t = smoothPosition();
+    double t = smoothPosition();
     if (m_playMode != PlayMode::Free && m_playIndex >= 0 && m_playIndex < m_clips.size()) {
         const StickerTask& c = m_clips.at(m_playIndex);
-        const double start = c.startTime.value_or(0);
         const double end = c.endTime.value_or(m_base.info.duration);
-        if (t >= end) {
-            if (m_playMode == PlayMode::Loop) {
-                m_player->setPosition(qint64(start * 1000));
-                resyncClock(start);
-                m_state.setPlayhead(start);
-                return;
-            }
-            m_player->pause(); // 播到终点自动停
-            seek(end);
+        // 平滑时间可能略慢于真实位置，判断终点时取两者较大者
+        const double reported = m_player->position() / 1000.0;
+        if (!m_loopRestartPending && std::max(t, reported) >= end) {
+            onClipEnd();
             return;
         }
+        if (m_loopRestartPending)
+            t = std::min(t, end); // 跳回起点生效前指针不越过终点
     }
     m_state.setPlayhead(t);
     m_state.followPlayhead();
