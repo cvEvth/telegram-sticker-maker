@@ -43,6 +43,8 @@ public:
     const QList<StickerTask>& clips() const { return m_clips; }
     int selectedIndex() const { return m_selected; }
     double playhead() const { return m_state.playhead(); }
+    bool isLooping() const { return m_playMode == PlayMode::Loop; }
+    bool isPlaying() const;
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -89,6 +91,8 @@ private:
     void togglePlay();
     void playClip(int index, PlayMode mode);
     void stopClipPlayback();
+    // 点击片段：在起止之间循环播放（未设终点时不播放）
+    void loopClip(int index, bool fromStart = true);
     void seek(double seconds);
     void step(double seconds);
     void changeSpeed(int delta);

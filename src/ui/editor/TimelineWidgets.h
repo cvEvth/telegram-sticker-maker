@@ -18,6 +18,9 @@ class TimelineTrack : public QWidget {
 public:
     explicit TimelineTrack(TimelineState* state, QWidget* parent = nullptr);
     QSize sizeHint() const override { return {600, 78}; }
+    // 时间 ↔ 横坐标（也供测试定位点击位置）
+    double xAt(double seconds) const;
+    double trackCenterY() const { return trackRect().center().y(); }
 
 signals:
     void scrubbed(double seconds);
@@ -36,7 +39,6 @@ protected:
 private:
     QRectF trackRect() const;
     double timeAt(double x) const;
-    double xAt(double seconds) const;
 
     TimelineState* m_state;
     enum class Drag { None, Scrub, Pan } m_drag = Drag::None;

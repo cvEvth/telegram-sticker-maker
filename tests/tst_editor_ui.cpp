@@ -9,6 +9,7 @@
 #include "ui/Theme.h"
 #include "ui/editor/ClipEditorDialog.h"
 #include "ui/editor/ClipListPanel.h"
+#include "ui/editor/TimelineWidgets.h"
 #include "ui/editor/PreviewCanvas.h"
 
 #include <QApplication>
@@ -319,6 +320,83 @@ private slots:
         QVERIFY2(maxStep < 0.12, qPrintable(QString::number(maxStep)));
         const double total = samples.last() - samples.first();
         QVERIFY2(total > 1.0 && total < 2.0, qPrintable(QString::number(total)));
+        dialog.reject();
+    }
+
+    // 点击片段卡片 → 选中并在起止之间循环；点时间轴上的片段 → 在该片段内循环；
+    // 点时间轴上片段以外 → 退出循环，继续正常播放
+    void clickingClipAutoLoops()
+    {
+        const QString src = generate(QStringLiteral("loop.mp4"),
+                                     {QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                                      QStringLiteral("testsrc2=size=320x240:rate=25:duration=8"), QStringLiteral("-c:v"),
+                                      QStringLiteral("mpeg4")});
+        StickerTask a = taskFor(src);
+        a.startTime = 0.5;
+        a.endTime = 1.5;
+        a.clipGroupId = QStringLiteral("clipgrp-l");
+        StickerTask b = a;
+        b.id = StickerTask::newId();
+        b.startTime = 3.0;
+        b.endTime = 3.8;
+        m_settings->setPlaybackRate(1.0);
+
+        ClipEditorDialog dialog(*m_settings, m_thumbs, m_proxies, {a, b}, 0);
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        QTest::qWait(500);
+        QVERIFY(!dialog.isPlaying());
+
+        QList<ClipCard*> cards = dialog.findChildren<ClipCard*>();
+        std::sort(cards.begin(), cards.end(), [](ClipCard* x, ClipCard* y) { return x->y() < y->y(); });
+        QTest::mouseClick(cards.at(1), Qt::LeftButton, {}, QPoint(cards.at(1)->width() - 6, cards.at(1)->height() - 4));
+        QTRY_VERIFY_WITH_TIMEOUT(dialog.isPlaying(), 3000);
+        QCOMPARE(dialog.selectedIndex(), 1);
+        QVERIFY(dialog.isLooping());
+        // 片段 0.8 秒，等 1.5 秒后仍在片段内（已经绕回过）
+        double maxSeen = 0;
+        QElapsedTimer timer;
+        timer.start();
+        while (timer.elapsed() < 1500) {
+            QTest::qWait(20);
+            const double t = dialog.playhead();
+            QVERIFY2(t >= 3.0 - 0.05 && t <= 3.8 + 0.1, qPrintable(QString::number(t)));
+            maxSeen = std::max(maxSeen, t);
+        }
+        QVERIFY(maxSeen > 3.5);
+
+        // 时间轴上点片段 1 的色块：改为在片段 1 内循环
+        auto* track = dialog.findChild<TimelineTrack*>();
+        QVERIFY(track);
+        const int y = int(track->trackCenterY());
+        double x = track->xAt(1.0);
+        if (x < 0 || x > track->width()) {
+            // 当前视窗没覆盖到 1.0s 时先恢复全长
+            for (QPushButton* p : dialog.findChildren<QPushButton*>())
+                if (p->text().startsWith(QStringLiteral("全长")))
+                    p->click();
+            QTest::qWait(50);
+            x = track->xAt(1.0);
+        }
+        QTest::mouseClick(track, Qt::LeftButton, {}, QPoint(int(x), y));
+        QTest::qWait(100);
+        QCOMPARE(dialog.selectedIndex(), 0);
+        QVERIFY(dialog.isLooping());
+        QVERIFY(dialog.isPlaying());
+        QTest::qWait(900);
+        QVERIFY2(dialog.playhead() >= 0.45 && dialog.playhead() <= 1.6, qPrintable(QString::number(dialog.playhead())));
+
+        // 点片段以外（6.0s）：退出循环，继续正常播放
+        for (QPushButton* p : dialog.findChildren<QPushButton*>())
+            if (p->text().startsWith(QStringLiteral("全长")))
+                p->click();
+        QTest::qWait(50);
+        QTest::mouseClick(track, Qt::LeftButton, {}, QPoint(int(track->xAt(6.0)), y));
+        QTest::qWait(100);
+        QVERIFY(!dialog.isLooping());
+        QVERIFY(dialog.isPlaying());
+        QTest::qWait(600);
+        QVERIFY2(dialog.playhead() > 6.2, qPrintable(QString::number(dialog.playhead())));
         dialog.reject();
     }
 

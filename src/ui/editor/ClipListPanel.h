@@ -27,6 +27,7 @@ public:
 
 signals:
     void clicked();
+    void activated(); // 鼠标点在卡片上（不含输入框），用于自动循环播放
     void startEdited(const QString& text);
     void endEdited(const QString& text);
     void emojiEdited(const QString& text);
@@ -60,6 +61,7 @@ public:
 
 signals:
     void clipClicked(int index);
+    void clipActivated(int index);
     void backgroundClicked();
     void startEdited(int index, const QString& text);
     void endEdited(int index, const QString& text);

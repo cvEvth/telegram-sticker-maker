@@ -121,6 +121,7 @@ ClipEditorDialog::ClipEditorDialog(AppSettings& settings, ThumbnailService* thum
             if (i != m_selected)
                 selectClip(i, true);
         });
+        connect(m_panel, &ClipListPanel::clipActivated, this, [this](int i) { loopClip(i); });
         connect(m_panel, &ClipListPanel::backgroundClicked, this, &ClipEditorDialog::deselectClip);
         connect(m_panel, &ClipListPanel::startEdited, this, &ClipEditorDialog::editStart);
         connect(m_panel, &ClipListPanel::endEdited, this, &ClipEditorDialog::editEnd);
@@ -295,13 +296,24 @@ QWidget* ClipEditorDialog::buildTimeline()
     });
     connect(m_fullButton, &QPushButton::clicked, &m_state, &TimelineState::showAll);
     connect(m_track, &TimelineTrack::scrubbed, this, [this](double t) {
-        if (m_playMode != PlayMode::Free)
-            stopClipPlayback();
+        // 点到或拖到正在循环的片段外：改为正常播放（原来在播就继续播）
+        if (m_playMode != PlayMode::Free && m_playIndex >= 0 && m_playIndex < m_clips.size()) {
+            const StickerTask& c = m_clips.at(m_playIndex);
+            const double start = c.startTime.value_or(0);
+            const double end = c.endTime.value_or(m_base.info.duration);
+            if (t < start || t >= end) {
+                m_playMode = PlayMode::Free;
+                m_playIndex = -1;
+                refreshClipPanel();
+            }
+        }
         seek(t);
     });
     connect(m_track, &TimelineTrack::clipPressed, this, [this](int i) {
         if (i != m_selected)
             selectClip(i, false);
+        // 点在片段上：从点击位置开始在片段内循环（随后的 scrubbed 会定位到点击处）
+        loopClip(i, false);
     });
     connect(&m_state, &TimelineState::changed, this, &ClipEditorDialog::refreshInfoRow);
     return box;
@@ -911,6 +923,31 @@ void ClipEditorDialog::playClip(int index, PlayMode mode)
     m_playIndex = index;
     seek(c.startTime.value_or(0));
     m_player->play();
+    refreshClipPanel();
+}
+
+bool ClipEditorDialog::isPlaying() const
+{
+    return m_player && m_player->playbackState() == QMediaPlayer::PlayingState;
+}
+
+void ClipEditorDialog::loopClip(int index, bool fromStart)
+{
+    if (!m_player || index < 0 || index >= m_clips.size())
+        return;
+    const StickerTask& c = m_clips.at(index);
+    if (!c.endTime)
+        return; // 未设终点：只选中
+    const bool alreadyLooping = m_playMode == PlayMode::Loop && m_playIndex == index
+        && m_player->playbackState() == QMediaPlayer::PlayingState;
+    if (alreadyLooping && fromStart)
+        return;
+    m_playMode = PlayMode::Loop;
+    m_playIndex = index;
+    if (fromStart)
+        seek(c.startTime.value_or(0));
+    if (m_player->playbackState() != QMediaPlayer::PlayingState)
+        m_player->play();
     refreshClipPanel();
 }
 

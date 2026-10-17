@@ -174,8 +174,10 @@ bool ClipCard::eventFilter(QObject* watched, QEvent* event)
 
 void ClipCard::mousePressEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::LeftButton)
+    if (event->button() == Qt::LeftButton) {
         emit clicked();
+        emit activated();
+    }
     // 必须接受：否则事件会传给列表容器，被当成"点击空白"而立刻取消选中
     event->accept();
 }
@@ -245,6 +247,7 @@ void ClipListPanel::setClips(const QList<StickerTask>& clips, int selected, int 
         auto* card = new ClipCard;
         const int index = int(m_cards.size());
         connect(card, &ClipCard::clicked, this, [this, index] { emit clipClicked(index); });
+        connect(card, &ClipCard::activated, this, [this, index] { emit clipActivated(index); });
         connect(card, &ClipCard::startEdited, this, [this, index](const QString& t) { emit startEdited(index, t); });
         connect(card, &ClipCard::endEdited, this, [this, index](const QString& t) { emit endEdited(index, t); });
         connect(card, &ClipCard::emojiEdited, this, [this, index](const QString& t) { emit emojiEdited(index, t); });
