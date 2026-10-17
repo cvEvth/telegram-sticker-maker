@@ -11,6 +11,7 @@
 #include "media/ProxyCache.h"
 #include "ui/AiSettingsDialog.h"
 #include "ui/ConversionDoneDialog.h"
+#include "ui/EmojiDialog.h"
 #include "ui/KeywordDialog.h"
 #include "ui/MainWindow.h"
 #include "ui/SettingsPanel.h"
@@ -176,6 +177,100 @@ private slots:
 
         disconnect(conn);
         QDesktopServices::unsetUrlHandler(QStringLiteral("https"));
+        window.close();
+    }
+
+    // 右键菜单批量设置 Emoji：点选 + 输入（忽略非 Emoji 文字）→ 覆盖全部选中项；再次打开预填，清空即清除
+    void batchEmojiFromMenu()
+    {
+        if (FFmpegTools::ffmpegPath().isEmpty())
+            QSKIP("ffmpeg not found");
+        QDir(AppPaths::configDir()).removeRecursively();
+        QStringList files;
+        for (int i = 1; i <= 3; ++i) {
+            const QString out = m_dir.filePath(QStringLiteral("emoji%1.png").arg(i));
+            ProcessRunner::run(FFmpegTools::ffmpegPath(),
+                               {QStringLiteral("-hide_banner"), QStringLiteral("-loglevel"), QStringLiteral("error"), QStringLiteral("-y"),
+                                QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"), QStringLiteral("testsrc2=size=200x200"),
+                                QStringLiteral("-frames:v"), QStringLiteral("1"), out});
+            files << out;
+        }
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        window.openPaths(files);
+        auto* table = window.findChild<TaskTableView*>();
+        auto* model = qobject_cast<TaskListModel*>(table->model());
+        QTRY_COMPARE_WITH_TIMEOUT(model->rowCount(), 3, 15000);
+        model->updateTask(1, [](StickerTask& t) { t.emoji = QStringLiteral("😡"); });
+        table->setFocus();
+        QTest::keySequence(table, QKeySequence::SelectAll);
+        QCOMPARE(table->selectedRowList().size(), 3);
+
+        // 打开右键菜单并点"设置选中贴纸的 Emoji"
+        const auto openFromMenu = [&] {
+            QTimer::singleShot(200, [] {
+                auto* menu = qobject_cast<QMenu*>(QApplication::activePopupWidget());
+                QVERIFY(menu);
+                for (QAction* a : menu->actions()) {
+                    if (a->text().startsWith(QStringLiteral("😀 设置选中贴纸的 Emoji"))) {
+                        QVERIFY(a->text().endsWith(QStringLiteral("(3)")));
+                        QTest::mouseClick(menu, Qt::LeftButton, {}, menu->actionGeometry(a).center());
+                        return;
+                    }
+                }
+                QFAIL("menu entry not found");
+            });
+            const QRect r = table->visualRect(model->index(0, TaskListModel::ColName));
+            QContextMenuEvent menuEvent(QContextMenuEvent::Mouse, r.center(), table->viewport()->mapToGlobal(r.center()));
+            QApplication::sendEvent(table->viewport(), &menuEvent);
+        };
+
+        bool dialogChecked = false;
+        QTimer::singleShot(600, [&] {
+            auto* dialog = qobject_cast<EmojiDialog*>(QApplication::activeModalWidget());
+            QVERIFY(dialog);
+            auto* input = dialog->findChild<QLineEdit*>();
+            QVERIFY(input->text().isEmpty()); // 选中项 Emoji 不一致：不预填
+            for (QPushButton* b : dialog->findChildren<QPushButton*>())
+                if (b->text() == QStringLiteral("😂"))
+                    b->click();
+            input->insert(QStringLiteral(" 哈哈 🤣"));
+            QCOMPARE(dialog->emoji(), QStringLiteral("😂🤣"));
+            bool warned = false;
+            for (QLabel* l : dialog->findChildren<QLabel*>())
+                warned |= l->text().contains(QStringLiteral("已忽略非 Emoji 文字"));
+            QVERIFY(warned);
+            snapshot(dialog, QStringLiteral("emoji_dialog.png"));
+            dialogChecked = true;
+            for (QPushButton* b : dialog->findChildren<QPushButton*>())
+                if (b->text() == QStringLiteral("保存"))
+                    b->click();
+        });
+        openFromMenu();
+        QTRY_VERIFY_WITH_TIMEOUT(dialogChecked, 5000);
+        for (int row = 0; row < 3; ++row)
+            QCOMPARE(model->taskAt(row).emoji, QStringLiteral("😂🤣"));
+        QCOMPARE(model->targetFileName(2), QStringLiteral("003_😂🤣.webp"));
+
+        // 再次打开：Emoji 相同时预填；清空保存 = 清除
+        dialogChecked = false;
+        QTimer::singleShot(600, [&] {
+            auto* dialog = qobject_cast<EmojiDialog*>(QApplication::activeModalWidget());
+            QVERIFY(dialog);
+            auto* input = dialog->findChild<QLineEdit*>();
+            QCOMPARE(input->text(), QStringLiteral("😂🤣"));
+            input->clear();
+            dialogChecked = true;
+            for (QPushButton* b : dialog->findChildren<QPushButton*>())
+                if (b->text() == QStringLiteral("保存"))
+                    b->click();
+        });
+        openFromMenu();
+        QTRY_VERIFY_WITH_TIMEOUT(dialogChecked, 5000);
+        for (int row = 0; row < 3; ++row)
+            QVERIFY(model->taskAt(row).emoji.isEmpty());
+        QCOMPARE(model->targetFileName(0), QStringLiteral("001.webp"));
         window.close();
     }
 

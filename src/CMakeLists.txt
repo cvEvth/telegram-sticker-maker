@@ -56,6 +56,7 @@ qt_add_library(tsm_ui STATIC
     ui/ConversionDoneDialog.cpp ui/ConversionDoneDialog.h
     ui/DropOverlay.cpp   ui/DropOverlay.h
     ui/DropZone.cpp      ui/DropZone.h
+    ui/EmojiDialog.cpp   ui/EmojiDialog.h
     ui/FlowLayout.cpp    ui/FlowLayout.h
     ui/HeaderBar.cpp     ui/HeaderBar.h
     ui/KeywordDialog.cpp ui/KeywordDialog.h

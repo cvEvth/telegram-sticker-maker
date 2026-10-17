@@ -124,6 +124,7 @@ private slots:
         QCOMPARE(AiEmoji::extractEmoji(QStringLiteral("😂🤣")), QStringLiteral("😂🤣"));
         QCOMPARE(AiEmoji::extractEmoji(QStringLiteral("好的：😂 ✨，就这个")), QStringLiteral("😂"));
         QCOMPARE(AiEmoji::extractEmoji(QStringLiteral("✨🌟")), QStringLiteral("✨🌟")); // 只有装饰符号时保留
+        QCOMPARE(AiEmoji::extractEmoji(QStringLiteral("😂 ✨"), false), QStringLiteral("😂✨")); // 手动输入时保留装饰符号
         QCOMPARE(AiEmoji::extractEmoji(QStringLiteral("👍🏻 ❤️")), QStringLiteral("👍🏻❤️"));
         QCOMPARE(AiEmoji::extractEmoji(QStringLiteral("👍🏻 👨‍👩‍👧")), QStringLiteral("👍🏻👨‍👩‍👧")); // 组合 Emoji 整个保留（正好 12 个字符）
         QCOMPARE(AiEmoji::extractEmoji(QStringLiteral("👍🏻 ❤️ 👨‍👩‍👧")), QStringLiteral("👍🏻❤️")); // 放不下的不截半个

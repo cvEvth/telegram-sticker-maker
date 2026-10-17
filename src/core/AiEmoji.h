@@ -18,8 +18,9 @@ QString defaultPrompt();
 // 片段内的取帧时刻（相对片段起点，秒）：≥1.5s 取 20%/50%/80%；0.6~1.5s 取 0.1s 与 60%；更短取一帧
 QList<double> sampleTimes(double clipDuration);
 
-// 从回复里只提取 Emoji（最多 12 个字符）；同时有表情和 ✨🌟💫 时去掉装饰符号
-QString extractEmoji(const QString& reply);
+// 只提取 Emoji（最多 12 个字符，不截断组合 Emoji）。
+// dropDecorative：AI 回复里同时有表情和 ✨🌟💫 时去掉装饰符号；手动输入时保留
+QString extractEmoji(const QString& reply, bool dropDecorative = true);
 
 // Chat Completions 请求体（文字提示 + 一张 JPEG）
 QByteArray buildRequest(const QString& model, const QString& prompt, const QByteArray& jpeg);

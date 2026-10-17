@@ -18,6 +18,7 @@
 #include "ui/ConversionDoneDialog.h"
 #include "ui/DropOverlay.h"
 #include "ui/DropZone.h"
+#include "ui/EmojiDialog.h"
 #include "ui/HeaderBar.h"
 #include "ui/LogPanel.h"
 #include "ui/SettingsPanel.h"
@@ -1154,6 +1155,7 @@ void MainWindow::showRowMenu(const QPoint& globalPos)
 
     QMenu menu(this);
     QAction* convert = menu.addAction(QStringLiteral("🚀 转换选中贴纸") + suffix);
+    QAction* emoji = menu.addAction(QStringLiteral("😀 设置选中贴纸的 Emoji") + suffix);
     QAction* keywords = menu.addAction(QStringLiteral("🏷️ 设置选中贴纸的关键词") + suffix);
     QAction* ai = menu.addAction(single ? QStringLiteral("✨ AI 识别此项 Emoji") : QStringLiteral("✨ AI 识别选中项") + suffix);
     QAction* open = nullptr;
@@ -1166,7 +1168,7 @@ void MainWindow::showRowMenu(const QPoint& globalPos)
     menu.addSeparator();
     QAction* remove = menu.addAction(single ? QStringLiteral("🗑️ 移除此项（Del）") : QStringLiteral("🗑️ 移除选中项") + suffix);
     // 忙碌时"转换""设置关键词"置灰；移除也不可用
-    for (QAction* a : {convert, keywords, ai, remove})
+    for (QAction* a : {convert, emoji, keywords, ai, remove})
         a->setEnabled(!busy);
 
     QAction* chosen = menu.exec(globalPos);
@@ -1174,6 +1176,8 @@ void MainWindow::showRowMenu(const QPoint& globalPos)
         return;
     if (chosen == convert)
         startConversion(rows);
+    else if (chosen == emoji)
+        openEmojiDialog(rows);
     else if (chosen == keywords)
         openKeywordDialog(rows);
     else if (chosen == ai)
@@ -1224,6 +1228,40 @@ void MainWindow::openKeywordDialog(const QList<int>& rows)
         logInfo(QStringLiteral("🏷️ 已清空 %1 项的关键词").arg(rows.size()));
     else
         logInfo(QStringLiteral("🏷️ 已为 %1 项设置关键词：%2").arg(rows.size()).arg(keywords.join(QStringLiteral("、"))));
+}
+
+void MainWindow::openEmojiDialog(const QList<int>& rows)
+{
+    if (rows.isEmpty())
+        return;
+    if (m_busy != Busy::None) {
+        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("任务正在进行中，请先停止！"));
+        return;
+    }
+    QString subtitle;
+    if (rows.size() == 1)
+        subtitle = m_model->taskAt(rows.first()).info.fileName;
+    else
+        subtitle = QStringLiteral("已选 %1 项贴纸").arg(rows.size());
+    // 所有选中项的 Emoji 相同时预填，否则为空
+    QString initial = m_model->taskAt(rows.first()).emoji;
+    for (const int row : rows) {
+        if (m_model->taskAt(row).emoji != initial) {
+            initial.clear();
+            break;
+        }
+    }
+
+    EmojiDialog dialog(subtitle, initial, this);
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    const QString emoji = dialog.emoji();
+    for (const int row : rows)
+        m_model->updateTask(row, [&](StickerTask& t) { t.emoji = emoji; });
+    if (emoji.isEmpty())
+        logInfo(QStringLiteral("😀 已清除 %1 项的 Emoji").arg(rows.size()));
+    else
+        logInfo(QStringLiteral("😀 已为 %1 项设置 Emoji：%2").arg(rows.size()).arg(emoji));
 }
 
 // ---------------------------------------------------------------- 列表操作

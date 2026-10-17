@@ -107,6 +107,8 @@ QHeaderView::section {
 #SectionTitle { font-weight: 600; font-size: 13px; }
 #Hint { color: #8b93a7; font-size: 11px; }
 #PathLabel { color: #6cc6f5; font-size: 11px; }
+#EmojiPick { padding: 0; font-size: 16px; border-radius: 8px; }
+#EmojiPick:hover { background: #2a3445; border-color: #2aabee; }
 #SitePromo { background: #17283a; border: 1px solid #27445c; border-radius: 10px; }
 #SitePromoText { color: #e6e9ef; font-size: 14px; }
 #PromoLine { color: #8b93a7; font-size: 12px; padding-bottom: 6px; }

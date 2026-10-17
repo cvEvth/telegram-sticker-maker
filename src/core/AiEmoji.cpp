@@ -60,7 +60,7 @@ QList<double> sampleTimes(double d)
     return {std::max(0.0, d / 2)};
 }
 
-QString extractEmoji(const QString& reply)
+QString extractEmoji(const QString& reply, bool dropDecorative)
 {
     QStringList clusters;
     QTextBoundaryFinder finder(QTextBoundaryFinder::Grapheme, reply);
@@ -74,7 +74,7 @@ QString extractEmoji(const QString& reply)
     }
     // 同时有表情和装饰符号时去掉装饰符号
     const bool hasReal = std::any_of(clusters.cbegin(), clusters.cend(), [](const QString& c) { return !isDecorative(c); });
-    if (hasReal)
+    if (dropDecorative && hasReal)
         clusters.removeIf([](const QString& c) { return isDecorative(c); });
 
     QString result;

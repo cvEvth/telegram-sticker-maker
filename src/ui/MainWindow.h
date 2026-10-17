@@ -101,6 +101,7 @@ private:
     // 右键菜单与关键词
     void showRowMenu(const QPoint& globalPos);
     void openKeywordDialog(const QList<int>& rows);
+    void openEmojiDialog(const QList<int>& rows);
 
     // 列表操作
     void removeSelected();
