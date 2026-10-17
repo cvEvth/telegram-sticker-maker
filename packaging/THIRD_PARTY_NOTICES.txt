@@ -1,0 +1,36 @@
+Telegram Sticker Maker - Third-party components
+================================================
+
+This program is distributed together with the following libraries and tools.
+Each one keeps its own license; full texts are in the "licenses" folder.
+
+Qt 6.8.3 (Core, Gui, Widgets, Multimedia, Network, Svg, plugins)
+  License: GNU Lesser General Public License v3 (licenses/LGPL-3.0.txt)
+  Source:  https://download.qt.io/archive/qt/6.8/6.8.3/submodules/
+  Qt is used as unmodified shared libraries (Qt6*.dll and the plugin folders);
+  you may replace them with your own compatible build.
+
+FFmpeg 8.1 (ffmpeg.exe, ffprobe.exe, av*.dll, sw*.dll) - LGPL build by BtbN
+  License: GNU Lesser General Public License v3 (licenses/LGPL-3.0.txt)
+  Source:  https://ffmpeg.org/download.html  /  https://github.com/BtbN/FFmpeg-Builds
+  FFmpeg runs as separate unmodified executables and shared libraries.
+
+FFmpeg 7.1 libraries bundled by Qt Multimedia (avcodec-61.dll, avformat-61.dll,
+avutil-59.dll, swresample-5.dll, swscale-8.dll)
+  License: GNU Lesser General Public License v2.1 or later
+  Source:  https://ffmpeg.org/download.html
+
+libwebp (libwebp.dll, libwebpdemux.dll, libsharpyuv.dll)
+  License: BSD 3-Clause (licenses/libwebp.txt)
+  Source:  https://chromium.googlesource.com/webm/libwebp
+
+libzip (zip.dll)
+  License: BSD 3-Clause (licenses/libzip.txt)
+  Source:  https://libzip.org/
+
+zlib (z.dll)
+  License: zlib License (licenses/zlib.txt)
+  Source:  https://zlib.net/
+
+Microsoft Visual C++ Runtime (vcruntime140*.dll, msvcp140*.dll)
+  Redistributed under the Microsoft Visual Studio redistributable terms.

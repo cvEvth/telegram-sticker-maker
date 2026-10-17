@@ -98,7 +98,7 @@ if(TARGET Qt6::windeployqt AND TARGET Qt6::qtpaths)
     add_custom_command(TARGET TelegramStickerMaker POST_BUILD
         COMMAND "$<TARGET_FILE:Qt6::windeployqt>"
             --qtpaths "$<TARGET_FILE:Qt6::qtpaths>"
-            --no-compiler-runtime --no-system-d3d-compiler --no-opengl-sw --no-quick-import
+            --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler --no-opengl-sw --no-quick-import
             --no-translations --verbose 0
             "$<TARGET_FILE:TelegramStickerMaker>"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:TelegramStickerMaker>/translations"

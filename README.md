@@ -17,6 +17,16 @@ scripts\build.bat release
 
 产物在 `build\<preset>\bin\`，构建后会自动部署 Qt 与 FFmpeg 运行库，`TelegramStickerMaker.exe` 可直接双击运行。
 
+发布打包（Release 构建 → `dist\` 下的便携 zip 与安装程序）：
+
+```bat
+powershell -ExecutionPolicy Bypass -File scripts\package.ps1
+```
+
+- 便携版 `TelegramStickerMaker-<版本>-win64.zip`：自带 VC++ 运行库、第三方许可证与使用说明，解压即用。
+- 安装程序 `TelegramStickerMaker-<版本>-win64-setup.exe`：需要 Inno Setup 6（默认找 `D:\apps\InnoSetup6\ISCC.exe`，可用环境变量 `ISCC` 指定），没找到时只出便携版；默认按当前用户安装，不需要管理员权限。
+- 版本号取自根目录 `CMakeLists.txt` 的 `project(... VERSION x.y.z)`。
+
 ## 目录结构
 
 ```
@@ -27,7 +37,8 @@ src/
   media/   FFmpeg 调用：子进程（无黑窗口）、素材解析、滤镜链、贴纸编码、WebM 时长改写、WebP 编码
   ui/      主窗口、右侧设置面板、拖放区、日志面板、列表委托、深色主题
   ui/editor/ 截取 / 裁切窗口：预览画布、时间轴、片段列表、窗口设置
-resources/ 样式表
+resources/ 样式表、程序图标
+packaging/ 安装脚本（Inno Setup）、简体中文语言文件、使用说明、第三方许可证清单
 tests/     tst_core / tst_plan / tst_editor（规则单元测试）、tst_media / tst_convert（用 ffmpeg 现场生成素材的解析与转换测试）、
            tst_editor_ui / tst_mainlist_ui（打开真实窗口模拟操作；设 TSM_SNAPSHOT_DIR 可保存截图）
 ```
@@ -48,4 +59,4 @@ tests/     tst_core / tst_plan / tst_editor（规则单元测试）、tst_media 
 - [x] 会话自动保存与恢复（第 10 节）：250ms 防抖原子写入、启动恢复（可停止）、缺失文件跳过、解析结果缓存、切换数据目录时迁移
 - [x] 导入导出（第 9 节）：原片 + 参数清单 / 已裁切源文件两种导出（压缩包或文件夹，可停止），zip / json / 文件夹导入，zip 解压缓存复用，预览缓存随包装回
 - [x] AI 匹配 Emoji（第 7 节）：兼容 OpenAI 的视觉接口，只取最终贴纸区域（镜像 / 裁切 / 圆角，白底），多帧胶片条，逐个识别、超时与重试，可只识别选中项、可停止
-- [ ] 发布打包
+- [x] 发布打包：Release 构建、便携 zip（约 88MB）与 Inno Setup 安装程序（约 59MB），自带 VC++ 运行库与第三方许可证

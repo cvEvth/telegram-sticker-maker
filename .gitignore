@@ -5,3 +5,4 @@
 CMakeUserPresets.json
 *.user
 *.log
+/dist/
