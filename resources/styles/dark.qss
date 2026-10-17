@@ -14,6 +14,8 @@ QToolTip { background: #262a33; color: #e6e8ee; border: 1px solid #3a4050; paddi
     border: 1px solid rgba(42, 171, 238, 0.45); border-radius: 12px;
     padding: 4px 12px; font-size: 12px;
 }
+#SiteLink { background: #17283a; color: #5ec2ff; border: 1px solid #27445c; border-radius: 12px; padding: 4px 12px; font-size: 12px; }
+#SiteLink:hover { background: #1d3550; color: #8fd6ff; border-color: #2aabee; }
 #Badge[muted="true"] { background: #22262e; color: #8b93a7; border-color: #323744; }
 
 /* 按钮 */
@@ -105,6 +107,9 @@ QHeaderView::section {
 #SectionTitle { font-weight: 600; font-size: 13px; }
 #Hint { color: #8b93a7; font-size: 11px; }
 #PathLabel { color: #6cc6f5; font-size: 11px; }
+#SitePromo { background: #17283a; border: 1px solid #27445c; border-radius: 10px; }
+#SitePromoText { color: #e6e9ef; font-size: 14px; }
+#PromoLine { color: #8b93a7; font-size: 12px; padding-bottom: 6px; }
 #ProgressCard { background: #1b2430; border: 1px solid #27445c; border-radius: 10px; }
 
 /* 底部日志 */

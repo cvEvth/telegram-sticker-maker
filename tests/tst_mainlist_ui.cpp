@@ -10,6 +10,7 @@
 #include "media/ProcessRunner.h"
 #include "media/ProxyCache.h"
 #include "ui/AiSettingsDialog.h"
+#include "ui/ConversionDoneDialog.h"
 #include "ui/KeywordDialog.h"
 #include "ui/MainWindow.h"
 #include "ui/SettingsPanel.h"
@@ -17,7 +18,9 @@
 #include "ui/Theme.h"
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QContextMenuEvent>
+#include <QDesktopServices>
 #include <QDir>
 #include <QIcon>
 #include <QLabel>
@@ -33,6 +36,15 @@
 #include <QTimer>
 
 using namespace tsm;
+
+// 记录 QDesktopServices::openUrl 打开的网址，测试时不真的打开浏览器
+class UrlRecorder : public QObject {
+    Q_OBJECT
+public:
+    QList<QUrl> urls;
+public slots:
+    void open(const QUrl& url) { urls << url; }
+};
 
 class TestMainListUi : public QObject {
     Q_OBJECT
@@ -83,6 +95,88 @@ private slots:
         const QList<QSize> sizes = icon.availableSizes();
         for (const int s : {16, 24, 32, 48, 64, 128, 256})
             QVERIFY2(sizes.contains(QSize(s, s)), qPrintable(QStringLiteral("缺少 %1px").arg(s)));
+    }
+
+    // 网站推广：标题栏链接、空列表提示、转换成功弹窗（可勾选不再弹出）
+    void sitePromotion()
+    {
+        if (FFmpegTools::ffmpegPath().isEmpty())
+            QSKIP("ffmpeg not found");
+        QDir(AppPaths::configDir()).removeRecursively();
+        UrlRecorder recorder;
+        QDesktopServices::setUrlHandler(QStringLiteral("https"), &recorder, "open");
+        const auto clickText = [](QWidget* root, const QString& prefix) {
+            for (QPushButton* b : root->findChildren<QPushButton*>())
+                if (b->isVisible() && b->text().startsWith(prefix)) {
+                    b->click();
+                    return true;
+                }
+            return false;
+        };
+        const QUrl site(QStringLiteral("https://www.cvevth.top/sticker"));
+
+        const QString outDir = m_dir.filePath(QStringLiteral("promo_out"));
+        {
+            AppSettings settings;
+            settings.setOutputDir(outDir);
+            settings.setOutputAsZip(true);
+        }
+        MainWindow window;
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+        // 空列表提示：网站为主，机器人其次
+        auto* promo = window.findChild<QLabel*>(QStringLiteral("PromoLine"));
+        QVERIFY(promo && promo->isVisible());
+        QVERIFY(promo->text().indexOf(site.toString()) < promo->text().indexOf(QStringLiteral("https://t.me/cvEvthBot")));
+        snapshot(&window, QStringLiteral("promo_empty.png"));
+
+        // 标题栏链接打开网站
+        QVERIFY(clickText(&window, QStringLiteral("🌐 cvevth.top")));
+        QCOMPARE(recorder.urls.value(0), site);
+
+        const QString video = m_dir.filePath(QStringLiteral("promo.mp4"));
+        ProcessRunner::run(FFmpegTools::ffmpegPath(),
+                           {QStringLiteral("-hide_banner"), QStringLiteral("-loglevel"), QStringLiteral("error"), QStringLiteral("-y"),
+                            QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                            QStringLiteral("testsrc2=size=320x240:rate=25:duration=1"), QStringLiteral("-c:v"),
+                            QStringLiteral("mpeg4"), video});
+        QStringList logs;
+        auto conn = connect(&Logger::instance(), &Logger::lineAdded, this, [&logs](const QString& line) { logs << line; });
+        window.openPaths({video});
+        auto* table = window.findChild<TaskTableView*>();
+        auto* model = qobject_cast<TaskListModel*>(table->model());
+        QTRY_COMPARE_WITH_TIMEOUT(model->rowCount(), 1, 15000);
+        QTRY_VERIFY_WITH_TIMEOUT(logs.join(u'\n').contains(QStringLiteral("已添加 1 项")), 5000);
+
+        // 转换成功弹窗
+        emit window.findChild<SettingsPanel*>()->startRequested();
+        ConversionDoneDialog* dialog = nullptr;
+        QTRY_VERIFY_WITH_TIMEOUT((dialog = window.findChild<ConversionDoneDialog*>()) && dialog->isVisible(), 120000);
+        QVERIFY(logs.join(u'\n').contains(QStringLiteral("前往 https://www.cvevth.top/sticker 创建")));
+        bool mentionsSite = false;
+        for (QLabel* l : dialog->findChildren<QLabel*>())
+            mentionsSite |= l->text().contains(QStringLiteral("www.cvevth.top/sticker"));
+        QVERIFY(mentionsSite);
+        QTest::qWait(200);
+        snapshot(dialog, QStringLiteral("promo_done_dialog.png"));
+        dialog->findChild<QCheckBox*>()->setChecked(true); // 以后不再弹出
+        QVERIFY(clickText(dialog, QStringLiteral("🌐 去网站创建")));
+        QCOMPARE(recorder.urls.last(), site);
+        QTRY_VERIFY_WITH_TIMEOUT(window.findChild<ConversionDoneDialog*>() == nullptr, 3000);
+        QVERIFY(!AppSettings().showDoneDialog());
+
+        // 勾选后再次转换：不再弹窗，只在日志里提示
+        logs.clear();
+        emit window.findChild<SettingsPanel*>()->startRequested();
+        QTRY_VERIFY_WITH_TIMEOUT(logs.join(u'\n').contains(QStringLiteral("批量转换已全部完成")), 120000);
+        QTest::qWait(300);
+        QVERIFY(window.findChild<ConversionDoneDialog*>() == nullptr);
+        QVERIFY(logs.join(u'\n').contains(QStringLiteral("cvevth.top/sticker")));
+
+        disconnect(conn);
+        QDesktopServices::unsetUrlHandler(QStringLiteral("https"));
+        window.close();
     }
 
     // 每个主窗口测试从空会话开始

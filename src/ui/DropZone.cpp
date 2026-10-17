@@ -1,5 +1,7 @@
 #include "ui/DropZone.h"
 
+#include "ui/BotPromo.h"
+
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QProgressBar>
@@ -60,6 +62,17 @@ DropZone::DropZone(QWidget* parent)
     idleLayout->addSpacing(4);
     idleLayout->addLayout(tags);
     idleLayout->addStretch();
+
+    // 配合使用的机器人与贴纸库
+    auto* promo = centeredLabel(
+        QStringLiteral("做好的贴纸可前往 <a href=\"%1\" style=\"color:#5ec2ff; text-decoration:none;\">www.cvevth.top/sticker</a>"
+                       " 创建 Telegram 贴纸包 · 也可把压缩包发给 <a href=\"%2\" style=\"color:#5ec2ff; text-decoration:none;\">%3</a>")
+            .arg(BotPromo::galleryUrl(), BotPromo::botUrl(), BotPromo::handle()),
+        QStringLiteral("PromoLine"));
+    promo->setTextFormat(Qt::RichText);
+    promo->setTextInteractionFlags(Qt::TextBrowserInteraction);
+    promo->setOpenExternalLinks(true);
+    idleLayout->addWidget(promo);
 
     // 进度页
     auto* progress = new QWidget;

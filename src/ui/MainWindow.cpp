@@ -14,6 +14,8 @@
 #include "media/SourceInput.h"
 #include "media/ThumbnailService.h"
 #include "ui/AiSettingsDialog.h"
+#include "ui/BotPromo.h"
+#include "ui/ConversionDoneDialog.h"
 #include "ui/DropOverlay.h"
 #include "ui/DropZone.h"
 #include "ui/HeaderBar.h"
@@ -752,6 +754,21 @@ void MainWindow::connectConverter()
                     logInfo(QStringLiteral("🛑 已停止：%1 成功，%2 失败，%3 已取消").arg(succeeded).arg(failed).arg(cancelled));
                 else
                     logInfo(QStringLiteral("🎉 批量转换已全部完成！（%1 成功，%2 失败）").arg(succeeded).arg(failed));
+                if (succeeded > 0 && cancelled == 0 && result.ok) {
+                    logInfo(QStringLiteral("💡 下一步：前往 %1 创建 Telegram 贴纸包").arg(BotPromo::galleryUrl()));
+                    if (m_settings.showDoneDialog()) {
+                        const QString location = result.locations.value(0);
+                        const bool zip = location.endsWith(u".zip", Qt::CaseInsensitive);
+                        auto* dialog = new ConversionDoneDialog(succeeded, failed, location, zip, this);
+                        dialog->setAttribute(Qt::WA_DeleteOnClose);
+                        connect(dialog, &ConversionDoneDialog::openOutputRequested, this, &MainWindow::openOutputDir);
+                        connect(dialog, &QDialog::finished, this, [this, dialog] {
+                            if (dialog->dontShowAgain())
+                                m_settings.setShowDoneDialog(false);
+                        });
+                        dialog->open(); // 不阻塞事件循环
+                    }
+                }
             });
 }
 

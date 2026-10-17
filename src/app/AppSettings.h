@@ -54,6 +54,10 @@ public:
     QString aiApiKey() const;
     void setAiApiKey(const QString& key);
 
+    // 转换成功后弹出提示（可在弹窗里勾选"以后不再弹出"）
+    bool showDoneDialog() const;
+    void setShowDoneDialog(bool on);
+
     QString filePath() const { return m_settings.fileName(); }
 
 private:

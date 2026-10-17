@@ -52,6 +52,8 @@ target_link_libraries(tsm_core
 # 界面库：主程序与界面交互测试共用
 qt_add_library(tsm_ui STATIC
     ui/AiSettingsDialog.cpp ui/AiSettingsDialog.h
+    ui/BotPromo.cpp      ui/BotPromo.h
+    ui/ConversionDoneDialog.cpp ui/ConversionDoneDialog.h
     ui/DropOverlay.cpp   ui/DropOverlay.h
     ui/DropZone.cpp      ui/DropZone.h
     ui/FlowLayout.cpp    ui/FlowLayout.h

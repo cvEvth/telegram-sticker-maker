@@ -22,6 +22,7 @@ constexpr auto PlaybackRate = "editor/playback_rate";
 constexpr auto AiBaseUrl = "ai/base_url";
 constexpr auto AiModel = "ai/model";
 constexpr auto AiApiKey = "ai/api_key";
+constexpr auto ShowDoneDialog = "ui/show_done_dialog";
 } // namespace key
 
 AppSettings::AppSettings()
@@ -108,5 +109,7 @@ QString AppSettings::aiModel() const { return value(key::AiModel, QStringLiteral
 void AppSettings::setAiModel(const QString& model) { setValue(key::AiModel, model); }
 QString AppSettings::aiApiKey() const { return value(key::AiApiKey, QString()).toString(); }
 void AppSettings::setAiApiKey(const QString& apiKey) { setValue(key::AiApiKey, apiKey); }
+bool AppSettings::showDoneDialog() const { return value(key::ShowDoneDialog, true).toBool(); }
+void AppSettings::setShowDoneDialog(bool on) { setValue(key::ShowDoneDialog, on); }
 
 } // namespace tsm

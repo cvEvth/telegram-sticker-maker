@@ -171,6 +171,7 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
     cardLayout->addWidget(m_progressHint);
     m_progressCard->hide();
 
+
     m_start = new QPushButton(QStringLiteral("🚀 开始转换"));
     m_start->setObjectName(QStringLiteral("PrimaryButton"));
     m_start->setMinimumHeight(46);
