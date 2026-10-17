@@ -34,6 +34,8 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
+发版前在 `CHANGELOG.md` 加一节 `## vX.Y.Z` 写上这一版的改动，它会放在 Release 说明开头的「更新内容」里；没写时自动列出上一版以来的提交标题。
+
 在 Actions 页面手动运行该工作流（填一个试用版本号）只构建打包、把产物作为构建附件保留 7 天，不发布 Release。发布说明模板在 `packaging/release-notes.md`。
 
 ## 目录结构

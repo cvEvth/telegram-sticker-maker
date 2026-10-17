@@ -32,6 +32,8 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 需要完整历史和标签，用来列出上一版以来的提交
 
       - name: Version
         shell: pwsh
@@ -101,7 +103,21 @@ jobs:
           $assets = Get-ChildItem dist -File | Where-Object { $_.Extension -in '.exe', '.zip' }
           if ($assets.Count -ne 2) { throw "Expected setup.exe and .zip in dist, found: $($assets.Name -join ', ')" }
           $sums = $assets | ForEach-Object { '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name }
-          $notes = (Get-Content packaging\release-notes.md -Raw -Encoding UTF8).Replace('{{VERSION}}', $env:TSM_VERSION)
+          # 更新内容：CHANGELOG.md 里对应版本的一节；没写时列出上一个标签以来的提交标题
+          $changelog = Get-Content CHANGELOG.md -Raw -Encoding UTF8
+          # (?![\d.])：v0.1.1 不会误配 v0.1.10
+          $pattern = '(?ms)^## v' + [regex]::Escape($env:TSM_VERSION) + '(?![\d.])[^\n]*\n(.*?)(?=^## |\z)'
+          if ($changelog -match $pattern -and $Matches[1].Trim()) {
+            $changes = $Matches[1].Trim()
+            Write-Host "Changes from CHANGELOG.md"
+          } else {
+            $prev = if ($env:GITHUB_REF_TYPE -eq 'tag') { git describe --tags --abbrev=0 "$env:GITHUB_REF_NAME^" 2>$null } else { git describe --tags --abbrev=0 2>$null }
+            $range = if ($prev) { "$prev..HEAD" } else { 'HEAD' }
+            $changes = (git log $range --no-merges --format='- %s') -join "`n"
+            if (-not $changes) { $changes = '- 无' }
+            Write-Host "CHANGELOG.md has no section for v$env:TSM_VERSION; listing commits in $range"
+          }
+          $notes = (Get-Content packaging\release-notes.md -Raw -Encoding UTF8).Replace('{{VERSION}}', $env:TSM_VERSION).Replace('{{CHANGES}}', $changes)
           $fence = '```'
           $notes += "`n## SHA-256`n`n$fence`n" + ($sums -join "`n") + "`n$fence`n"
           Set-Content dist\release-notes.md $notes -Encoding UTF8
