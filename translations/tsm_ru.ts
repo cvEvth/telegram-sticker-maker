@@ -1340,6 +1340,14 @@
         <translation>Откройте %1, чтобы создать набор стикеров Telegram
 Можно также отправить готовый архив прямо %2</translation>
     </message>
+    <message>
+        <source>⬆️ 新版本 %1</source>
+        <translation>⬆️ Новая версия %1</translation>
+    </message>
+    <message>
+        <source>点击前往下载页面</source>
+        <translation>Открыть страницу загрузки</translation>
+    </message>
 </context>
 <context>
     <name>tsm::KeywordDialog</name>
@@ -1969,6 +1977,10 @@
         <comment>关键词之间的分隔符</comment>
         <translation>, </translation>
     </message>
+    <message>
+        <source>⬆️ 发现新版本 %1（当前 %2），下载：%3</source>
+        <translation>⬆️ Доступна новая версия %1 (текущая: %2). Скачать: %3</translation>
+    </message>
 </context>
 <context>
     <name>tsm::PreviewCanvas</name>
@@ -2122,6 +2134,18 @@
         <source>实际路径：</source>
         <translation>Фактический путь: </translation>
     </message>
+    <message>
+        <source>启动时检查新版本</source>
+        <translation>Проверять новые версии при запуске</translation>
+    </message>
+    <message>
+        <source>🔄 检查更新</source>
+        <translation>🔄 Обновления</translation>
+    </message>
+    <message>
+        <source>每天最多联网查询一次 GitHub 上的最新版本，只提醒，不会自动下载。</source>
+        <translation>Не чаще раза в день проверяет последнюю версию на GitHub. Только уведомляет, ничего не скачивает.</translation>
+    </message>
 </context>
 <context>
     <name>tsm::TaskListModel</name>
@@ -2217,6 +2241,13 @@
     <message>
         <source>片段 %1: %2 – %3</source>
         <translation>Фрагмент %1: %2 – %3</translation>
+    </message>
+</context>
+<context>
+    <name>tsm::UpdateChecker</name>
+    <message>
+        <source>无法识别的版本信息</source>
+        <translation>Не удалось распознать данные о версии</translation>
     </message>
 </context>
 </TS>

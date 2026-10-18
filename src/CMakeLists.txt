@@ -10,6 +10,7 @@ qt_add_library(tsm_core STATIC
     app/ListLoader.cpp      app/ListLoader.h
     app/Logger.cpp          app/Logger.h
     app/SessionStore.cpp    app/SessionStore.h
+    app/UpdateChecker.cpp   app/UpdateChecker.h
     core/AiEmoji.cpp        core/AiEmoji.h
     core/CropMath.cpp       core/CropMath.h
     core/EncodePlan.cpp     core/EncodePlan.h

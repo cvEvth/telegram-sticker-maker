@@ -16,6 +16,8 @@ QToolTip { background: #262a33; color: #e6e8ee; border: 1px solid #3a4050; paddi
 }
 #SiteLink { background: #17283a; color: #5ec2ff; border: 1px solid #27445c; border-radius: 12px; padding: 4px 12px; font-size: 12px; }
 #SiteLink:hover { background: #1d3550; color: #8fd6ff; border-color: #2aabee; }
+#UpdateLink { background: #183324; color: #6ee7a0; border: 1px solid #2a5a3e; border-radius: 12px; padding: 4px 12px; font-size: 12px; }
+#UpdateLink:hover { background: #1e4230; color: #9af0be; border-color: #3fbf75; }
 #Badge[muted="true"] { background: #22262e; color: #8b93a7; border-color: #323744; }
 
 /* 按钮 */

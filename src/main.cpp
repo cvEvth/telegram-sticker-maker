@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
 
     tsm::MainWindow window;
     window.show();
+    window.checkForUpdates();
     if (const QStringList paths = QApplication::arguments().mid(1); !paths.isEmpty())
         window.openPaths(paths);
     return app.exec();

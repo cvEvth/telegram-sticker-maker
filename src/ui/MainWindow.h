@@ -28,6 +28,7 @@ class SessionStore;
 class SettingsPanel;
 class TaskListModel;
 class TaskTableView;
+class UpdateChecker;
 class ThumbnailService;
 
 class MainWindow : public QMainWindow {
@@ -39,6 +40,8 @@ public:
 
     // 启动参数里的文件 / 文件夹（拖到程序图标上打开）
     void openPaths(const QStringList& paths) { addPaths(paths); }
+    // 按设置在后台检查新版本（由 main 调用，测试里创建窗口时不会联网）
+    void checkForUpdates();
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
@@ -126,6 +129,7 @@ private:
     BatchConverter* m_converter = nullptr;
     Exporter* m_exporter = nullptr;
     AiMatcher* m_aiMatcher = nullptr;
+    UpdateChecker* m_updates = nullptr;
     ThumbnailService* m_thumbs = nullptr;
     ProxyCache* m_proxies = nullptr;
     SessionStore* m_session = nullptr;

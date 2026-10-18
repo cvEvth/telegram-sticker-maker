@@ -1331,6 +1331,14 @@ Release to import the files</translation>
         <translation>Go to %1 to create a Telegram sticker pack
 You can also send the converted zip straight to %2</translation>
     </message>
+    <message>
+        <source>⬆️ 新版本 %1</source>
+        <translation>⬆️ New version %1</translation>
+    </message>
+    <message>
+        <source>点击前往下载页面</source>
+        <translation>Open the download page</translation>
+    </message>
 </context>
 <context>
     <name>tsm::KeywordDialog</name>
@@ -1934,6 +1942,10 @@ You can also send the converted zip straight to %2</translation>
         <comment>关键词之间的分隔符</comment>
         <translation>, </translation>
     </message>
+    <message>
+        <source>⬆️ 发现新版本 %1（当前 %2），下载：%3</source>
+        <translation>⬆️ New version %1 is available (current: %2). Download: %3</translation>
+    </message>
 </context>
 <context>
     <name>tsm::PreviewCanvas</name>
@@ -2087,6 +2099,18 @@ You can also send the converted zip straight to %2</translation>
         <source>实际路径：</source>
         <translation>Actual path: </translation>
     </message>
+    <message>
+        <source>启动时检查新版本</source>
+        <translation>Check for new versions at startup</translation>
+    </message>
+    <message>
+        <source>🔄 检查更新</source>
+        <translation>🔄 Updates</translation>
+    </message>
+    <message>
+        <source>每天最多联网查询一次 GitHub 上的最新版本，只提醒，不会自动下载。</source>
+        <translation>Checks GitHub for the latest version at most once a day. It only notifies you and never downloads anything.</translation>
+    </message>
 </context>
 <context>
     <name>tsm::TaskListModel</name>
@@ -2182,6 +2206,13 @@ Double-click to change the emoji</translation>
     <message>
         <source>片段 %1: %2 – %3</source>
         <translation>Clip %1: %2 – %3</translation>
+    </message>
+</context>
+<context>
+    <name>tsm::UpdateChecker</name>
+    <message>
+        <source>无法识别的版本信息</source>
+        <translation>Unrecognized version information</translation>
     </message>
 </context>
 </TS>

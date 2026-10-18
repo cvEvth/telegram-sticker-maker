@@ -2,6 +2,7 @@
 
 #include "core/Spec.h"
 
+#include <QDateTime>
 #include <QSettings>
 #include <QString>
 
@@ -61,6 +62,12 @@ public:
     // 界面语言："zh_CN" / "en" / "ru"；空字符串表示跟随系统。重启后生效
     QString language() const;
     void setLanguage(const QString& language);
+
+    // 启动时检查新版本；上次确认已是最新版的时间（一天内不重复检查）
+    bool checkUpdates() const;
+    void setCheckUpdates(bool on);
+    QDateTime lastUpdateCheck() const;
+    void setLastUpdateCheck(const QDateTime& time);
 
     QString filePath() const { return m_settings.fileName(); }
 

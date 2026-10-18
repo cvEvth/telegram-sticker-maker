@@ -2,10 +2,12 @@
 
 #include "ui/BotPromo.h"
 
+#include <QDesktopServices>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QStyle>
+#include <QUrl>
 #include <QVBoxLayout>
 
 namespace tsm {
@@ -36,10 +38,19 @@ HeaderBar::HeaderBar(QWidget* parent)
                          .arg(BotPromo::galleryUrl(), BotPromo::handle()));
     connect(site, &QPushButton::clicked, this, &BotPromo::openGallery);
 
+    // 有新版本时才显示
+    m_update = new QPushButton;
+    m_update->setObjectName(QStringLiteral("UpdateLink"));
+    m_update->setCursor(Qt::PointingHandCursor);
+    m_update->hide();
+    connect(m_update, &QPushButton::clicked, this, [this] { QDesktopServices::openUrl(QUrl(m_updateUrl)); });
+
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(20, 12, 20, 12);
     layout->addLayout(texts);
     layout->addStretch();
+    layout->addWidget(m_update, 0, Qt::AlignVCenter);
+    layout->addSpacing(10);
     layout->addWidget(site, 0, Qt::AlignVCenter);
     layout->addSpacing(10);
     layout->addWidget(m_badge, 0, Qt::AlignVCenter);
@@ -53,6 +64,14 @@ void HeaderBar::setBadge(const QString& text, bool muted)
         m_badge->style()->unpolish(m_badge);
         m_badge->style()->polish(m_badge);
     }
+}
+
+void HeaderBar::showUpdate(const QString& version, const QString& pageUrl)
+{
+    m_updateUrl = pageUrl;
+    m_update->setText(tr("⬆️ 新版本 %1").arg(version));
+    m_update->setToolTip(tr("点击前往下载页面"));
+    m_update->show();
 }
 
 } // namespace tsm

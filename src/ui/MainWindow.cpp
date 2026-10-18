@@ -6,6 +6,7 @@
 #include "app/Exporter.h"
 #include "app/Logger.h"
 #include "app/SessionStore.h"
+#include "app/UpdateChecker.h"
 #include "core/Format.h"
 #include "core/MediaKinds.h"
 #include "core/TaskListModel.h"
@@ -1441,6 +1442,28 @@ QStringList MainWindow::scanFolder(const QString& dir)
     collator.setNumericMode(true);
     std::sort(files.begin(), files.end(), [&](const QString& a, const QString& b) { return collator.compare(a, b) < 0; });
     return files;
+}
+
+void MainWindow::checkForUpdates()
+{
+    if (!m_settings.checkUpdates())
+        return;
+    // 上次确认已是最新版后一天内不再查；发现过新版本则每次启动都会再查并提醒
+    const QDateTime last = m_settings.lastUpdateCheck();
+    if (last.isValid() && last.secsTo(QDateTime::currentDateTime()) < 24 * 3600)
+        return;
+    if (!m_updates) {
+        m_updates = new UpdateChecker(this);
+        connect(m_updates, &UpdateChecker::updateAvailable, this, [this](const UpdateChecker::Release& release) {
+            m_header->showUpdate(release.version, release.pageUrl);
+            logInfo(tr("⬆️ 发现新版本 %1（当前 %2），下载：%3")
+                        .arg(release.version, QApplication::applicationVersion(), release.pageUrl));
+        });
+        connect(m_updates, &UpdateChecker::upToDate, this,
+                [this] { m_settings.setLastUpdateCheck(QDateTime::currentDateTime()); });
+        // 网络不通很常见，失败不打扰用户，下次启动再试
+    }
+    m_updates->check(QApplication::applicationVersion());
 }
 
 } // namespace tsm

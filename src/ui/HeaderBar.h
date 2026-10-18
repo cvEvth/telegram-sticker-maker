@@ -3,6 +3,7 @@
 #include <QFrame>
 
 class QLabel;
+class QPushButton;
 
 namespace tsm {
 
@@ -13,9 +14,13 @@ class HeaderBar : public QFrame {
 public:
     explicit HeaderBar(QWidget* parent = nullptr);
     void setBadge(const QString& text, bool muted);
+    // 显示"发现新版本"按钮，点击打开 pageUrl
+    void showUpdate(const QString& version, const QString& pageUrl);
 
 private:
     QLabel* m_badge = nullptr;
+    QPushButton* m_update = nullptr;
+    QString m_updateUrl;
 };
 
 } // namespace tsm

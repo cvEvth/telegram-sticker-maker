@@ -2,6 +2,7 @@
 #include "app/AppSettings.h"
 #include "app/Language.h"
 #include "app/ListLoader.h"
+#include "app/UpdateChecker.h"
 #include "core/StickerList.h"
 #include "core/Format.h"
 #include "core/Keywords.h"
@@ -355,6 +356,37 @@ private slots:
         QCOMPARE(fresh.encodePreset(), EncodePreset::Quality);
         fresh.setEncodePreset(EncodePreset::Fast);
         QCOMPARE(fresh.encodePreset(), EncodePreset::Fast);
+    }
+
+    void compareVersions()
+    {
+        QVERIFY(UpdateChecker::compareVersions(QStringLiteral("0.1.0"), QStringLiteral("0.2.0")) < 0);
+        QVERIFY(UpdateChecker::compareVersions(QStringLiteral("0.10.0"), QStringLiteral("0.9.1")) > 0);
+        QVERIFY(UpdateChecker::compareVersions(QStringLiteral("1.0.0"), QStringLiteral("0.99.99")) > 0);
+        QCOMPARE(UpdateChecker::compareVersions(QStringLiteral("v1.2.0"), QStringLiteral("1.2.0")), 0);
+        QCOMPARE(UpdateChecker::compareVersions(QStringLiteral("1.2"), QStringLiteral("1.2.0")), 0);
+        QVERIFY(UpdateChecker::compareVersions(QStringLiteral("1.2.0"), QStringLiteral("1.2.1")) < 0);
+    }
+
+    void parseRelease()
+    {
+        const auto json = [](const QJsonObject& obj) { return QJsonDocument(obj).toJson(); };
+        const QString page = QStringLiteral("https://github.com/cvEvth/telegram-sticker-maker/releases/tag/v1.3.0");
+
+        const auto release = UpdateChecker::parseRelease(json({{"tag_name", "v1.3.0"}, {"html_url", page}}));
+        QVERIFY(release);
+        QCOMPARE(release->version, QStringLiteral("1.3.0"));
+        QCOMPARE(release->pageUrl, page);
+
+        // 非 GitHub 链接退回固定的 Release 页面
+        const auto odd = UpdateChecker::parseRelease(json({{"tag_name", "1.3.0"}, {"html_url", "https://example.com/x"}}));
+        QVERIFY(odd);
+        QCOMPARE(odd->pageUrl, UpdateChecker::releasesPageUrl());
+
+        QVERIFY(!UpdateChecker::parseRelease(json({{"tag_name", "v2.0.0"}, {"prerelease", true}})));
+        QVERIFY(!UpdateChecker::parseRelease(json({{"tag_name", "v2.0.0"}, {"draft", true}})));
+        QVERIFY(!UpdateChecker::parseRelease(json({{"message", "API rate limit exceeded"}})));
+        QVERIFY(!UpdateChecker::parseRelease("not json"));
     }
 };
 

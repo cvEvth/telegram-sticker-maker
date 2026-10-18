@@ -25,6 +25,8 @@ constexpr auto AiModel = "ai/model";
 constexpr auto AiApiKey = "ai/api_key";
 constexpr auto ShowDoneDialog = "ui/show_done_dialog";
 constexpr auto Language = "ui/language";
+constexpr auto CheckUpdates = "update/check";
+constexpr auto LastUpdateCheck = "update/last_check";
 } // namespace key
 
 AppSettings::AppSettings()
@@ -130,5 +132,9 @@ bool AppSettings::showDoneDialog() const { return value(key::ShowDoneDialog, tru
 void AppSettings::setShowDoneDialog(bool on) { setValue(key::ShowDoneDialog, on); }
 QString AppSettings::language() const { return value(key::Language, QString()).toString(); }
 void AppSettings::setLanguage(const QString& language) { setValue(key::Language, language); }
+bool AppSettings::checkUpdates() const { return value(key::CheckUpdates, true).toBool(); }
+void AppSettings::setCheckUpdates(bool on) { setValue(key::CheckUpdates, on); }
+QDateTime AppSettings::lastUpdateCheck() const { return value(key::LastUpdateCheck, QDateTime()).toDateTime(); }
+void AppSettings::setLastUpdateCheck(const QDateTime& time) { setValue(key::LastUpdateCheck, time); }
 
 } // namespace tsm

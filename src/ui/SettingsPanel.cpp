@@ -149,6 +149,11 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
         m_languageHint->show();
     });
 
+    // 6. 检查更新
+    m_checkUpdates = new QCheckBox(tr("启动时检查新版本"));
+    m_checkUpdates->setChecked(m_s.checkUpdates());
+    connect(m_checkUpdates, &QCheckBox::toggled, this, [this](bool on) { m_s.setCheckUpdates(on); });
+
     auto* sections = new QWidget;
     auto* sectionsLayout = new QVBoxLayout(sections);
     sectionsLayout->setContentsMargins(0, 0, 4, 0);
@@ -161,6 +166,9 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
         {makeHint(tr("实际写入所选路径下的 telegram_sticker_maker 文件夹。留空则用配置目录。")),
          makeRow({m_dataDir, m_browseData}, 0), m_dataResolved, makeRow({openData, m_clearCache, m_cacheInfo}, 2)}));
     sectionsLayout->addWidget(makeSection(tr("🌐 界面语言"), {m_language, m_languageHint}));
+    sectionsLayout->addWidget(makeSection(
+        tr("🔄 检查更新"),
+        {m_checkUpdates, makeHint(tr("每天最多联网查询一次 GitHub 上的最新版本，只提醒，不会自动下载。"))}));
     sectionsLayout->addStretch();
 
     auto* scroll = new QScrollArea;
@@ -169,7 +177,7 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
     scroll->setFrameShape(QFrame::NoFrame);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    // 6. 底部操作区
+    // 7. 底部操作区
     m_progressCard = new QFrame;
     m_progressCard->setObjectName(QStringLiteral("ProgressCard"));
     m_progressTitle = new QLabel;
