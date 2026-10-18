@@ -91,8 +91,10 @@ qt_add_translations(tsm_ui
 
 qt_add_executable(TelegramStickerMaker WIN32 main.cpp)
 if(WIN32)
-    # exe 文件图标（资源管理器、任务栏、快捷方式）
-    target_sources(TelegramStickerMaker PRIVATE "${PROJECT_SOURCE_DIR}/resources/icons/app.rc")
+    # exe 文件图标与版本信息（资源管理器、任务栏、快捷方式、文件属性）
+    set(TSM_RC_ICON "${PROJECT_SOURCE_DIR}/resources/icons/app.ico")
+    configure_file("${PROJECT_SOURCE_DIR}/resources/icons/app.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/app.rc" @ONLY)
+    target_sources(TelegramStickerMaker PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/app.rc")
 endif()
 target_link_libraries(TelegramStickerMaker PRIVATE tsm_ui)
 target_compile_definitions(TelegramStickerMaker PRIVATE APP_VERSION="${PROJECT_VERSION}")

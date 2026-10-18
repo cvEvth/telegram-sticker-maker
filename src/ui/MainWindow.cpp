@@ -84,7 +84,7 @@ MainWindow::MainWindow(QWidget* parent)
     , m_proxies(new ProxyCache(this))
     , m_session(new SessionStore(m_model, this))
 {
-    setWindowTitle(QStringLiteral("Telegram Sticker Maker"));
+    setWindowTitle(QStringLiteral("Telegram Sticker Maker %1").arg(QApplication::applicationVersion()));
     resize(1500, 820);
     setMinimumSize(1180, 640);
     setAcceptDrops(true);
