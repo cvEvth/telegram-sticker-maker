@@ -59,6 +59,23 @@ russian.VisitSite=Открыть cvevth.top и узнать, как создат
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
+[InstallDelete]
+; 覆盖安装前先清掉上一版的运行库和插件目录，避免新版不再附带的旧 DLL 残留或被误加载
+; 只列出本程序会放的文件和目录，不用 {app}\*，以免误删安装目录里的其他文件
+Type: files; Name: "{app}\*.dll"
+Type: filesandordirs; Name: "{app}\generic"
+Type: filesandordirs; Name: "{app}\iconengines"
+Type: filesandordirs; Name: "{app}\imageformats"
+Type: filesandordirs; Name: "{app}\multimedia"
+Type: filesandordirs; Name: "{app}\networkinformation"
+Type: filesandordirs; Name: "{app}\platforms"
+Type: filesandordirs; Name: "{app}\styles"
+Type: filesandordirs; Name: "{app}\tls"
+Type: filesandordirs; Name: "{app}\translations"
+Type: filesandordirs; Name: "{app}\licenses"
+; 0.1.0 附带过、之后已移除的说明文件
+Type: files; Name: "{app}\使用说明.txt"
+
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
