@@ -216,7 +216,7 @@ private slots:
         options.pathFor = [](const StickerTask& t) { return QStringLiteral("sources/") + t.info.fileName; };
         const QByteArray json = StickerList::write({video, still}, options);
 
-        // 格式（需求 9.3）
+        // 格式
         const QJsonObject root = QJsonDocument::fromJson(json).object();
         QCOMPARE(root.value(u"kind").toString(), QStringLiteral("sticker_maker_list"));
         QCOMPARE(root.value(u"version").toInt(), 1);

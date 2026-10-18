@@ -1,4 +1,4 @@
-// 导入导出（需求第 9 节）：zip 解压、清单定位、导入缓存复用、两种导出模式的端到端结果
+// 导入导出：zip 解压、清单定位、导入缓存复用、两种导出模式的端到端结果
 #include "app/Exporter.h"
 #include "app/ImportSource.h"
 #include "app/ListLoader.h"

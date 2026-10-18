@@ -30,7 +30,7 @@ class ThumbnailService;
 class TimelineOverview;
 class TimelineTrack;
 
-// 截取 / 裁切编辑窗口（需求第 6 节）。
+// 截取 / 裁切编辑窗口。
 // 视频模式编辑同一视频的一组片段；图片模式只编辑一个素材的裁切样式。
 class ClipEditorDialog : public QDialog {
     Q_OBJECT

@@ -10,7 +10,7 @@
 
 namespace tsm {
 
-// 缩略图：取片段起点那一帧，应用镜像、裁切、圆角（需求 3.2 / 6.7 / 12）。
+// 缩略图：取片段起点那一帧，应用镜像、裁切、圆角。
 // 同一文件、时间点、尺寸、裁切、圆角、镜像只生成一次；源文件修改后失效。
 // 内存缓存 + 磁盘缓存（数据目录下 preview_cache/thumbs）。
 class ThumbnailService : public QObject {

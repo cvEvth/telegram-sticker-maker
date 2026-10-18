@@ -11,7 +11,7 @@
 
 namespace tsm {
 
-// 导出（需求 9.1，不转码）
+// 导出（不转码）
 enum class ExportKind {
     Sources, // 模式 A：原片 + sticker_list.json（相对路径），附带预览缓存
     Trimmed, // 模式 B：按转换结果命名的已裁切源文件 + stickers.json

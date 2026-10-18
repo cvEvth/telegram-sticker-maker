@@ -10,7 +10,7 @@ namespace tsm {
 
 class FlowLayout;
 
-// 关键词弹窗（需求第 8 节）：标签式输入，最多 20 个、合计不超过 64 字符。
+// 关键词弹窗：标签式输入，最多 20 个、合计不超过 64 字符。
 class KeywordDialog : public QDialog {
     Q_OBJECT
 

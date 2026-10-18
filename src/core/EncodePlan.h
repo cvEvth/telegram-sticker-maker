@@ -6,7 +6,7 @@
 #include <QString>
 #include <optional>
 
-// 视频贴纸的画质规划与重试规则（需求 5.3 ~ 5.6）。纯计算，不调用 FFmpeg。
+// 视频贴纸的画质规划与重试规则。纯计算，不调用 FFmpeg。
 namespace tsm::EncodePlan {
 
 inline constexpr double kBppTarget = 0.055;
@@ -71,7 +71,7 @@ struct Plan {
 double chooseFps(const Input& in, QSize canvas, qint64 target);
 Plan plan(const Input& in);
 
-// 一次编码结果之后的决定（需求 5.6）
+// 一次编码结果之后的决定
 struct RetryState {
     double fps = 0;
     int bitrateKbps = 0;

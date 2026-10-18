@@ -8,7 +8,7 @@
 #include <QString>
 #include <optional>
 
-// 裁切框计算（需求 6.6）。坐标为原始视频像素（镜像后的画面坐标）。
+// 裁切框计算。坐标为原始视频像素（镜像后的画面坐标）。
 namespace tsm::CropMath {
 
 inline constexpr int kMinCropSize = 16;

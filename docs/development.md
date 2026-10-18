@@ -3,7 +3,7 @@
 技术栈：C++20 · Qt 6.8 Widgets / Multimedia · FFmpeg 8.1（LGPL 共享库）· libwebp · libzip · CMake + Ninja + vcpkg。
 目前只做了 Windows 版，代码按跨平台写（没有用 Windows 专有界面 API），macOS / Linux 需要补构建脚本与打包。
 
-完整的功能需求见 [功能需求说明.md](../功能需求说明.md)，版本改动见 [CHANGELOG.md](../CHANGELOG.md)。
+版本改动见 [CHANGELOG.md](../CHANGELOG.md)。
 
 ## 环境
 
@@ -54,7 +54,7 @@ powershell -ExecutionPolicy Bypass -File scripts\package.ps1
 
 在 `dist\` 下生成：
 
-- `TelegramStickerMaker-<版本>-win64.zip`：便携版，自带 VC++ 运行库、第三方许可证与使用说明
+- `TelegramStickerMaker-<版本>-win64.zip`：便携版，自带 VC++ 运行库与第三方许可证
 - `TelegramStickerMaker-<版本>-win64-setup.exe`：Inno Setup 安装程序（找不到 `ISCC.exe` 时跳过）；默认按当前用户安装，不需要管理员权限
 
 版本号默认取 `CMakeLists.txt` 里的 `set(TSM_VERSION x.y.z)`，设置环境变量 `TSM_VERSION` 可以覆盖。
@@ -85,7 +85,7 @@ src/
   ui/         主窗口、右侧设置面板、拖放区、日志、列表委托、各类弹窗、深色主题
   ui/editor/  截取 / 裁切窗口：预览画布、时间轴、片段列表、窗口设置
 resources/    样式表、程序图标
-packaging/    安装脚本（Inno Setup）、简体中文语言文件、使用说明、第三方许可证清单、发布说明模板
+packaging/    安装脚本（Inno Setup）、简体中文语言文件、第三方许可证清单、发布说明模板
 tests/        单元测试与界面测试
 docs/         开发文档与 README 截图
 ```

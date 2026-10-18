@@ -5,7 +5,7 @@
 #include <QDateTime>
 #include <functional>
 
-// sticker_list.json（本工具的列表，需求 9.3）与 stickers.json（转换输出，需求第 4 节）的读写。
+// sticker_list.json（本工具的列表）与 stickers.json（转换输出）的读写。
 // 会话文件格式同 sticker_list.json，使用绝对路径，另附可选的 media 字段缓存解析结果。
 namespace tsm::StickerList {
 

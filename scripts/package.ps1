@@ -1,6 +1,6 @@
 # Usage: powershell -ExecutionPolicy Bypass -File scripts\package.ps1 [-SkipBuild] [-SkipInstaller]
 # Builds the release preset, assembles dist\TelegramStickerMaker-<version>-win64\ (runtime files,
-# VC++ runtime DLLs, licenses, readme), zips it, and builds the Inno Setup installer when ISCC is found.
+# VC++ runtime DLLs, licenses), zips it, and builds the Inno Setup installer when ISCC is found.
 # NOTE: keep this file ASCII-only; Windows PowerShell 5.1 reads BOM-less files with the ANSI code page.
 param(
     [switch]$SkipBuild,
@@ -55,7 +55,7 @@ foreach ($dll in 'vcruntime140.dll', 'vcruntime140_1.dll', 'msvcp140.dll', 'msvc
     Copy-Item (Join-Path $crt $dll) -Destination $stage
 }
 
-# ---- licenses and readme
+# ---- licenses
 $licenses = Join-Path $stage 'licenses'
 New-Item -ItemType Directory -Force $licenses | Out-Null
 $ffmpegRoot = if ($env:FFMPEG_ROOT) { $env:FFMPEG_ROOT } else { 'D:\deps\ffmpeg' }

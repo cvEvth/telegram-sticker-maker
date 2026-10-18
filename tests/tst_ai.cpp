@@ -1,4 +1,4 @@
-// AI 匹配 Emoji（需求第 7 节）：回复解析、取帧拼图、请求与重试（本机假接口）
+// AI 匹配 Emoji：回复解析、取帧拼图、请求与重试（本机假接口）
 #include "app/AiMatcher.h"
 #include "core/AiEmoji.h"
 #include "media/AiFrameGrabber.h"

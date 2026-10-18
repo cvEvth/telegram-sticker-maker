@@ -8,7 +8,7 @@
 
 namespace tsm {
 
-// 截取窗口的流畅预览副本（需求 6.2）：对 MP4 / WebM / Ogg 以外的格式在后台生成 480p 副本。
+// 截取窗口的流畅预览副本：对 MP4 / WebM / Ogg 以外的格式在后台生成 480p 副本。
 // 按文件内容标识（路径 + 修改时间 + 大小）缓存，最多保留 60 个，超过删最旧的。
 class ProxyCache : public QObject {
     Q_OBJECT

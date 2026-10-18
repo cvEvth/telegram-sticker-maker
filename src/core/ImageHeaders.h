@@ -3,7 +3,7 @@
 #include <QByteArray>
 #include <QString>
 
-// 读 GIF / PNG(APNG) / WebP 文件头（需求第 2 节）：
+// 读 GIF / PNG(APNG) / WebP 文件头：
 //  - 透明：GIF 调色板透明（图形控制扩展的透明标记）、PNG 带 Alpha 的颜色类型或 tRNS、WebP 的 Alpha 标记；
 //  - 动图：逐帧时长累加（单帧缺省或为 0 时按 100ms）。
 namespace tsm::ImageHeaders {

@@ -9,7 +9,7 @@
 
 namespace tsm::FilterGraph {
 
-// 处理顺序（需求 5.1）：镜像 → 裁切 → Lanczos 缩放 → 预设滤镜 → 帧率 → 圆角透明遮罩，
+// 处理顺序：镜像 → 裁切 → Lanczos 缩放 → 预设滤镜 → 帧率 → 圆角透明遮罩，
 // 自定义表情再透明填充到画布中央。输入 [0:v] 为素材，[1:v] 为圆角遮罩（灰度 PNG）；输出标签 [out]。
 struct Spec {
     bool mirror = false;

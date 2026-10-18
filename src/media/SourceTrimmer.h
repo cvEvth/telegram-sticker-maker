@@ -6,7 +6,7 @@
 #include <functional>
 #include <memory>
 
-// 导出"已裁切的转换前文件"（需求 9.1 模式 B）：按片段起止剪切并应用裁切、圆角、镜像，
+// 导出"已裁切的转换前文件"（模式 B）：按片段起止剪切并应用裁切、圆角、镜像，
 // 保持高画质，不压到贴纸码率。
 namespace tsm::SourceTrimmer {
 

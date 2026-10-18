@@ -4,7 +4,7 @@
 
 namespace tsm::ListLoader {
 
-// 找文件（需求 9.2）：先按原路径（绝对路径），找不到再按清单所在目录的相对路径，
+// 找文件：先按原路径（绝对路径），找不到再按清单所在目录的相对路径，
 // 再找不到就在清单同目录按文件名找。都找不到返回空。
 QString resolvePath(const QString& rawPath, const QString& baseDir, const QString& fileName);
 

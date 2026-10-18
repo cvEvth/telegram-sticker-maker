@@ -1,4 +1,4 @@
-// 裁切框计算与时间轴视图状态（需求 6.4 / 6.6）
+// 裁切框计算与时间轴视图状态
 #include "core/CropMath.h"
 #include "core/TimelineState.h"
 

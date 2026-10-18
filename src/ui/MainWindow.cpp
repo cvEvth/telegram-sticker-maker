@@ -222,7 +222,7 @@ void MainWindow::configureTable()
     m_table->setItemDelegateForColumn(TaskListModel::ColKeywords, keywords);
     connect(keywords, &KeywordsDelegate::clicked, this, [this](int row) { openKeywordDialog({row}); });
     m_table->setMouseTracking(true);
-    // TODO(主列表): 再次单击已选中行取消选中、点击空白取消选择、右键菜单（需求 3.3 / 3.4）
+    // TODO(主列表): 再次单击已选中行取消选中、点击空白取消选择、右键菜单
 }
 
 void MainWindow::connectSignals()

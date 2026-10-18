@@ -1,4 +1,4 @@
-// 画质规划与重试规则（需求 5.3 ~ 5.6）、滤镜链拼装
+// 画质规划与重试规则、滤镜链拼装
 #include "core/EncodePlan.h"
 #include "media/FilterGraph.h"
 

@@ -14,7 +14,7 @@ class QVBoxLayout;
 
 namespace tsm {
 
-// 片段卡片（需求 6.7）
+// 片段卡片
 class ClipCard : public QFrame {
     Q_OBJECT
 

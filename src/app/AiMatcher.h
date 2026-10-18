@@ -20,7 +20,7 @@ struct AiConfig {
     QString prompt; // 为空时用默认提示词
 };
 
-// 批量 AI 匹配 Emoji（需求 7.2）：逐个识别，间隔 0.2 秒；超时 25 秒；
+// 批量 AI 匹配 Emoji：逐个识别，间隔 0.2 秒；超时 25 秒；
 // 429 / 5xx / 网络错误最多重试 2 次（等 1s、2s），其他 HTTP 错误直接放弃。所有信号在主线程发出。
 class AiMatcher : public QObject {
     Q_OBJECT

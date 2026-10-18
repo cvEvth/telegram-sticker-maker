@@ -12,7 +12,7 @@ namespace tsm {
 
 class AppSettings;
 
-// 截取窗口设置（需求 6.9），确定后写入 AppSettings
+// 截取窗口设置，确定后写入 AppSettings
 class EditorSettingsDialog : public QDialog {
     Q_OBJECT
 

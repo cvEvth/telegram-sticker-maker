@@ -9,7 +9,7 @@ class TimelineState;
 // 片段色块的配色（时间轴、总览条、片段卡片共用）
 QColor clipColor(int index);
 
-// 主时间轴（需求 6.4）：自适应刻度、片段色块、已播放高亮、悬停竖线、播放头。
+// 主时间轴：自适应刻度、片段色块、已播放高亮、悬停竖线、播放头。
 // 左键拖动 = 拖动播放头；中键 / Alt+左键 = 平移；滚轮 = 缩放；Shift+滚轮 = 平移；
 // 双击片段 = 放大到该片段，双击空白 = 恢复全长。
 class TimelineTrack : public QWidget {

@@ -12,7 +12,7 @@ struct ProbeResult {
 
 namespace MediaProbe {
 
-// 解析素材信息（需求第 2 节）。会启动 ffprobe，只在工作线程调用。
+// 解析素材信息。会启动 ffprobe，只在工作线程调用。
 ProbeResult probe(const QString& path);
 
 } // namespace MediaProbe

@@ -4,7 +4,7 @@
 #include <QSet>
 #include <QString>
 
-// 输出命名规则（需求第 4 节）
+// 输出命名规则
 namespace tsm::OutputNaming {
 
 // 去掉文件名非法字符与控制字符

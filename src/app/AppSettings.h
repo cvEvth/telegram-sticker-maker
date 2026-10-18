@@ -7,7 +7,7 @@
 
 namespace tsm {
 
-// 需求第 11 节的持久化设置。每次修改立即写盘。
+// 持久化设置。每次修改立即写盘。
 class AppSettings {
 public:
     AppSettings();

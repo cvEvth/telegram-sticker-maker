@@ -27,7 +27,7 @@ struct EncodeResult {
 using CancelFlag = std::shared_ptr<std::atomic_bool>;
 using ProgressFn = std::function<void(int percent, const QString& text)>;
 
-// 把一个任务转换为贴纸文件（需求第 5 节）。同步执行，只在工作线程调用。
+// 把一个任务转换为贴纸文件。同步执行，只在工作线程调用。
 class StickerEncoder {
 public:
     StickerEncoder(EncodeRequest request, CancelFlag cancel, ProgressFn progress);

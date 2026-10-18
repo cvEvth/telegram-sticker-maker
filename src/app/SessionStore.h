@@ -9,7 +9,7 @@ namespace tsm {
 
 class TaskListModel;
 
-// 会话自动保存（需求第 10 节）：列表任何变化 250ms 防抖后原子写入数据目录的会话文件；
+// 会话自动保存：列表任何变化 250ms 防抖后原子写入数据目录的会话文件；
 // 内容没变就不重复写；恢复期间暂停保存。
 class SessionStore : public QObject {
     Q_OBJECT

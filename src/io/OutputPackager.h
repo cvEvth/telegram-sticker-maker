@@ -5,7 +5,7 @@
 #include <QList>
 #include <QStringList>
 
-// 转换成功的贴纸写到最终位置（需求第 4 节）：
+// 转换成功的贴纸写到最终位置：
 //  - 压缩包：全部贴纸 + stickers.json 打进输出目录下的 TG_Stickers_YYYYMMDD_HHMMSS.zip（仅存储），
 //    失败时退回为把单个文件直接写到各自的目标目录；
 //  - 文件夹：每个目标目录下新建时间戳文件夹，贴纸和 stickers.json 都放在里面。

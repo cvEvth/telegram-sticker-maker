@@ -10,7 +10,7 @@ namespace tsm {
 
 class AppSettings;
 
-// ⚙️ AI 设置（需求 7.1）：API Key / Base URL / 模型名称；保存后显示 ✓ 并自动关闭
+// ⚙️ AI 设置：API Key / Base URL / 模型名称；保存后显示 ✓ 并自动关闭
 class AiSettingsDialog : public QDialog {
     Q_OBJECT
 

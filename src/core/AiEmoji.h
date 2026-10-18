@@ -4,7 +4,7 @@
 #include <QList>
 #include <QString>
 
-// AI 匹配 Emoji 的纯逻辑部分（需求 7.2）
+// AI 匹配 Emoji 的纯逻辑部分
 namespace tsm::AiEmoji {
 
 inline constexpr int kMaxEmojiChars = 12;

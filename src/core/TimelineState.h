@@ -7,7 +7,7 @@
 
 namespace tsm {
 
-// 时间轴视图状态（需求 6.4）：总览条与主时间轴共享。
+// 时间轴视图状态：总览条与主时间轴共享。
 class TimelineState : public QObject {
     Q_OBJECT
 

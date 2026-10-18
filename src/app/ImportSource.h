@@ -5,7 +5,7 @@
 #include <atomic>
 #include <memory>
 
-// 导入入口（需求 9.2）：zip / json / 文件夹 → 清单文件 → 条目列表
+// 导入入口：zip / json / 文件夹 → 清单文件 → 条目列表
 namespace tsm::ImportSource {
 
 inline constexpr auto kListFileName = "sticker_list.json";

@@ -1,4 +1,4 @@
-// 主列表交互（需求 3.3 / 3.4）与关键词弹窗（第 8 节）的界面测试。
+// 主列表交互与关键词弹窗的界面测试。
 // 设置环境变量 TSM_SNAPSHOT_DIR 时保存截图。
 #include "app/AppPaths.h"
 #include "app/AppSettings.h"
