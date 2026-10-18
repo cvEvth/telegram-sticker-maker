@@ -5,6 +5,10 @@
 <h1 align="center">Telegram Sticker Maker</h1>
 
 <p align="center">
+  <b>简体中文</b> · <a href="README.en.md">English</a> · <a href="README.ru.md">Русский</a>
+</p>
+
+<p align="center">
   把视频、动图、图片批量做成 Telegram 贴纸的 Windows 桌面工具<br>
   截取片段、裁切画面、配好 Emoji 和关键词，一键转换成符合官方规格的 WebM / WebP 贴纸
 </p>
