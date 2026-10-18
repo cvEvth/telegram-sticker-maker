@@ -2,6 +2,7 @@
 
 #include "app/AppPaths.h"
 #include "app/AppSettings.h"
+#include "app/Language.h"
 
 #include <QButtonGroup>
 #include <QCheckBox>
@@ -72,8 +73,8 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
     setFixedWidth(360);
 
     // 1. 输出规格
-    m_modeSticker = new QPushButton(QStringLiteral("🎨 标准贴纸 (512px)"));
-    m_modeEmoji = new QPushButton(QStringLiteral("😀 自定义表情 (100px)"));
+    m_modeSticker = new QPushButton(tr("🎨 标准贴纸 (512px)"));
+    m_modeEmoji = new QPushButton(tr("😀 自定义表情 (100px)"));
     auto* modeGroup = new QButtonGroup(this);
     for (QPushButton* button : {m_modeSticker, m_modeEmoji}) {
         button->setCheckable(true);
@@ -87,17 +88,19 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
 
     // 2. 编码预设
     m_preset = new QComboBox;
-    m_preset->addItem(QStringLiteral("✨ 高画质（两遍编码 + 轻度降噪）"), int(EncodePreset::Quality));
-    m_preset->addItem(QStringLiteral("⚡ 快速导出（单遍编码）"), int(EncodePreset::Fast));
+    m_preset->addItem(tr("✨ 高画质（两遍编码 + 轻度降噪）"), int(EncodePreset::Quality));
+    m_preset->addItem(tr("⚡ 快速导出（单遍编码）"), int(EncodePreset::Fast));
+    // 按内容定宽会把固定宽度的面板撑宽；译文较长时让下拉框缩短并省略
+    m_preset->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
     m_preset->setCurrentIndex(qMax(0, m_preset->findData(int(m_s.encodePreset()))));
     connect(m_preset, &QComboBox::currentIndexChanged, this,
             [this] { m_s.setEncodePreset(EncodePreset(m_preset->currentData().toInt())); });
 
     // 3. 输出目录
-    m_besideSource = new QCheckBox(QStringLiteral("保存至原文件所在目录"));
+    m_besideSource = new QCheckBox(tr("保存至原文件所在目录"));
     m_besideSource->setChecked(m_s.saveBesideSource());
     m_outputDir = new QLineEdit(QDir::toNativeSeparators(m_s.outputDir()));
-    m_browseOutput = new QPushButton(QStringLiteral("浏览..."));
+    m_browseOutput = new QPushButton(tr("浏览..."));
     m_outputRow = makeRow({m_outputDir, m_browseOutput}, 0);
     connect(m_besideSource, &QCheckBox::toggled, this, [this](bool on) {
         m_s.setSaveBesideSource(on);
@@ -106,25 +109,25 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
     });
     connect(m_outputDir, &QLineEdit::editingFinished, this, [this] { applyOutputDir(m_outputDir->text()); });
     connect(m_browseOutput, &QPushButton::clicked, this, [this] {
-        const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("选择输出目录"), m_s.outputDir());
+        const QString dir = QFileDialog::getExistingDirectory(this, tr("选择输出目录"), m_s.outputDir());
         if (!dir.isEmpty())
             applyOutputDir(dir);
     });
 
     // 4. 数据目录
     m_dataDir = new QLineEdit(QDir::toNativeSeparators(m_s.dataDirChoice()));
-    m_dataDir->setPlaceholderText(QStringLiteral("留空则使用配置目录"));
-    m_browseData = new QPushButton(QStringLiteral("浏览..."));
+    m_dataDir->setPlaceholderText(tr("留空则使用配置目录"));
+    m_browseData = new QPushButton(tr("浏览..."));
     m_dataResolved = new QLabel;
     m_dataResolved->setObjectName(QStringLiteral("PathLabel"));
     m_dataResolved->setWordWrap(true);
     m_dataResolved->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    auto* openData = new QPushButton(QStringLiteral("打开文件夹"));
-    m_clearCache = new QPushButton(QStringLiteral("清除预览缓存"));
-    m_cacheInfo = makeHint(QStringLiteral("缓存为空"));
+    auto* openData = new QPushButton(tr("打开文件夹"));
+    m_clearCache = new QPushButton(tr("清除预览缓存"));
+    m_cacheInfo = makeHint(tr("缓存为空"));
     connect(m_dataDir, &QLineEdit::editingFinished, this, [this] { applyDataDirChoice(m_dataDir->text()); });
     connect(m_browseData, &QPushButton::clicked, this, [this] {
-        const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("选择数据目录"), m_s.resolvedDataDir());
+        const QString dir = QFileDialog::getExistingDirectory(this, tr("选择数据目录"), m_s.resolvedDataDir());
         if (dir.isEmpty())
             return;
         m_dataDir->setText(QDir::toNativeSeparators(dir));
@@ -133,17 +136,31 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
     connect(openData, &QPushButton::clicked, this, &SettingsPanel::openDataDirRequested);
     connect(m_clearCache, &QPushButton::clicked, this, &SettingsPanel::clearCacheRequested);
 
+    // 5. 界面语言（重启后生效）
+    m_language = new QComboBox;
+    m_language->addItem(tr("跟随系统"), QString());
+    for (const Language::Option& option : Language::available())
+        m_language->addItem(option.nativeName, option.code);
+    m_language->setCurrentIndex(qMax(0, m_language->findData(m_s.language())));
+    m_languageHint = makeHint(tr("重启程序后生效"));
+    m_languageHint->hide();
+    connect(m_language, &QComboBox::currentIndexChanged, this, [this] {
+        m_s.setLanguage(m_language->currentData().toString());
+        m_languageHint->show();
+    });
+
     auto* sections = new QWidget;
     auto* sectionsLayout = new QVBoxLayout(sections);
     sectionsLayout->setContentsMargins(0, 0, 4, 0);
     sectionsLayout->setSpacing(10);
-    sectionsLayout->addWidget(makeSection(QStringLiteral("🎯 输出规格"), {makeRow({m_modeSticker, m_modeEmoji})}));
-    sectionsLayout->addWidget(makeSection(QStringLiteral("🎨 编码预设"), {m_preset}));
-    sectionsLayout->addWidget(makeSection(QStringLiteral("📁 输出目录"), {m_besideSource, m_outputRow}));
+    sectionsLayout->addWidget(makeSection(tr("🎯 输出规格"), {makeRow({m_modeSticker, m_modeEmoji})}));
+    sectionsLayout->addWidget(makeSection(tr("🎨 编码预设"), {m_preset}));
+    sectionsLayout->addWidget(makeSection(tr("📁 输出目录"), {m_besideSource, m_outputRow}));
     sectionsLayout->addWidget(makeSection(
-        QStringLiteral("💾 数据目录"),
-        {makeHint(QStringLiteral("实际写入所选路径下的 telegram_sticker_maker 文件夹。留空则用配置目录。")),
+        tr("💾 数据目录"),
+        {makeHint(tr("实际写入所选路径下的 telegram_sticker_maker 文件夹。留空则用配置目录。")),
          makeRow({m_dataDir, m_browseData}, 0), m_dataResolved, makeRow({openData, m_clearCache, m_cacheInfo}, 2)}));
+    sectionsLayout->addWidget(makeSection(tr("🌐 界面语言"), {m_language, m_languageHint}));
     sectionsLayout->addStretch();
 
     auto* scroll = new QScrollArea;
@@ -152,7 +169,7 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
     scroll->setFrameShape(QFrame::NoFrame);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    // 5. 底部操作区
+    // 6. 底部操作区
     m_progressCard = new QFrame;
     m_progressCard->setObjectName(QStringLiteral("ProgressCard"));
     m_progressTitle = new QLabel;
@@ -171,23 +188,23 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
     m_progressCard->hide();
 
 
-    m_start = new QPushButton(QStringLiteral("🚀 开始转换"));
+    m_start = new QPushButton(tr("🚀 开始转换"));
     m_start->setObjectName(QStringLiteral("PrimaryButton"));
     m_start->setMinimumHeight(46);
     m_start->setCursor(Qt::PointingHandCursor);
 
-    m_export = new QPushButton(QStringLiteral("📤 导出"));
+    m_export = new QPushButton(tr("📤 导出"));
     auto* exportMenu = new QMenu(m_export);
     m_exportSources = exportMenu->addAction(QString());
     m_exportTrimmed = exportMenu->addAction(QString());
     m_export->setMenu(exportMenu);
 
-    m_zip = new QCheckBox(QStringLiteral("输出为压缩包"));
+    m_zip = new QCheckBox(tr("输出为压缩包"));
     m_zip->setChecked(m_s.outputAsZip());
-    m_stop = new QPushButton(QStringLiteral("🛑 停止"));
+    m_stop = new QPushButton(tr("🛑 停止"));
     m_stop->setObjectName(QStringLiteral("DangerButton"));
     m_stop->setEnabled(false);
-    m_openOutput = new QPushButton(QStringLiteral("📂 打开输出目录"));
+    m_openOutput = new QPushButton(tr("📂 打开输出目录"));
 
     auto* actions = new QWidget;
     actions->setObjectName(QStringLiteral("ActionArea"));
@@ -198,7 +215,7 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
     actionsLayout->addWidget(m_start);
     actionsLayout->addWidget(m_export);
     actionsLayout->addWidget(m_zip);
-    actionsLayout->addWidget(makeHint(QStringLiteral("keywords 写入压缩包或输出文件夹内的 stickers.json")));
+    actionsLayout->addWidget(makeHint(tr("keywords 写入压缩包或输出文件夹内的 stickers.json")));
     actionsLayout->addWidget(makeRow({m_stop, m_openOutput}));
 
     auto* root = new QVBoxLayout(this);
@@ -234,7 +251,7 @@ void SettingsPanel::setBusyState(const BusyState& state)
         m_progressHint->setText(state.hint);
         m_progressHint->setVisible(!state.hint.isEmpty());
     }
-    m_start->setText(state.converting ? QStringLiteral("转换中...") : QStringLiteral("🚀 开始转换"));
+    m_start->setText(state.converting ? tr("转换中...") : tr("🚀 开始转换"));
 
     // 忙碌锁：禁用会冲突的操作
     const bool idle = !state.active;
@@ -279,11 +296,11 @@ void SettingsPanel::applyDataDirChoice(const QString& choice)
 void SettingsPanel::refreshExportMenu()
 {
     if (m_zip->isChecked()) {
-        m_exportSources->setText(QStringLiteral("打包原片与参数清单为压缩包"));
-        m_exportTrimmed->setText(QStringLiteral("按转换结果打包已裁切源文件，不压成贴纸码率"));
+        m_exportSources->setText(tr("打包原片与参数清单为压缩包"));
+        m_exportTrimmed->setText(tr("按转换结果打包已裁切源文件，不压成贴纸码率"));
     } else {
-        m_exportSources->setText(QStringLiteral("复制原片到文件夹，并附带参数清单"));
-        m_exportTrimmed->setText(QStringLiteral("按转换结果输出已裁切源文件到文件夹，不压成贴纸码率"));
+        m_exportSources->setText(tr("复制原片到文件夹，并附带参数清单"));
+        m_exportTrimmed->setText(tr("按转换结果输出已裁切源文件到文件夹，不压成贴纸码率"));
     }
 }
 
@@ -294,7 +311,7 @@ void SettingsPanel::refreshOutputDirRow()
 
 void SettingsPanel::refreshDataDirLabel()
 {
-    m_dataResolved->setText(QStringLiteral("实际路径：") + wrappablePath(m_s.resolvedDataDir()));
+    m_dataResolved->setText(tr("实际路径：") + wrappablePath(m_s.resolvedDataDir()));
 }
 
 } // namespace tsm

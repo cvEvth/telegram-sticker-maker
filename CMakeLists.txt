@@ -22,8 +22,9 @@ if(MSVC)
     add_compile_definitions(NOMINMAX WIN32_LEAN_AND_MEAN UNICODE _UNICODE)
 endif()
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets Multimedia Network Concurrent Test)
-qt_standard_project_setup()
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets Multimedia Network Concurrent Test LinguistTools)
+# 界面文字直接用简体中文写在代码里，英语 / 俄语走 Qt Linguist 翻译（translations/*.ts）
+qt_standard_project_setup(I18N_SOURCE_LANGUAGE zh_CN I18N_TRANSLATED_LANGUAGES en ru)
 
 find_package(WebP CONFIG REQUIRED)
 find_package(libzip CONFIG REQUIRED)

@@ -1,5 +1,6 @@
 #include "core/MediaKinds.h"
 
+#include <QCoreApplication>
 #include <QFile>
 #include <QFileInfo>
 #include <QtEndian>
@@ -104,7 +105,7 @@ bool isAnimatedWebp(const QString& path)
 QString openFileFilter()
 {
     const QStringList all = videoExtensions() + imageExtensions();
-    return QStringLiteral("媒体文件 (%1);;视频 (%2);;图片与动图 (%3);;所有文件 (*)")
+    return QCoreApplication::translate("MediaKinds", "媒体文件 (%1);;视频 (%2);;图片与动图 (%3);;所有文件 (*)")
         .arg(globList(all), globList(videoExtensions()), globList(imageExtensions()));
 }
 

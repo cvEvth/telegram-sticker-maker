@@ -2,6 +2,7 @@
 
 #include "core/Keywords.h"
 
+#include <QCoreApplication>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -124,7 +125,7 @@ QByteArray write(const QList<StickerTask>& tasks, const WriteOptions& options)
 ParseResult parse(const QByteArray& json)
 {
     ParseResult result;
-    result.error = QStringLiteral("列表文件格式无效");
+    result.error = QCoreApplication::translate("StickerList", "列表文件格式无效");
     QJsonParseError err;
     const QJsonDocument doc = QJsonDocument::fromJson(json, &err);
     if (err.error != QJsonParseError::NoError || !doc.isObject())

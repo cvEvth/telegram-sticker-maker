@@ -29,7 +29,7 @@ void DropOverlay::paintEvent(QPaintEvent*)
     font.setBold(true);
     painter.setFont(font);
     painter.setPen(QColor(0xe6, 0xe8, 0xee));
-    painter.drawText(box, Qt::AlignCenter, QStringLiteral("📥\n松开鼠标立即导入文件"));
+    painter.drawText(box, Qt::AlignCenter, tr("📥\n松开鼠标立即导入文件"));
 }
 
 } // namespace tsm

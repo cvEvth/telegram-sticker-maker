@@ -25,8 +25,6 @@
   <a href="https://www.cvevth.top/sticker"><b>🌐 Create a sticker pack online</b></a>
 </p>
 
-> The app's interface is in Simplified Chinese only. Button names below are given in Chinese with an English translation so you can find them.
-
 ![Main window](docs/screenshots/main-window.png)
 
 ## Features
@@ -38,6 +36,7 @@
 - **Emoji and keywords**: double-click to set an emoji, or right-click to set emoji and keywords in bulk; you can also connect an OpenAI-compatible vision model to match emoji to the mood of each frame automatically
 - **Lots of input formats**: MP4, MKV, WebM, MOV, AVI, FLV, GIF, APNG, animated WebP, PNG, JPG, WebP, BMP, TIFF, HEIC; transparency in videos, GIFs and PNGs is preserved
 - **Custom emoji**: switch to 100×100 mode to make a whole Custom Emoji set at once
+- **English, Simplified Chinese and Russian interface**: follows your system language by default; switch it under "🌐 Language" in the settings panel
 - **Safe from interruptions**: the list and every edit are saved automatically and restored exactly when you reopen the app; you can also export the source files with a settings manifest and continue on another computer
 
 ## Download
@@ -53,10 +52,10 @@ Requirements: Windows 10 / 11, 64-bit. Both packages bundle their runtimes, noth
 
 ## Quick start
 
-1. **Drag** videos, GIFs or images **into the window**, or click 「添加文件」 (Add files) / 「添加文件夹」 (Add folder)
+1. **Drag** videos, GIFs or images **into the window**, or click "Add files" / "Add folder"
 2. To trim clips or crop the frame, click ✂️ on a row to open the editor
-3. **Double-click 「目标文件名」 (Target file name)** to set an emoji; the right-click menu sets emoji and keywords in bulk, or lets AI match emoji
-4. Click 「🚀 开始转换」 (Start conversion). When it finishes, the output folder contains `TG_Stickers_<date>_<time>.zip` (the stickers plus a `stickers.json` with their emoji and keywords)
+3. **Double-click "Target file name"** to set an emoji; the right-click menu sets emoji and keywords in bulk, or lets AI match emoji
+4. Click "🚀 Start conversion". When it finishes, the output folder contains `TG_Stickers_<date>_<time>.zip` (the stickers plus a `stickers.json` with their emoji and keywords)
 
 ### Trim and crop
 
@@ -91,19 +90,19 @@ The app isn't signed with a paid code-signing certificate, so Windows SmartScree
 <details>
 <summary><b>How do I use AI emoji matching?</b></summary>
 
-Click 「⚙️ AI 设置」 (AI settings) in the toolbar and fill in the API key, base URL and model name. Any vision model that speaks the OpenAI Chat Completions format works (OpenAI, DeepSeek, Moonshot, OneAPI-style relays and so on). If the base URL points to your own machine (localhost / 127.0.0.1), the key can be left empty. Recognition only looks at the final sticker area (with crop, rounded corners and mirroring applied); for videos, several frames are combined into one image.
+Click "⚙️ AI settings" in the toolbar and fill in the API key, base URL and model name. Any vision model that speaks the OpenAI Chat Completions format works (OpenAI, DeepSeek, Moonshot, OneAPI-style relays and so on). If the base URL points to your own machine (localhost / 127.0.0.1), the key can be left empty. Recognition only looks at the final sticker area (with crop, rounded corners and mirroring applied); for videos, several frames are combined into one image.
 </details>
 
 <details>
 <summary><b>Conversion fails or says the file is too large</b></summary>
 
-Long clips with complex, fast-moving content may not fit in 256 KB even at the lowest frame rate. Try trimming the clip or cropping away extra area. If 「编码预设」 (Encoding preset) is set to 「⚡ 快速导出」 (Fast export), switch back to the default 「✨ 高画质」 (High quality), which uses two-pass encoding with light denoising for better quality at the same size. The reason for a failure is shown in the status bar and the log.
+Long clips with complex, fast-moving content may not fit in 256 KB even at the lowest frame rate. Try trimming the clip or cropping away extra area. If "Encoding preset" is set to "⚡ Fast export", switch back to the default "✨ High quality", which uses two-pass encoding with light denoising for better quality at the same size. The reason for a failure is shown in the status bar and the log.
 </details>
 
 <details>
 <summary><b>Where are settings and caches stored?</b></summary>
 
-By default in `%LOCALAPPDATA%\TelegramStickerMaker` (settings, the auto-saved list and preview caches). You can move it to another drive with 「数据目录」 (Data folder) on the right, and 「清除预览缓存」 (Clear preview cache) frees up space. Uninstalling keeps this data, so you can pick up where you left off after reinstalling.
+By default in `%LOCALAPPDATA%\TelegramStickerMaker` (settings, the auto-saved list and preview caches). You can move it to another drive with "Data folder" on the right, and "Clear preview cache" frees up space. Uninstalling keeps this data, so you can pick up where you left off after reinstalling.
 </details>
 
 ## Development

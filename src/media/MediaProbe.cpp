@@ -6,6 +6,7 @@
 #include "media/FFmpegTools.h"
 #include "media/ProcessRunner.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -78,7 +79,7 @@ ProbeResult probeAnimatedWebp(const QString& path, MediaInfo info)
     ProbeResult result;
     const ImageHeaders::Info header = ImageHeaders::scanFile(path);
     if (!header.parsed || !header.animated) {
-        result.error = QStringLiteral("无法解析动态 WebP");
+        result.error = QCoreApplication::translate("MediaProbe", "无法解析动态 WebP");
         return result;
     }
     info.isVideo = true;
@@ -93,7 +94,7 @@ ProbeResult probeAnimatedWebp(const QString& path, MediaInfo info)
     result.info = info;
     result.ok = info.isValid();
     if (!result.ok)
-        result.error = QStringLiteral("无法读取画面尺寸");
+        result.error = QCoreApplication::translate("MediaProbe", "无法读取画面尺寸");
     return result;
 }
 } // namespace
@@ -107,12 +108,12 @@ ProbeResult MediaProbe::probe(const QString& path)
     info.fileSize = fileInfo.size();
 
     if (!fileInfo.isFile()) {
-        result.error = QStringLiteral("文件不存在");
+        result.error = QCoreApplication::translate("MediaProbe", "文件不存在");
         return result;
     }
     const MediaKind kind = MediaKinds::classify(path);
     if (kind == MediaKind::Unsupported) {
-        result.error = QStringLiteral("不支持的文件格式");
+        result.error = QCoreApplication::translate("MediaProbe", "不支持的文件格式");
         return result;
     }
     const bool webp = fileInfo.suffix().compare(u"webp", Qt::CaseInsensitive) == 0;
@@ -121,7 +122,7 @@ ProbeResult MediaProbe::probe(const QString& path)
 
     const QString ffprobe = FFmpegTools::ffprobePath();
     if (ffprobe.isEmpty()) {
-        result.error = QStringLiteral("找不到 ffprobe");
+        result.error = QCoreApplication::translate("MediaProbe", "找不到 ffprobe");
         return result;
     }
 
@@ -141,7 +142,7 @@ ProbeResult MediaProbe::probe(const QString& path)
     QJsonParseError parseError;
     const QJsonDocument doc = QJsonDocument::fromJson(run.stdOut, &parseError);
     if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
-        result.error = QStringLiteral("无法解析 ffprobe 输出");
+        result.error = QCoreApplication::translate("MediaProbe", "无法解析 ffprobe 输出");
         return result;
     }
     const QJsonObject root = doc.object();
@@ -158,7 +159,7 @@ ProbeResult MediaProbe::probe(const QString& path)
         break;
     }
     if (video.isEmpty()) {
-        result.error = QStringLiteral("未找到视频或图像流");
+        result.error = QCoreApplication::translate("MediaProbe", "未找到视频或图像流");
         return result;
     }
 
@@ -202,7 +203,7 @@ ProbeResult MediaProbe::probe(const QString& path)
     }
 
     if (!info.isValid()) {
-        result.error = QStringLiteral("无法读取画面尺寸");
+        result.error = QCoreApplication::translate("MediaProbe", "无法读取画面尺寸");
         return result;
     }
     result.ok = true;

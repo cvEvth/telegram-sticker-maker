@@ -6,6 +6,7 @@
 #include "media/ProcessRunner.h"
 #include "media/SourceInput.h"
 
+#include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
@@ -107,7 +108,7 @@ void ProxyCache::generate(const QString& source, double duration)
                 process.kill();
                 process.waitForFinished(3000);
                 ok = false;
-                error = QStringLiteral("已取消");
+                error = tr("已取消");
                 break;
             }
             process.waitForReadyRead(200);
@@ -128,13 +129,13 @@ void ProxyCache::generate(const QString& source, double duration)
         if (ok && (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)) {
             ok = false;
             const QStringList lines = QString::fromUtf8(process.readAllStandardError()).split(u'\n', Qt::SkipEmptyParts);
-            error = lines.isEmpty() ? QStringLiteral("ffmpeg 退出码 %1").arg(process.exitCode()) : lines.last().trimmed();
+            error = lines.isEmpty() ? tr("ffmpeg 退出码 %1").arg(process.exitCode()) : lines.last().trimmed();
         }
         if (ok) {
             QFile::remove(target);
             ok = QFile::rename(temp, target);
             if (!ok)
-                error = QStringLiteral("无法写入缓存文件");
+                error = tr("无法写入缓存文件");
         }
         if (!ok)
             QFile::remove(temp);
@@ -167,7 +168,8 @@ void ProxyCache::prune()
 
 QString CacheUsage::text() const
 {
-    return files == 0 ? QStringLiteral("缓存为空") : QStringLiteral("%1 个文件 · %2").arg(files).arg(formatBytes(bytes));
+    return files == 0 ? QCoreApplication::translate("ProxyCache", "缓存为空")
+                      : QCoreApplication::translate("ProxyCache", "%n 个文件 · %1", nullptr, int(files)).arg(formatBytes(bytes));
 }
 
 CacheUsage measurePreviewCache(const QString& dir)

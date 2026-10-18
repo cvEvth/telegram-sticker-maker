@@ -3,6 +3,7 @@
 #include "core/MediaKinds.h"
 #include "media/MediaProbe.h"
 
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
 #include <QFileInfo>
@@ -35,7 +36,7 @@ Result load(const StickerList::Entry& entry, const QString& baseDir)
     const QString path = resolvePath(entry.task.inputPath, baseDir, entry.task.info.fileName);
     if (path.isEmpty()) {
         result.outcome = Outcome::Missing;
-        result.error = QStringLiteral("找不到源文件");
+        result.error = QCoreApplication::translate("ListLoader", "找不到源文件");
         return result;
     }
 

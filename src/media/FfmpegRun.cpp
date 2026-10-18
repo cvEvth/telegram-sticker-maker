@@ -3,6 +3,7 @@
 #include "media/FFmpegTools.h"
 #include "media/ProcessRunner.h"
 
+#include <QCoreApplication>
 #include <QProcess>
 #include <algorithm>
 
@@ -14,7 +15,7 @@ Result run(const QStringList& args, double duration, const std::shared_ptr<std::
     Result result;
     const QString ffmpeg = FFmpegTools::ffmpegPath();
     if (ffmpeg.isEmpty()) {
-        result.error = QStringLiteral("找不到 ffmpeg");
+        result.error = QCoreApplication::translate("FfmpegRun", "找不到 ffmpeg");
         return result;
     }
     QStringList full{QStringLiteral("-hide_banner"), QStringLiteral("-nostdin"), QStringLiteral("-y"),
@@ -36,7 +37,7 @@ Result run(const QStringList& args, double duration, const std::shared_ptr<std::
             process.kill();
             process.waitForFinished(3000);
             result.cancelled = true;
-            result.error = QStringLiteral("已取消");
+            result.error = QCoreApplication::translate("FfmpegRun", "已取消");
             return result;
         }
         process.waitForReadyRead(100);
@@ -51,7 +52,7 @@ Result run(const QStringList& args, double duration, const std::shared_ptr<std::
     }
     if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
         const QStringList lines = QString::fromUtf8(process.readAllStandardError()).split(u'\n', Qt::SkipEmptyParts);
-        result.error = lines.isEmpty() ? QStringLiteral("ffmpeg 退出码 %1").arg(process.exitCode()) : lines.last().trimmed();
+        result.error = lines.isEmpty() ? QCoreApplication::translate("FfmpegRun", "ffmpeg 退出码 %1").arg(process.exitCode()) : lines.last().trimmed();
         return result;
     }
     result.ok = true;

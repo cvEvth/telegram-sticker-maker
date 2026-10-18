@@ -32,16 +32,16 @@ DropZone::DropZone(QWidget* parent)
     idleLayout->setSpacing(12);
     idleLayout->addStretch();
     idleLayout->addWidget(centeredLabel(QStringLiteral("📂"), QStringLiteral("DropIcon")));
-    idleLayout->addWidget(centeredLabel(QStringLiteral("拖拽图片或视频到这里"), QStringLiteral("DropTitle")));
-    idleLayout->addWidget(centeredLabel(QStringLiteral("支持多文件与文件夹拖拽，也可导入已导出的 zip / JSON"),
+    idleLayout->addWidget(centeredLabel(tr("拖拽图片或视频到这里"), QStringLiteral("DropTitle")));
+    idleLayout->addWidget(centeredLabel(tr("支持多文件与文件夹拖拽，也可导入已导出的 zip / JSON"),
                                         QStringLiteral("DropHint")));
 
     auto* buttons = new QHBoxLayout;
     buttons->setSpacing(10);
     buttons->addStretch();
-    auto* addFiles = new QPushButton(QStringLiteral("➕ 添加文件"));
-    auto* addFolder = new QPushButton(QStringLiteral("📁 添加文件夹"));
-    auto* import = new QPushButton(QStringLiteral("📥 导入"));
+    auto* addFiles = new QPushButton(tr("➕ 添加文件"));
+    auto* addFolder = new QPushButton(tr("📁 添加文件夹"));
+    auto* import = new QPushButton(tr("📥 导入"));
     for (auto* button : {addFiles, addFolder, import}) {
         button->setCursor(Qt::PointingHandCursor);
         buttons->addWidget(button);
@@ -65,8 +65,8 @@ DropZone::DropZone(QWidget* parent)
 
     // 配合使用的机器人与贴纸库
     auto* promo = centeredLabel(
-        QStringLiteral("做好的贴纸可前往 <a href=\"%1\" style=\"color:#5ec2ff; text-decoration:none;\">www.cvevth.top/sticker</a>"
-                       " 创建 Telegram 贴纸包 · 也可把压缩包发给 <a href=\"%2\" style=\"color:#5ec2ff; text-decoration:none;\">%3</a>")
+        tr("做好的贴纸可前往 <a href=\"%1\" style=\"color:#5ec2ff; text-decoration:none;\">www.cvevth.top/sticker</a>"
+           " 创建 Telegram 贴纸包 · 也可把压缩包发给 <a href=\"%2\" style=\"color:#5ec2ff; text-decoration:none;\">%3</a>")
             .arg(BotPromo::galleryUrl(), BotPromo::botUrl(), BotPromo::handle()),
         QStringLiteral("PromoLine"));
     promo->setTextFormat(Qt::RichText);

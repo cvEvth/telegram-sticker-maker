@@ -1,5 +1,6 @@
 #include "core/AiEmoji.h"
 
+#include <QCoreApplication>
 #include <QJsonArray>
 #include <algorithm>
 #include <QJsonDocument>
@@ -104,6 +105,8 @@ QByteArray buildRequest(const QString& model, const QString& prompt, const QByte
     return QJsonDocument(root).toJson(QJsonDocument::Compact);
 }
 
+QString invalidReplyText() { return QCoreApplication::translate("AiEmoji", "接口返回格式无效"); }
+
 QString parseReply(const QByteArray& body, QString* error)
 {
     QJsonParseError err;
@@ -114,7 +117,7 @@ QString parseReply(const QByteArray& body, QString* error)
         if (error) {
             // 兼容接口常见的 {"error": {"message": ...}}
             const QString message = doc.object().value(u"error").toObject().value(u"message").toString();
-            *error = message.isEmpty() ? QStringLiteral("接口返回格式无效") : message;
+            *error = message.isEmpty() ? invalidReplyText() : message;
         }
         return {};
     }

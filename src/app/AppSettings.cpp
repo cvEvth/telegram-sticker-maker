@@ -24,6 +24,7 @@ constexpr auto AiBaseUrl = "ai/base_url";
 constexpr auto AiModel = "ai/model";
 constexpr auto AiApiKey = "ai/api_key";
 constexpr auto ShowDoneDialog = "ui/show_done_dialog";
+constexpr auto Language = "ui/language";
 } // namespace key
 
 AppSettings::AppSettings()
@@ -127,5 +128,7 @@ QString AppSettings::aiApiKey() const { return value(key::AiApiKey, QString()).t
 void AppSettings::setAiApiKey(const QString& apiKey) { setValue(key::AiApiKey, apiKey); }
 bool AppSettings::showDoneDialog() const { return value(key::ShowDoneDialog, true).toBool(); }
 void AppSettings::setShowDoneDialog(bool on) { setValue(key::ShowDoneDialog, on); }
+QString AppSettings::language() const { return value(key::Language, QString()).toString(); }
+void AppSettings::setLanguage(const QString& language) { setValue(key::Language, language); }
 
 } // namespace tsm

@@ -32,11 +32,11 @@ QString AiMatcher::validate(const AiConfig& config)
 {
     const QUrl url(config.baseUrl.trimmed());
     if (!url.isValid() || (url.scheme() != u"http" && url.scheme() != u"https") || url.host().isEmpty())
-        return QStringLiteral("Base URL 无效，请在 AI 设置中检查");
+        return tr("Base URL 无效，请在 AI 设置中检查");
     if (config.model.trimmed().isEmpty())
-        return QStringLiteral("请先在 AI 设置中填写模型名称");
+        return tr("请先在 AI 设置中填写模型名称");
     if (config.apiKey.trimmed().isEmpty() && !AiEmoji::isLocalBaseUrl(config.baseUrl))
-        return QStringLiteral("请先在 AI 设置中填写 API Key");
+        return tr("请先在 AI 设置中填写 API Key");
     return {};
 }
 
@@ -161,10 +161,10 @@ void AiMatcher::onReply()
         QString message;
         AiEmoji::parseReply(body, &message);
         error = QStringLiteral("HTTP %1").arg(status);
-        if (!message.isEmpty() && message != u"接口返回格式无效")
+        if (!message.isEmpty() && message != AiEmoji::invalidReplyText())
             error += QStringLiteral(": ") + message;
     } else if (reply->error() == QNetworkReply::OperationCanceledError) {
-        error = QStringLiteral("请求超时（%1 秒）").arg(AiEmoji::kTimeoutMs / 1000);
+        error = tr("请求超时（%1 秒）").arg(AiEmoji::kTimeoutMs / 1000);
     } else {
         error = reply->errorString();
     }

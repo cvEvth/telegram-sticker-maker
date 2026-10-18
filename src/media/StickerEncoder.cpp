@@ -8,6 +8,7 @@
 #include "media/WebmDuration.h"
 #include "media/WebpEncoder.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -53,11 +54,11 @@ EncodeResult StickerEncoder::run()
 {
     EncodeResult result;
     if (!QFileInfo::exists(m_req.task.inputPath)) {
-        result.statusText = QStringLiteral("源文件不存在");
+        result.statusText = QCoreApplication::translate("StickerEncoder", "源文件不存在");
         return result;
     }
     if (FFmpegTools::ffmpegPath().isEmpty()) {
-        result.statusText = QStringLiteral("找不到 ffmpeg");
+        result.statusText = QCoreApplication::translate("StickerEncoder", "找不到 ffmpeg");
         return result;
     }
     QDir().mkpath(m_req.workDir);
@@ -66,7 +67,7 @@ EncodeResult StickerEncoder::run()
         const QSize content = m_req.task.info.isVideo ? EncodePlan::videoContentSize(sourceSize(), m_req.mode)
                                                       : EncodePlan::staticContentSize(sourceSize(), m_req.mode);
         if (!writeMask(content)) {
-            result.statusText = QStringLiteral("无法生成圆角遮罩");
+            result.statusText = QCoreApplication::translate("StickerEncoder", "无法生成圆角遮罩");
             return result;
         }
     }
@@ -74,7 +75,7 @@ EncodeResult StickerEncoder::run()
     if (cancelled()) {
         result.ok = false;
         result.cancelled = true;
-        result.statusText = QStringLiteral("已取消");
+        result.statusText = QCoreApplication::translate("StickerEncoder", "已取消");
     }
     return result;
 }
@@ -93,7 +94,7 @@ EncodeResult StickerEncoder::encodeVideo()
     input.mode = m_req.mode;
     input.preset = m_req.preset;
     if (m_duration > EncodePlan::kShortClipSeconds) {
-        report(2, QStringLiteral("分析运动量..."));
+        report(2, QCoreApplication::translate("StickerEncoder", "分析运动量..."));
         input.motion = measureMotion(m_start, m_duration);
         if (cancelled())
             return result;
@@ -101,7 +102,7 @@ EncodeResult StickerEncoder::encodeVideo()
 
     const EncodePlan::Plan plan = EncodePlan::plan(input);
     const QString summary = plan.summary();
-    report(5, QStringLiteral("编码规划: ") + summary);
+    report(5, QCoreApplication::translate("StickerEncoder", "编码规划: ") + summary);
 
     EncodePlan::RetryState state;
     state.fps = plan.fps;
@@ -119,21 +120,21 @@ EncodeResult StickerEncoder::encodeVideo()
         if (plan.twoPass) {
             const int mid = lo + (hi - lo) * 2 / 5;
             const FfmpegRun p1 = runFfmpeg(videoArgs(plan, state.fps, state.bitrateKbps, 1, attemptFile), m_duration, lo,
-                                           mid, prefix + QStringLiteral("第一遍分析..."));
+                                           mid, prefix + QCoreApplication::translate("StickerEncoder", "第一遍分析..."));
             if (cancelled())
                 return result;
             const FfmpegRun p2 = p1.ok ? runFfmpeg(videoArgs(plan, state.fps, state.bitrateKbps, 2, attemptFile),
-                                                   m_duration, mid, hi, prefix + QStringLiteral("第二遍高质量编码..."))
+                                                   m_duration, mid, hi, prefix + QCoreApplication::translate("StickerEncoder", "第二遍高质量编码..."))
                                        : p1;
             ok = p2.ok;
             if (!ok)
-                result.statusText = QStringLiteral("编码失败: ") + p2.error;
+                result.statusText = QCoreApplication::translate("StickerEncoder", "编码失败: ") + p2.error;
         } else {
             const FfmpegRun p = runFfmpeg(videoArgs(plan, state.fps, state.bitrateKbps, 0, attemptFile), m_duration, lo,
-                                          hi, prefix + QStringLiteral("编码中..."));
+                                          hi, prefix + QCoreApplication::translate("StickerEncoder", "编码中..."));
             ok = p.ok;
             if (!ok)
-                result.statusText = QStringLiteral("编码失败: ") + p.error;
+                result.statusText = QCoreApplication::translate("StickerEncoder", "编码失败: ") + p.error;
         }
         if (cancelled())
             return result;
@@ -142,7 +143,7 @@ EncodeResult StickerEncoder::encodeVideo()
 
         const qint64 size = QFileInfo(attemptFile).size();
         if (size <= 0) {
-            result.statusText = QStringLiteral("编码失败: 输出文件为空");
+            result.statusText = QCoreApplication::translate("StickerEncoder", "编码失败: 输出文件为空");
             return result;
         }
         if (size <= plan.limitBytes) {
@@ -166,27 +167,27 @@ EncodeResult StickerEncoder::encodeVideo()
     }
 
     if (bestFile.isEmpty()) {
-        result.statusText = QStringLiteral("无法将体积压缩至 %1KB 以内").arg(plan.limitBytes / 1024);
+        result.statusText = QCoreApplication::translate("StickerEncoder", "无法将体积压缩至 %1KB 以内").arg(plan.limitBytes / 1024);
         return result;
     }
 
-    report(97, QStringLiteral("写入文件..."));
+    report(97, QCoreApplication::translate("StickerEncoder", "写入文件..."));
     QFile::remove(m_req.outputFile);
     if (!QFile::copy(bestFile, m_req.outputFile)) {
-        result.statusText = QStringLiteral("无法写入输出文件");
+        result.statusText = QCoreApplication::translate("StickerEncoder", "无法写入输出文件");
         return result;
     }
     // 3 秒破限：保留全部帧，只把文件头时长改写为 2.99 秒
     if (m_duration > spec::kOfficialMaxDuration) {
         QString error;
         if (!WebmDuration::write(m_req.outputFile, spec::kPatchedDuration, &error)) {
-            result.statusText = QStringLiteral("改写时长失败: ") + error;
+            result.statusText = QCoreApplication::translate("StickerEncoder", "改写时长失败: ") + error;
             return result;
         }
     }
     result.ok = true;
     result.size = QFileInfo(m_req.outputFile).size();
-    result.statusText = QStringLiteral("转换完成，体积: %1 | %2").arg(kbText(result.size), summary);
+    result.statusText = QCoreApplication::translate("StickerEncoder", "转换完成，体积: %1 | %2").arg(kbText(result.size), summary);
     return result;
 }
 
@@ -262,7 +263,7 @@ std::optional<double> StickerEncoder::measureMotion(double start, double duratio
          << QStringLiteral("fps=%1,scale=%2:%2:flags=area,format=gray").arg(sampleRate, 0, 'f', 4).arg(kMotionSide)
          << QStringLiteral("-frames:v") << QString::number(kMotionSamples)
          << QStringLiteral("-an") << QStringLiteral("-f") << QStringLiteral("rawvideo") << QStringLiteral("-");
-    const FfmpegRun run = runFfmpeg(args, 0, 2, 5, QStringLiteral("分析运动量..."), true);
+    const FfmpegRun run = runFfmpeg(args, 0, 2, 5, QCoreApplication::translate("StickerEncoder", "分析运动量..."), true);
     constexpr int frameBytes = kMotionSide * kMotionSide;
     const int frames = int(run.stdOut.size() / frameBytes);
     if (!run.ok || frames < 2)
@@ -289,7 +290,7 @@ EncodeResult StickerEncoder::encodeStatic()
     const QSize content = EncodePlan::staticContentSize(sourceSize(), m_req.mode);
     const QSize canvas = EncodePlan::canvasSize(content, m_req.mode);
     const qint64 limit = EncodePlan::staticLimitBytes(m_req.mode);
-    const QString failText = QStringLiteral("静态转换失败或体积超出 %1KB").arg(limit / 1024);
+    const QString failText = QCoreApplication::translate("StickerEncoder", "静态转换失败或体积超出 %1KB").arg(limit / 1024);
 
     // HEIC / JPEG 的方向由 ffmpeg 解码时自动摆正，与解析出的宽高一致
     const QString frameFile = QDir(m_req.workDir).filePath(QStringLiteral("frame.png"));
@@ -299,16 +300,16 @@ EncodeResult StickerEncoder::encodeStatic()
          << QStringLiteral("-map_metadata") << QStringLiteral("-1")
          << QStringLiteral("-c:v") << QStringLiteral("png") << QStringLiteral("-f") << QStringLiteral("image2")
          << native(frameFile);
-    const FfmpegRun render = runFfmpeg(args, 0, 5, 30, QStringLiteral("处理画面..."));
+    const FfmpegRun render = runFfmpeg(args, 0, 5, 30, QCoreApplication::translate("StickerEncoder", "处理画面..."));
     if (cancelled())
         return result;
     if (!render.ok) {
-        result.statusText = QStringLiteral("处理画面失败: ") + render.error;
+        result.statusText = QCoreApplication::translate("StickerEncoder", "处理画面失败: ") + render.error;
         return result;
     }
     const QImage image(frameFile);
     if (image.isNull()) {
-        result.statusText = QStringLiteral("无法读取处理后的画面");
+        result.statusText = QCoreApplication::translate("StickerEncoder", "无法读取处理后的画面");
         return result;
     }
 
@@ -317,16 +318,16 @@ EncodeResult StickerEncoder::encodeStatic()
         int quality;
         QString label;
     };
-    QList<Step> steps{{WebpEncoder::Mode::Lossless, 100, QStringLiteral("纯无损")},
-                      {WebpEncoder::Mode::NearLossless, 100, QStringLiteral("近无损")}};
+    QList<Step> steps{{WebpEncoder::Mode::Lossless, 100, QCoreApplication::translate("StickerEncoder", "纯无损")},
+                      {WebpEncoder::Mode::NearLossless, 100, QCoreApplication::translate("StickerEncoder", "近无损")}};
     for (const int q : {98, 95, 90, 85, 80, 70, 60})
-        steps << Step{WebpEncoder::Mode::Lossy, q, QStringLiteral("有损 q%1").arg(q)};
+        steps << Step{WebpEncoder::Mode::Lossy, q, QCoreApplication::translate("StickerEncoder", "有损 q%1").arg(q)};
 
     for (int i = 0; i < steps.size(); ++i) {
         if (cancelled())
             return result;
         const Step& step = steps.at(i);
-        report(35 + i * 60 / int(steps.size()), QStringLiteral("WebP 编码（%1）...").arg(step.label));
+        report(35 + i * 60 / int(steps.size()), QCoreApplication::translate("StickerEncoder", "WebP 编码（%1）...").arg(step.label));
         QString error;
         const QByteArray data = WebpEncoder::encode(image, step.mode, step.quality, &error);
         if (data.isEmpty()) {
@@ -337,13 +338,13 @@ EncodeResult StickerEncoder::encodeStatic()
             continue;
         QFile out(m_req.outputFile);
         if (!out.open(QIODevice::WriteOnly) || out.write(data) != data.size()) {
-            result.statusText = QStringLiteral("无法写入输出文件");
+            result.statusText = QCoreApplication::translate("StickerEncoder", "无法写入输出文件");
             return result;
         }
         out.close();
         result.ok = true;
         result.size = data.size();
-        result.statusText = QStringLiteral("转换完成（%1），体积: %2").arg(step.label, kbText(result.size));
+        result.statusText = QCoreApplication::translate("StickerEncoder", "转换完成（%1），体积: %2").arg(step.label, kbText(result.size));
         return result;
     }
     result.statusText = failText;
@@ -452,7 +453,7 @@ StickerEncoder::FfmpegRun StickerEncoder::runFfmpeg(const QStringList& args, dou
     const QByteArray err = process.readAllStandardError();
     if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
         const QStringList lines = QString::fromUtf8(err).split(u'\n', Qt::SkipEmptyParts);
-        run.error = lines.isEmpty() ? QStringLiteral("ffmpeg 退出码 %1").arg(process.exitCode()) : lines.last().trimmed();
+        run.error = lines.isEmpty() ? QCoreApplication::translate("StickerEncoder", "ffmpeg 退出码 %1").arg(process.exitCode()) : lines.last().trimmed();
         return run;
     }
     run.ok = true;

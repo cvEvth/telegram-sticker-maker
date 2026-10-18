@@ -175,7 +175,7 @@ void TimelineTrack::paintEvent(QPaintEvent*)
     // 底部：可视起点 / 操作提示 / 可视终点
     const QRectF footer(track.left(), track.bottom() + 1, track.width(), kFooterHeight - 1);
     p.drawText(footer, Qt::AlignLeft | Qt::AlignVCenter, formatTimecode(vs));
-    p.drawText(footer, Qt::AlignHCenter | Qt::AlignVCenter, QStringLiteral("滚轮缩放 · Shift 平移"));
+    p.drawText(footer, Qt::AlignHCenter | Qt::AlignVCenter, tr("滚轮缩放 · Shift 平移"));
     p.drawText(footer, Qt::AlignRight | Qt::AlignVCenter, formatTimecode(ve));
 }
 
@@ -214,9 +214,9 @@ void TimelineTrack::mouseMoveEvent(QMouseEvent* e)
         const int index = m_state->spanAt(t);
         if (index >= 0) {
             const auto& s = m_state->spans().at(index);
-            const QString end = s.end ? formatTimecode(*s.end) : QStringLiteral("未设终点");
+            const QString end = s.end ? formatTimecode(*s.end) : tr("未设终点");
             QToolTip::showText(e->globalPosition().toPoint(),
-                               QStringLiteral("片段 %1: %2 – %3").arg(index + 1).arg(formatTimecode(s.start), end), this);
+                               tr("片段 %1: %2 – %3").arg(index + 1).arg(formatTimecode(s.start), end), this);
         } else {
             QToolTip::hideText();
         }

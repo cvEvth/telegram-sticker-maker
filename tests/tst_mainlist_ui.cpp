@@ -35,6 +35,7 @@
 #include <QTemporaryDir>
 #include <QTest>
 #include <QTimer>
+#include <QTranslator>
 
 using namespace tsm;
 
@@ -96,6 +97,24 @@ private slots:
         const QList<QSize> sizes = icon.availableSizes();
         for (const int s : {16, 24, 32, 48, 64, 128, 256})
             QVERIFY2(sizes.contains(QSize(s, s)), qPrintable(QStringLiteral("缺少 %1px").arg(s)));
+    }
+
+    // 英语 / 俄语翻译已嵌入资源，普通条目与复数条目都能查到
+    void translationsLoad()
+    {
+        QTranslator en;
+        QVERIFY(en.load(QStringLiteral(":/i18n/tsm_en")));
+        QCOMPARE(en.translate("tsm::SettingsPanel", "🚀 开始转换"), QStringLiteral("🚀 Start conversion"));
+        QCOMPARE(en.translate("tsm::MainWindow", "已添加 %n 项", nullptr, 1), QStringLiteral("%n item"));
+        QCOMPARE(en.translate("tsm::MainWindow", "已添加 %n 项", nullptr, 3), QStringLiteral("%n items"));
+
+        QTranslator ru;
+        QVERIFY(ru.load(QStringLiteral(":/i18n/tsm_ru")));
+        QCOMPARE(ru.translate("StickerTask", "等待转换"), QStringLiteral("Ожидает"));
+        QCOMPARE(ru.translate("tsm::MainWindow", "已添加 %n 项", nullptr, 1), QStringLiteral("%n элемент"));
+        QCOMPARE(ru.translate("tsm::MainWindow", "已添加 %n 项", nullptr, 3), QStringLiteral("%n элемента"));
+        QCOMPARE(ru.translate("tsm::MainWindow", "已添加 %n 项", nullptr, 11), QStringLiteral("%n элементов"));
+        QCOMPARE(ru.translate("tsm::MainWindow", "已添加 %n 项", nullptr, 21), QStringLiteral("%n элемент"));
     }
 
     // 网站推广：标题栏链接、空列表提示、转换成功弹窗（可勾选不再弹出）

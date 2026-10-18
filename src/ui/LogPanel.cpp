@@ -17,13 +17,13 @@ LogPanel::LogPanel(QWidget* parent)
 
     m_toggle = new QToolButton;
     m_toggle->setObjectName(QStringLiteral("LogToggle"));
-    m_toggle->setText(QStringLiteral("📋 运行日志"));
+    m_toggle->setText(tr("📋 运行日志"));
     m_toggle->setCursor(Qt::PointingHandCursor);
 
     m_summary = new QLabel;
     m_summary->setObjectName(QStringLiteral("LogSummary"));
 
-    auto* clear = new QPushButton(QStringLiteral("清空日志"));
+    auto* clear = new QPushButton(tr("清空日志"));
     clear->setObjectName(QStringLiteral("SmallButton"));
 
     m_arrow = new QToolButton;
@@ -41,7 +41,7 @@ LogPanel::LogPanel(QWidget* parent)
     m_view = new QPlainTextEdit;
     m_view->setObjectName(QStringLiteral("LogView"));
     m_view->setReadOnly(true);
-    m_view->setPlaceholderText(QStringLiteral("暂无输出日志..."));
+    m_view->setPlaceholderText(tr("暂无输出日志..."));
     m_view->setMaximumBlockCount(5000);
     m_view->setFixedHeight(180);
     QFont mono(QStringLiteral("Consolas"));

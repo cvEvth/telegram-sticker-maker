@@ -1,5 +1,6 @@
 #include "media/WebmDuration.h"
 
+#include <QCoreApplication>
 #include <QFile>
 #include <QtEndian>
 #include <cstring>
@@ -162,7 +163,7 @@ bool write(const QString& path, double seconds, QString* error)
     const auto field = locate(head);
     if (!field) {
         if (error)
-            *error = QStringLiteral("未找到 WebM 时长字段");
+            *error = QCoreApplication::translate("WebmDuration", "未找到 WebM 时长字段");
         return false;
     }
     const double ticks = seconds * 1e9 / double(field->timecodeScale);

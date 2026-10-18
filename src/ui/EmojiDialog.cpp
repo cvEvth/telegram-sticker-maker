@@ -30,15 +30,15 @@ const QStringList& quickPicks()
 EmojiDialog::EmojiDialog(const QString& subtitle, const QString& initial, QWidget* parent)
     : QDialog(parent)
 {
-    setWindowTitle(QStringLiteral("设置 Emoji"));
+    setWindowTitle(tr("设置 Emoji"));
     setObjectName(QStringLiteral("EmojiDialog"));
     setMinimumWidth(440);
 
-    auto* title = new QLabel(QStringLiteral("设置 Emoji"));
+    auto* title = new QLabel(tr("设置 Emoji"));
     title->setObjectName(QStringLiteral("DialogTitle"));
     auto* sub = new QLabel(subtitle);
     sub->setObjectName(QStringLiteral("Hint"));
-    auto* desc = new QLabel(QStringLiteral("覆盖选中贴纸的 Emoji，文件名随之更新。只保留 Emoji 字符，最多 %1 个字符；留空则清除。")
+    auto* desc = new QLabel(tr("覆盖选中贴纸的 Emoji，文件名随之更新。只保留 Emoji 字符，最多 %1 个字符；留空则清除。")
                                 .arg(AiEmoji::kMaxEmojiChars));
     desc->setObjectName(QStringLiteral("Hint"));
     desc->setWordWrap(true);
@@ -56,13 +56,13 @@ EmojiDialog::EmojiDialog(const QString& subtitle, const QString& initial, QWidge
     }
 
     m_input = new QLineEdit(initial);
-    m_input->setPlaceholderText(QStringLiteral("输入或点选 Emoji，如 😂🤣"));
+    m_input->setPlaceholderText(tr("输入或点选 Emoji，如 😂🤣"));
     m_input->setClearButtonEnabled(true);
     m_preview = new QLabel;
     m_preview->setObjectName(QStringLiteral("Hint"));
 
-    auto* cancel = new QPushButton(QStringLiteral("取消"));
-    auto* save = new QPushButton(QStringLiteral("保存"));
+    auto* cancel = new QPushButton(tr("取消"));
+    auto* save = new QPushButton(tr("保存"));
     save->setObjectName(QStringLiteral("PrimaryButton"));
     save->setMinimumSize(96, 34);
     save->setDefault(true);
@@ -100,7 +100,7 @@ void EmojiDialog::append(const QString& e)
     const QString next = emoji() + e;
     if (AiEmoji::extractEmoji(next, false) != next) {
         m_preview->setProperty("warning", true);
-        m_preview->setText(QStringLiteral("最多 %1 个字符，放不下了").arg(AiEmoji::kMaxEmojiChars));
+        m_preview->setText(tr("最多 %1 个字符，放不下了").arg(AiEmoji::kMaxEmojiChars));
         m_preview->style()->polish(m_preview);
         return;
     }
@@ -115,16 +115,16 @@ void EmojiDialog::refreshPreview()
     QString message;
     bool warning = false;
     if (text.isEmpty()) {
-        message = QStringLiteral("将清除选中贴纸的 Emoji");
+        message = tr("将清除选中贴纸的 Emoji");
     } else if (result.isEmpty()) {
-        message = QStringLiteral("没有识别到 Emoji，保存后将清除");
+        message = tr("没有识别到 Emoji，保存后将清除");
         warning = true;
     } else {
         QString compact = text;
         compact.remove(u' ');
-        message = QStringLiteral("将设置为：%1").arg(result);
+        message = tr("将设置为：%1").arg(result);
         if (compact != result) {
-            message += QStringLiteral("（已忽略非 Emoji 文字或超出部分）");
+            message += tr("（已忽略非 Emoji 文字或超出部分）");
             warning = true;
         }
     }

@@ -6,6 +6,7 @@
 #include "media/SourceInput.h"
 
 #include <QBuffer>
+#include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
 #include <QFile>
@@ -68,7 +69,7 @@ Result grab(const StickerTask& task, const QString& workDir, const std::shared_p
 {
     Result result;
     if (!QFileInfo::exists(task.inputPath)) {
-        result.error = QStringLiteral("源文件不存在");
+        result.error = QCoreApplication::translate("AiFrameGrabber", "源文件不存在");
         return result;
     }
     QDir().mkpath(workDir);
@@ -78,7 +79,7 @@ Result grab(const StickerTask& task, const QString& workDir, const std::shared_p
         crop = FilterGraph::evenCrop(*task.crop, frame);
     const QSize content = crop ? crop->size() : frame;
     if (!content.isValid()) {
-        result.error = QStringLiteral("无法获取画面尺寸");
+        result.error = QCoreApplication::translate("AiFrameGrabber", "无法获取画面尺寸");
         return result;
     }
 
@@ -88,7 +89,7 @@ Result grab(const StickerTask& task, const QString& workDir, const std::shared_p
     if (task.cropRadius > 0) {
         mask = QDir(workDir).filePath(QStringLiteral("ai_mask.png"));
         if (!FilterGraph::writeRoundMask(scale, task.cropRadius, mask)) {
-            result.error = QStringLiteral("无法生成圆角遮罩");
+            result.error = QCoreApplication::translate("AiFrameGrabber", "无法生成圆角遮罩");
             return result;
         }
     }
@@ -130,7 +131,7 @@ Result grab(const StickerTask& task, const QString& workDir, const std::shared_p
              << QStringLiteral("-f") << QStringLiteral("image2") << QDir::toNativeSeparators(out);
         const FfmpegRun::Result run = FfmpegRun::run(args, 0, cancel);
         if (run.cancelled) {
-            result.error = QStringLiteral("已取消");
+            result.error = QCoreApplication::translate("AiFrameGrabber", "已取消");
             return result;
         }
         const QImage image(out);
@@ -139,13 +140,13 @@ Result grab(const StickerTask& task, const QString& workDir, const std::shared_p
             // 末尾时刻偶尔取不到帧（片段贴着结尾），跳过即可
             if (!frames.isEmpty() || i + 1 < times.size())
                 continue;
-            result.error = run.ok ? QStringLiteral("无法读取画面") : QStringLiteral("取帧失败: ") + run.error;
+            result.error = run.ok ? QCoreApplication::translate("AiFrameGrabber", "无法读取画面") : QCoreApplication::translate("AiFrameGrabber", "取帧失败: ") + run.error;
             return result;
         }
         frames << onWhite(image);
     }
     if (frames.isEmpty()) {
-        result.error = QStringLiteral("无法读取画面");
+        result.error = QCoreApplication::translate("AiFrameGrabber", "无法读取画面");
         return result;
     }
 
@@ -153,7 +154,7 @@ Result grab(const StickerTask& task, const QString& workDir, const std::shared_p
     QBuffer buffer(&result.jpeg);
     buffer.open(QIODevice::WriteOnly);
     if (!result.image.save(&buffer, "JPG", kJpegQuality)) {
-        result.error = QStringLiteral("无法编码 JPEG");
+        result.error = QCoreApplication::translate("AiFrameGrabber", "无法编码 JPEG");
         return result;
     }
     result.ok = true;

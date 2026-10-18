@@ -55,11 +55,11 @@ ClipCard::ClipCard(QWidget* parent)
     m_thumb->setAlignment(Qt::AlignCenter);
 
     m_start = new QLineEdit;
-    m_start->setPlaceholderText(QStringLiteral("起点"));
-    m_start->setToolTip(QStringLiteral("起点时间，支持 01:23.456 / 83.5 / 83.5s 等写法"));
+    m_start->setPlaceholderText(tr("起点"));
+    m_start->setToolTip(tr("起点时间，支持 01:23.456 / 83.5 / 83.5s 等写法"));
     m_end = new QLineEdit;
-    m_end->setPlaceholderText(QStringLiteral("终点"));
-    m_end->setToolTip(QStringLiteral("终点时间；清空 = 未设终点"));
+    m_end->setPlaceholderText(tr("终点"));
+    m_end->setToolTip(tr("终点时间；清空 = 未设终点"));
     m_emoji = new QLineEdit;
     m_emoji->setPlaceholderText(QStringLiteral("Emoji"));
     m_emoji->setMaximumWidth(76);
@@ -74,7 +74,7 @@ ClipCard::ClipCard(QWidget* parent)
 
     m_menu = new QToolButton;
     m_menu->setText(QStringLiteral("⋮"));
-    m_menu->setToolTip(QStringLiteral("更多操作"));
+    m_menu->setToolTip(tr("更多操作"));
 
     // 第一行：序号 + 缩略图 + （Emoji、时长、⋮ / 标签）；第二行：起点 – 终点
     auto* meta = new QHBoxLayout;
@@ -129,7 +129,7 @@ void ClipCard::setClip(int index, const StickerTask& clip, bool selected, PlaySt
     if (clip.startTime && clip.endTime)
         m_duration->setText(formatSecondsShort(*clip.endTime - *clip.startTime) + QStringLiteral("s"));
     else
-        m_duration->setText(QStringLiteral("未设终点"));
+        m_duration->setText(tr("未设终点"));
     m_duration->setProperty("missing", !clip.endTime.has_value());
     repolish(m_duration);
 
@@ -137,13 +137,13 @@ void ClipCard::setClip(int index, const StickerTask& clip, bool selected, PlaySt
     if (!clip.emoji.isEmpty())
         tags << clip.emoji;
     if (clip.mirror)
-        tags << QStringLiteral("🪞 镜像");
+        tags << tr("🪞 镜像");
     if (const QString crop = clip.cropTag(); !crop.isEmpty())
         tags << crop;
     if (play == PlayState::Playing)
-        tags << QStringLiteral("▶️ 播放中");
+        tags << tr("▶️ 播放中");
     else if (play == PlayState::Looping)
-        tags << QStringLiteral("🔁 循环中");
+        tags << tr("🔁 循环中");
     m_tags->setText(tags.join(QStringLiteral("  ")));
     m_tags->setVisible(!tags.isEmpty());
 
@@ -197,7 +197,7 @@ ClipListPanel::ClipListPanel(QWidget* parent)
     setObjectName(QStringLiteral("ClipPanel"));
     setFixedWidth(360);
 
-    auto* title = new QLabel(QStringLiteral("📋 待添加片段列表"));
+    auto* title = new QLabel(tr("📋 待添加片段列表"));
     title->setObjectName(QStringLiteral("SectionTitle"));
     m_count = new QLabel;
     m_count->setObjectName(QStringLiteral("Hint"));
@@ -220,8 +220,8 @@ ClipListPanel::ClipListPanel(QWidget* parent)
     m_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_scroll->viewport()->installEventFilter(this);
 
-    auto* add = new QPushButton(QStringLiteral("➕ 添加片段"));
-    add->setToolTip(QStringLiteral("从当前指针开始，终点留空，用 ] 打点"));
+    auto* add = new QPushButton(tr("➕ 添加片段"));
+    add->setToolTip(tr("从当前指针开始，终点留空，用 ] 打点"));
     add->setFocusPolicy(Qt::NoFocus);
     connect(add, &QPushButton::clicked, this, &ClipListPanel::addClicked);
 
@@ -235,7 +235,7 @@ ClipListPanel::ClipListPanel(QWidget* parent)
 
 void ClipListPanel::setClips(const QList<StickerTask>& clips, int selected, int playingIndex, ClipCard::PlayState play)
 {
-    m_count->setText(QStringLiteral("共 %1 个片段").arg(clips.size()));
+    m_count->setText(tr("共 %n 个片段", nullptr, int(clips.size())));
     // 可能正处在该卡片自己的信号里（⋮ 菜单删除片段），延迟销毁
     while (m_cards.size() > clips.size()) {
         ClipCard* card = m_cards.takeLast();

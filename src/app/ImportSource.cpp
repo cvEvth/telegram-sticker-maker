@@ -3,6 +3,7 @@
 #include "io/ZipReader.h"
 #include "media/ProxyCache.h"
 
+#include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
@@ -16,7 +17,7 @@ const QString kDoneMarker = QStringLiteral(".extracted");
 
 QString notFoundText()
 {
-    return QStringLiteral("未找到 sticker_list.json 或 stickers.json");
+    return QCoreApplication::translate("ImportSource", "未找到 sticker_list.json 或 stickers.json");
 }
 } // namespace
 
@@ -66,7 +67,7 @@ Prepared prepare(const QString& path, const QString& importCacheDir, const std::
             QString error;
             if (!ZipReader::extractAll(fi.absoluteFilePath(), partial, &error, cancel)) {
                 QDir(partial).removeRecursively();
-                result.error = QStringLiteral("解压失败: ") + error;
+                result.error = QCoreApplication::translate("ImportSource", "解压失败: ") + error;
                 return result;
             }
             QFile marker(QDir(partial).filePath(kDoneMarker));
@@ -74,7 +75,7 @@ Prepared prepare(const QString& path, const QString& importCacheDir, const std::
                 marker.close();
             if (!QDir().rename(partial, dir)) {
                 QDir(partial).removeRecursively();
-                result.error = QStringLiteral("无法写入导入缓存 %1").arg(QDir::toNativeSeparators(dir));
+                result.error = QCoreApplication::translate("ImportSource", "无法写入导入缓存 %1").arg(QDir::toNativeSeparators(dir));
                 return result;
             }
         }
@@ -82,7 +83,7 @@ Prepared prepare(const QString& path, const QString& importCacheDir, const std::
     } else if (fi.isFile()) {
         manifest = fi.absoluteFilePath();
     } else {
-        result.error = QStringLiteral("找不到 %1").arg(QDir::toNativeSeparators(path));
+        result.error = QCoreApplication::translate("ImportSource", "找不到 %1").arg(QDir::toNativeSeparators(path));
         return result;
     }
 
@@ -92,7 +93,7 @@ Prepared prepare(const QString& path, const QString& importCacheDir, const std::
     }
     QFile file(manifest);
     if (!file.open(QIODevice::ReadOnly)) {
-        result.error = QStringLiteral("无法读取 %1").arg(QDir::toNativeSeparators(manifest));
+        result.error = QCoreApplication::translate("ImportSource", "无法读取 %1").arg(QDir::toNativeSeparators(manifest));
         return result;
     }
     result.list = StickerList::parse(file.readAll());

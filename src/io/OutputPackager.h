@@ -25,7 +25,7 @@ struct Item {
 
 struct Options {
     QString prefix = QStringLiteral("TG_Stickers"); // 压缩包 / 时间戳文件夹名前缀
-    QString noun = QStringLiteral("贴纸");           // 日志用词
+    bool stickers = true; // 日志里称"贴纸"；false 时称"文件"（导出已裁切源文件）
 };
 
 struct Result {

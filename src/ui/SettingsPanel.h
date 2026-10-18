@@ -66,6 +66,8 @@ private:
     QLabel* m_dataResolved = nullptr;
     QPushButton* m_clearCache = nullptr;
     QLabel* m_cacheInfo = nullptr;
+    QComboBox* m_language = nullptr;
+    QLabel* m_languageHint = nullptr;
 
     QFrame* m_progressCard = nullptr;
     QLabel* m_progressTitle = nullptr;

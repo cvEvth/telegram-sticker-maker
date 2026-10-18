@@ -97,15 +97,15 @@ MainWindow::MainWindow(QWidget* parent)
     refreshUi();
     refreshCacheInfo();
 
-    logInfo(QStringLiteral("✅ 启动就绪"));
+    logInfo(tr("✅ 启动就绪"));
     if (FFmpegTools::ffmpegPath().isEmpty() || FFmpegTools::ffprobePath().isEmpty())
-        logInfo(QStringLiteral("⚠️ 未找到 ffmpeg / ffprobe，请确认它们与程序位于同一目录"));
+        logInfo(tr("⚠️ 未找到 ffmpeg / ffprobe，请确认它们与程序位于同一目录"));
 
     // 启动时恢复上次进度；恢复结束前不触发保存
     m_session->setSuspended(true);
     m_session->setPath(AppPaths::sessionFile(m_settings.resolvedDataDir()));
     connect(m_session, &SessionStore::saveFailed, this,
-            [](const QString& error) { logInfo(QStringLiteral("⚠️ 会话保存失败: %1").arg(error)); });
+            [](const QString& error) { logInfo(tr("⚠️ 会话保存失败: %1").arg(error)); });
     QTimer::singleShot(0, this, &MainWindow::restoreSession);
 }
 
@@ -175,14 +175,14 @@ QWidget* MainWindow::buildToolbar()
         layout->addWidget(button);
         return button;
     };
-    m_btnAddFiles = add(QStringLiteral("➕ 添加文件"), QStringLiteral("选择一个或多个视频 / 动图 / 图片"));
-    m_btnClip = add(QStringLiteral("✂️ 截取视频片段"), QStringLiteral("从一个视频截取一段或多段贴纸"));
-    m_btnAddFolder = add(QStringLiteral("📁 添加文件夹"), QStringLiteral("递归扫描文件夹内所有支持的媒体文件"));
-    m_btnImport = add(QStringLiteral("📥 导入"), QStringLiteral("导入本工具导出的 zip / JSON 列表"));
-    m_btnAi = add(QStringLiteral("✨ AI 匹配 Emoji"), QStringLiteral("用 AI 识别画面情绪并填写 Emoji"));
-    m_btnAiSettings = add(QStringLiteral("⚙️ AI 设置"), QStringLiteral("配置兼容 OpenAI 的接口"));
+    m_btnAddFiles = add(tr("➕ 添加文件"), tr("选择一个或多个视频 / 动图 / 图片"));
+    m_btnClip = add(tr("✂️ 截取视频片段"), tr("从一个视频截取一段或多段贴纸"));
+    m_btnAddFolder = add(tr("📁 添加文件夹"), tr("递归扫描文件夹内所有支持的媒体文件"));
+    m_btnImport = add(tr("📥 导入"), tr("导入本工具导出的 zip / JSON 列表"));
+    m_btnAi = add(tr("✨ AI 匹配 Emoji"), tr("用 AI 识别画面情绪并填写 Emoji"));
+    m_btnAiSettings = add(tr("⚙️ AI 设置"), tr("配置兼容 OpenAI 的接口"));
     layout->addStretch();
-    m_btnClear = add(QStringLiteral("🗑️ 清空列表"), QStringLiteral("移除列表中的全部项目"));
+    m_btnClear = add(tr("🗑️ 清空列表"), tr("移除列表中的全部项目"));
     m_btnClear->setObjectName(QStringLiteral("DangerGhostButton"));
     return bar;
 }
@@ -270,7 +270,7 @@ void MainWindow::connectSignals()
         m_session->saveNow();
         applyDataDir();
         refreshCacheInfo();
-        logInfo(QStringLiteral("💾 数据目录已切换为 %1").arg(QDir::toNativeSeparators(newDir)));
+        logInfo(tr("💾 数据目录已切换为 %1").arg(QDir::toNativeSeparators(newDir)));
     });
 
     connectConverter();
@@ -374,7 +374,7 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 void MainWindow::addFilesDialog()
 {
     const QStringList files =
-        QFileDialog::getOpenFileNames(this, QStringLiteral("添加文件"), m_lastDir, MediaKinds::openFileFilter());
+        QFileDialog::getOpenFileNames(this, tr("添加文件"), m_lastDir, MediaKinds::openFileFilter());
     if (files.isEmpty())
         return;
     m_lastDir = QFileInfo(files.first()).absolutePath();
@@ -383,7 +383,7 @@ void MainWindow::addFilesDialog()
 
 void MainWindow::addFolderDialog()
 {
-    const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("添加文件夹"), m_lastDir);
+    const QString dir = QFileDialog::getExistingDirectory(this, tr("添加文件夹"), m_lastDir);
     if (dir.isEmpty())
         return;
     m_lastDir = dir;
@@ -392,8 +392,8 @@ void MainWindow::addFolderDialog()
 
 void MainWindow::importDialog()
 {
-    const QString file = QFileDialog::getOpenFileName(this, QStringLiteral("导入列表"), m_lastDir,
-                                                      QStringLiteral("贴纸列表 (*.zip *.json)"));
+    const QString file = QFileDialog::getOpenFileName(this, tr("导入列表"), m_lastDir,
+                                                      tr("贴纸列表 (*.zip *.json)"));
     if (file.isEmpty())
         return;
     m_lastDir = QFileInfo(file).absolutePath();
@@ -427,21 +427,21 @@ void MainWindow::addPaths(const QStringList& paths)
         }
     }
     if (unsupported > 0)
-        logInfo(QStringLiteral("⚠️ 跳过 %1 个不支持的文件").arg(unsupported));
+        logInfo(tr("⚠️ 跳过 %n 个不支持的文件", nullptr, unsupported));
     if (!manifests.isEmpty()) {
         // 一次导入一个，其余（含普通素材）排在后面按顺序处理
         if (m_busy == Busy::None) {
             m_pendingPaths << manifests.mid(1) << media;
             importManifest(manifests.first());
         } else {
-            logInfo(QStringLiteral("⚠️ 任务正在进行中，请先停止或等待完成"));
+            logInfo(tr("⚠️ 任务正在进行中，请先停止或等待完成"));
         }
         return;
     }
     if (!media.isEmpty())
         startProbing(media);
     else if (unsupported == 0 && paths.size() == 1 && QFileInfo(paths.first()).isDir())
-        logInfo(QStringLiteral("⚠️ 文件夹中没有找到支持的媒体文件"));
+        logInfo(tr("⚠️ 文件夹中没有找到支持的媒体文件"));
 }
 
 void MainWindow::importManifest(const QString& path)
@@ -451,14 +451,14 @@ void MainWindow::importManifest(const QString& path)
         return;
     }
     if (m_busy != Busy::None) {
-        logInfo(QStringLiteral("⚠️ 任务正在进行中，请先停止或等待完成"));
+        logInfo(tr("⚠️ 任务正在进行中，请先停止或等待完成"));
         return;
     }
     const QFileInfo fi(path);
     const bool isZip = fi.isFile() && fi.suffix().compare(u"zip", Qt::CaseInsensitive) == 0;
     m_cancel = std::make_shared<std::atomic_bool>(false);
     setBusy(Busy::Importing, 0);
-    m_busyHint = (isZip ? QStringLiteral("正在解压 ") : QStringLiteral("正在读取 ")) + fi.fileName();
+    m_busyHint = (isZip ? tr("正在解压 ") : tr("正在读取 ")) + fi.fileName();
     refreshUi();
 
     const QString cacheDir = AppPaths::importCacheDir(m_settings.resolvedDataDir());
@@ -476,25 +476,25 @@ void MainWindow::onImportPrepared(const QString& path, const ImportSource::Prepa
     setBusy(Busy::None, 0);
     const QString name = QFileInfo(path).fileName();
     if (cancelled) {
-        logInfo(QStringLiteral("🛑 已取消导入，已加入 0 项"));
+        logInfo(tr("🛑 已取消导入，已加入 0 项"));
         m_pendingPaths.clear();
         return;
     }
     if (!prepared.ok) {
-        logInfo(QStringLiteral("❌ 导入 %1 失败: %2").arg(name, prepared.error));
+        logInfo(tr("❌ 导入 %1 失败: %2").arg(name, prepared.error));
         processPendingPaths();
         return;
     }
     if (prepared.reusedExtraction)
-        logInfo(QStringLiteral("♻️ %1 之前解压过，直接复用导入缓存").arg(name));
+        logInfo(tr("♻️ %1 之前解压过，直接复用导入缓存").arg(name));
     const QList<StickerList::Entry>& entries = prepared.list.entries;
     if (entries.isEmpty()) {
-        logInfo(QStringLiteral("⚠️ %1 中没有贴纸条目").arg(QFileInfo(prepared.manifestPath).fileName()));
+        logInfo(tr("⚠️ %1 中没有贴纸条目").arg(QFileInfo(prepared.manifestPath).fileName()));
         processPendingPaths();
         return;
     }
-    const QString kind = prepared.list.kind == StickerList::Kind::StickerList ? QStringLiteral("列表") : QStringLiteral("转换输出");
-    logInfo(QStringLiteral("📥 正在导入%1 %2（%3 项）").arg(kind, name).arg(entries.size()));
+    const QString kind = prepared.list.kind == StickerList::Kind::StickerList ? tr("列表") : tr("转换输出");
+    logInfo(tr("📥 正在导入%1 %2（%n 项）", nullptr, int(entries.size())).arg(kind, name));
     startLoading(entries, prepared.baseDir, LoadPurpose::Import);
 }
 
@@ -519,7 +519,7 @@ void MainWindow::startProbing(const QStringList& files)
 void MainWindow::startLoading(const QList<StickerList::Entry>& entries, const QString& baseDir, LoadPurpose purpose)
 {
     if (m_busy != Busy::None) {
-        logInfo(QStringLiteral("⚠️ 任务正在进行中，请先停止或等待完成"));
+        logInfo(tr("⚠️ 任务正在进行中，请先停止或等待完成"));
         return;
     }
     m_loadPurpose = purpose;
@@ -536,7 +536,7 @@ void MainWindow::startLoading(const QList<StickerList::Entry>& entries, const QS
             const QString name = entry.task.info.fileName.isEmpty() ? QFileInfo(entry.task.inputPath).fileName()
                                                                     : entry.task.info.fileName;
             QMetaObject::invokeMethod(this, [this, name] {
-                m_busyHint = QStringLiteral("正在解析 ") + name;
+                m_busyHint = tr("正在解析 ") + name;
                 refreshUi();
             }, Qt::QueuedConnection);
             const ListLoader::Result result = ListLoader::load(entry, baseDir);
@@ -569,7 +569,7 @@ void MainWindow::onEntryLoaded(const ListLoader::Result& result, const QString& 
         break;
     case ListLoader::Outcome::Failed:
         ++m_loadFailed;
-        logInfo(QStringLiteral("❌ [%1] 解析失败: %2").arg(name, result.error));
+        logInfo(tr("❌ [%1] 解析失败: %2").arg(name, result.error));
         break;
     }
     refreshUi();
@@ -579,37 +579,37 @@ void MainWindow::onLoadingFinished(bool cancelled)
 {
     const LoadPurpose purpose = m_loadPurpose;
     setBusy(Busy::None, 0);
-    const QString failed = m_loadFailed > 0 ? QStringLiteral("，%1 项解析失败").arg(m_loadFailed) : QString();
+    const QString failed = m_loadFailed > 0 ? tr("，%n 项解析失败", nullptr, m_loadFailed) : QString();
 
     switch (purpose) {
     case LoadPurpose::Restore:
         if (cancelled)
-            logInfo(QStringLiteral("🛑 已停止恢复，已恢复 %1 项").arg(m_loadAdded));
+            logInfo(tr("🛑 已停止恢复，已恢复 %n 项", nullptr, m_loadAdded));
         else
-            logInfo(QStringLiteral("📂 已恢复上次进度：%1 项%2").arg(m_loadAdded).arg(failed));
+            logInfo(tr("📂 已恢复上次进度：%n 项%1", nullptr, m_loadAdded).arg(failed));
         if (m_loadMissing > 0)
-            logInfo(QStringLiteral("⚠️ 有 %1 个源文件找不到，已跳过（可能被移动或删除）").arg(m_loadMissing));
+            logInfo(tr("⚠️ 有 %n 个源文件找不到，已跳过（可能被移动或删除）", nullptr, m_loadMissing));
         // 恢复期间不保存，结束后保存一次
         m_session->setSuspended(false);
         m_session->saveNow();
         break;
     case LoadPurpose::Import:
         if (cancelled)
-            logInfo(QStringLiteral("🛑 已取消导入，已加入 %1 项").arg(m_loadAdded));
+            logInfo(tr("🛑 已取消导入，已加入 %n 项", nullptr, m_loadAdded));
         else
-            logInfo(QStringLiteral("📥 已导入 %1 项%2").arg(m_loadAdded).arg(failed));
+            logInfo(tr("📥 已导入 %n 项%1", nullptr, m_loadAdded).arg(failed));
         if (m_loadMissing > 0)
-            logInfo(QStringLiteral("⚠️ 有 %1 个源文件缺失，已跳过").arg(m_loadMissing));
+            logInfo(tr("⚠️ 有 %n 个源文件缺失，已跳过", nullptr, m_loadMissing));
         if (m_loadProxies > 0) {
-            logInfo(QStringLiteral("🎞️ 已装回 %1 个预览缓存").arg(m_loadProxies));
+            logInfo(tr("🎞️ 已装回 %n 个预览缓存", nullptr, m_loadProxies));
             refreshCacheInfo();
         }
         break;
     case LoadPurpose::AddFiles:
         if (cancelled)
-            logInfo(QStringLiteral("🛑 已取消导入，已加入 %1 项").arg(m_loadAdded));
+            logInfo(tr("🛑 已取消导入，已加入 %n 项", nullptr, m_loadAdded));
         else
-            logInfo(QStringLiteral("➕ 已添加 %1 项%2").arg(m_loadAdded).arg(failed));
+            logInfo(tr("➕ 已添加 %n 项%1", nullptr, m_loadAdded).arg(failed));
         break;
     }
     // 用户停止导入时，排队的其余导入一并取消；恢复结束后照常添加启动参数里的文件
@@ -641,7 +641,7 @@ void MainWindow::restoreSession()
         const QString backup = path + QStringLiteral(".broken");
         QFile::remove(backup);
         QFile::rename(path, backup);
-        logInfo(QStringLiteral("⚠️ 会话文件无法读取，已备份为 %1").arg(QDir::toNativeSeparators(backup)));
+        logInfo(tr("⚠️ 会话文件无法读取，已备份为 %1").arg(QDir::toNativeSeparators(backup)));
         m_session->setPath(path);
         nothingToRestore();
         return;
@@ -664,7 +664,7 @@ void MainWindow::startConversion(QList<int> rows)
             rows << i;
     }
     if (rows.isEmpty()) {
-        logInfo(QStringLiteral("⚠️ 列表为空，请先添加素材"));
+        logInfo(tr("⚠️ 列表为空，请先添加素材"));
         return;
     }
 
@@ -683,8 +683,8 @@ void MainWindow::startConversion(QList<int> rows)
 
     m_stageText.clear();
     setBusy(Busy::Converting, int(jobs.size()));
-    const QString mode = settings.mode == OutputMode::Emoji ? QStringLiteral("自定义表情 100px") : QStringLiteral("标准贴纸 512px");
-    logInfo(QStringLiteral("🚀 开始转换 %1 项（%2）").arg(jobs.size()).arg(mode));
+    const QString mode = settings.mode == OutputMode::Emoji ? tr("自定义表情 100px") : tr("标准贴纸 512px");
+    logInfo(tr("🚀 开始转换 %n 项（%1）", nullptr, int(jobs.size())).arg(mode));
     m_converter->start(jobs, settings);
 }
 
@@ -701,7 +701,7 @@ void MainWindow::connectConverter()
             t.statusText = defaultStatusText(TaskStatus::Running);
             t.progress = 0;
         }, false);
-        logInfo(QStringLiteral("▶️ [%1] 开始转换").arg(nameOf(id)));
+        logInfo(tr("▶️ [%1] 开始转换").arg(nameOf(id)));
         refreshUi();
     });
 
@@ -729,14 +729,14 @@ void MainWindow::connectConverter()
                 }, false);
                 ++m_busyDone;
                 if (status == TaskStatus::Succeeded)
-                    logInfo(QStringLiteral("✅ [%1] 转换成功 (%2)").arg(nameOf(id), formatBytes(size)));
+                    logInfo(tr("✅ [%1] 转换成功 (%2)").arg(nameOf(id), formatBytes(size)));
                 else if (status == TaskStatus::Failed)
                     logInfo(QStringLiteral("❌ [%1] %2").arg(nameOf(id), text));
                 refreshUi();
             });
 
     connect(m_converter, &BatchConverter::packaging, this, [this] {
-        m_busyHint = QStringLiteral("正在写出贴纸文件...");
+        m_busyHint = tr("正在写出贴纸文件...");
         refreshUi();
     });
 
@@ -752,11 +752,11 @@ void MainWindow::connectConverter()
                     m_lastOutput = result.locations.first();
                 setBusy(Busy::None, 0);
                 if (cancelled > 0)
-                    logInfo(QStringLiteral("🛑 已停止：%1 成功，%2 失败，%3 已取消").arg(succeeded).arg(failed).arg(cancelled));
+                    logInfo(tr("🛑 已停止：%1 成功，%2 失败，%3 已取消").arg(succeeded).arg(failed).arg(cancelled));
                 else
-                    logInfo(QStringLiteral("🎉 批量转换已全部完成！（%1 成功，%2 失败）").arg(succeeded).arg(failed));
+                    logInfo(tr("🎉 批量转换已全部完成！（%1 成功，%2 失败）").arg(succeeded).arg(failed));
                 if (succeeded > 0 && cancelled == 0 && result.ok) {
-                    logInfo(QStringLiteral("💡 下一步：前往 %1 创建 Telegram 贴纸包").arg(BotPromo::galleryUrl()));
+                    logInfo(tr("💡 下一步：前往 %1 创建 Telegram 贴纸包").arg(BotPromo::galleryUrl()));
                     if (m_settings.showDoneDialog()) {
                         const QString location = result.locations.value(0);
                         const bool zip = location.endsWith(u".zip", Qt::CaseInsensitive);
@@ -780,7 +780,7 @@ void MainWindow::startExport(int mode)
     if (m_busy != Busy::None)
         return;
     if (m_model->rowCount() == 0) {
-        logInfo(QStringLiteral("⚠️ 列表为空，没有可导出的内容"));
+        logInfo(tr("⚠️ 列表为空，没有可导出的内容"));
         return;
     }
 
@@ -792,7 +792,7 @@ void MainWindow::startExport(int mode)
     settings.proxyCacheDir = m_proxies->cacheDir();
     if (settings.kind == ExportKind::Sources && !settings.asZip) {
         // 不压缩：先选父文件夹，在里面建 sticker_bundle_YYYYMMDD_HHMMSS
-        const QString dir = QFileDialog::getExistingDirectory(this, QStringLiteral("选择导出位置"), settings.destDir);
+        const QString dir = QFileDialog::getExistingDirectory(this, tr("选择导出位置"), settings.destDir);
         if (dir.isEmpty())
             return;
         settings.destDir = dir;
@@ -802,14 +802,14 @@ void MainWindow::startExport(int mode)
     for (int row = 0; row < m_model->rowCount(); ++row) {
         m_model->updateTask(row, [](StickerTask& t) {
             t.resetRuntimeState();
-            t.statusText = QStringLiteral("等待导出...");
+            t.statusText = tr("等待导出...");
         }, false);
         jobs << ExportJob{m_model->taskAt(row), m_model->targetFileName(row), m_model->targetDirectory(row)};
     }
 
     setBusy(Busy::Exporting, int(jobs.size()));
-    const QString what = settings.kind == ExportKind::Sources ? QStringLiteral("原片 + 参数清单") : QStringLiteral("已裁切源文件");
-    logInfo(QStringLiteral("📤 开始导出 %1 项（%2）").arg(jobs.size()).arg(what));
+    const QString what = settings.kind == ExportKind::Sources ? tr("原片 + 参数清单") : tr("已裁切源文件");
+    logInfo(tr("📤 开始导出 %n 项（%1）", nullptr, int(jobs.size())).arg(what));
     m_exporter->start(jobs, settings);
 }
 
@@ -823,10 +823,10 @@ void MainWindow::connectExporter()
     connect(m_exporter, &Exporter::taskStarted, this, [this, nameOf](const QString& id) {
         m_model->updateTask(m_model->rowOfId(id), [](StickerTask& t) {
             t.status = TaskStatus::Running;
-            t.statusText = QStringLiteral("正在导出...");
+            t.statusText = tr("正在导出...");
             t.progress = 0;
         }, false);
-        m_busyHint = QStringLiteral("正在导出 ") + nameOf(id);
+        m_busyHint = tr("正在导出 ") + nameOf(id);
         refreshUi();
     });
 
@@ -866,13 +866,13 @@ void MainWindow::connectExporter()
         if (!summary.locations.isEmpty())
             m_lastOutput = summary.locations.first();
         setBusy(Busy::None, 0);
-        const QString failed = summary.failed > 0 ? QStringLiteral("，%1 项失败").arg(summary.failed) : QString();
+        const QString failed = summary.failed > 0 ? tr("，%n 项失败", nullptr, summary.failed) : QString();
         if (summary.cancelled > 0)
-            logInfo(QStringLiteral("🛑 已停止导出：%1 项已导出，%2 项已取消%3").arg(summary.exported).arg(summary.cancelled).arg(failed));
+            logInfo(tr("🛑 已停止导出：%1 项已导出，%2 项已取消%3").arg(summary.exported).arg(summary.cancelled).arg(failed));
         else
-            logInfo(QStringLiteral("📤 导出完成：%1 项%2").arg(summary.exported).arg(failed));
+            logInfo(tr("📤 导出完成：%n 项%1", nullptr, summary.exported).arg(failed));
         if (summary.missing > 0)
-            logInfo(QStringLiteral("⚠️ 有 %1 个源文件缺失，已跳过").arg(summary.missing));
+            logInfo(tr("⚠️ 有 %n 个源文件缺失，已跳过", nullptr, summary.missing));
     });
 }
 
@@ -893,7 +893,7 @@ void MainWindow::startAiMatch(QList<int> rows)
             rows << i;
     }
     if (rows.isEmpty()) {
-        logInfo(QStringLiteral("⚠️ 列表为空，请先添加素材"));
+        logInfo(tr("⚠️ 列表为空，请先添加素材"));
         return;
     }
     AiConfig config;
@@ -910,7 +910,7 @@ void MainWindow::startAiMatch(QList<int> rows)
     for (const int row : rows)
         tasks << m_model->taskAt(row);
     setBusy(Busy::AiMatching, int(tasks.size()));
-    logInfo(QStringLiteral("✨ 开始 AI 匹配 Emoji：%1 项（%2）").arg(tasks.size()).arg(config.model));
+    logInfo(tr("✨ 开始 AI 匹配 Emoji：%n 项（%1）", nullptr, int(tasks.size())).arg(config.model));
     m_aiMatcher->start(tasks, config, QDir(m_settings.resolvedDataDir()).filePath(QStringLiteral("work")));
 }
 
@@ -922,7 +922,7 @@ void MainWindow::connectAiMatcher()
     };
 
     connect(m_aiMatcher, &AiMatcher::itemStarted, this, [this, nameOf](const QString& id) {
-        m_busyHint = QStringLiteral("正在识别 ") + nameOf(id);
+        m_busyHint = tr("正在识别 ") + nameOf(id);
         refreshUi();
     });
 
@@ -933,7 +933,7 @@ void MainWindow::connectAiMatcher()
                 if (!error.isEmpty()) {
                     logInfo(QStringLiteral("❌ [AI Emoji] %1: %2").arg(name, error));
                 } else if (emoji.isEmpty()) {
-                    logInfo(QStringLiteral("[AI Emoji] %1 -> 无匹配").arg(name));
+                    logInfo(tr("[AI Emoji] %1 -> 无匹配").arg(name));
                 } else {
                     // 覆盖该行的 Emoji，文件名随之更新
                     m_model->updateTask(m_model->rowOfId(id), [&](StickerTask& t) { t.emoji = emoji; });
@@ -945,10 +945,10 @@ void MainWindow::connectAiMatcher()
     connect(m_aiMatcher, &AiMatcher::finished, this, [this](int matched, int empty, int failed, bool cancelled) {
         setBusy(Busy::None, 0);
         if (cancelled) {
-            logInfo(QStringLiteral("🛑 已停止 AI 匹配：%1 项已匹配").arg(matched));
+            logInfo(tr("🛑 已停止 AI 匹配：%n 项已匹配", nullptr, matched));
             return;
         }
-        logInfo(QStringLiteral("✨ AI Emoji 智能匹配已完成！（%1 项匹配，%2 项无匹配，%3 项失败）").arg(matched).arg(empty).arg(failed));
+        logInfo(tr("✨ AI Emoji 智能匹配已完成！（%1 项匹配，%2 项无匹配，%3 项失败）").arg(matched).arg(empty).arg(failed));
     });
 }
 
@@ -959,12 +959,12 @@ void MainWindow::openEditor(int row)
     if (row < 0 || row >= m_model->rowCount() || m_editorOpen)
         return;
     if (m_busy != Busy::None) {
-        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("任务正在进行中，请先停止！"));
+        QMessageBox::warning(this, tr("提示"), tr("任务正在进行中，请先停止！"));
         return;
     }
     const QString path = m_model->taskAt(row).inputPath;
     if (!QFileInfo::exists(path)) {
-        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("源文件不存在：%1").arg(QDir::toNativeSeparators(path)));
+        QMessageBox::warning(this, tr("提示"), tr("源文件不存在：%1").arg(QDir::toNativeSeparators(path)));
         return;
     }
 
@@ -997,7 +997,7 @@ void MainWindow::openEditor(int row)
             t.emoji = e.emoji;
             t.resetRuntimeState();
         });
-        logInfo(QStringLiteral("[%1] 已保存裁切样式").arg(base.info.fileName));
+        logInfo(tr("[%1] 已保存裁切样式").arg(base.info.fileName));
         return;
     }
 
@@ -1038,7 +1038,7 @@ void MainWindow::openEditor(int row)
         groupRows << first + i;
     m_table->selectRows(groupRows);
     m_table->scrollTo(m_model->index(first, 0));
-    logInfo(QStringLiteral("[%1] 已保存截取列表，共 %2 个贴纸").arg(base.info.fileName).arg(tasks.size()));
+    logInfo(tr("[%1] 已保存截取列表，共 %n 个贴纸", nullptr, int(tasks.size())).arg(base.info.fileName));
 }
 
 void MainWindow::openClipTool()
@@ -1050,16 +1050,16 @@ void MainWindow::openClipTool()
         return;
     }
     if (m_busy != Busy::None) {
-        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("任务正在进行中，请先停止！"));
+        QMessageBox::warning(this, tr("提示"), tr("任务正在进行中，请先停止！"));
         return;
     }
-    const QString file = QFileDialog::getOpenFileName(this, QStringLiteral("选择要截取的视频"), m_lastDir, MediaKinds::openFileFilter());
+    const QString file = QFileDialog::getOpenFileName(this, tr("选择要截取的视频"), m_lastDir, MediaKinds::openFileFilter());
     if (file.isEmpty())
         return;
     m_lastDir = QFileInfo(file).absolutePath();
     const MediaKind kind = MediaKinds::classify(file);
     if (kind != MediaKind::Video && kind != MediaKind::AnimatedImage) {
-        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("所选文件不是视频格式！"));
+        QMessageBox::warning(this, tr("提示"), tr("所选文件不是视频格式！"));
         return;
     }
 
@@ -1069,11 +1069,11 @@ void MainWindow::openClipTool()
         const ProbeResult result = watcher->result();
         watcher->deleteLater();
         if (!result.ok) {
-            logInfo(QStringLiteral("❌ [%1] 解析失败: %2").arg(QFileInfo(file).fileName(), result.error));
+            logInfo(tr("❌ [%1] 解析失败: %2").arg(QFileInfo(file).fileName(), result.error));
             return;
         }
         m_model->appendTasks({StickerTask::fromMedia(file, result.info)});
-        logInfo(QStringLiteral("➕ 已添加 1 项"));
+        logInfo(tr("➕ 已添加 1 项"));
         openEditor(m_model->rowCount() - 1);
     });
     watcher->setFuture(QtConcurrent::run([file] { return MediaProbe::probe(file); }));
@@ -1099,7 +1099,7 @@ void MainWindow::onRowAction(int row, int action)
     case ActionsDelegate::Remove:
         if (m_busy != Busy::None)
             return;
-        logInfo(QStringLiteral("🗑️ 已移除 %1").arg(m_model->taskAt(row).info.fileName));
+        logInfo(tr("🗑️ 已移除 %1").arg(m_model->taskAt(row).info.fileName));
         m_model->removeTaskRows({row});
         break;
     default:
@@ -1126,16 +1126,16 @@ void MainWindow::refreshCacheInfo()
 void MainWindow::clearPreviewCacheClicked()
 {
     if (m_busy != Busy::None || m_editorOpen) {
-        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("任务正在进行中，请先停止！"));
+        QMessageBox::warning(this, tr("提示"), tr("任务正在进行中，请先停止！"));
         return;
     }
     m_proxies->cancelAll();
     const QString dir = AppPaths::previewCacheDir(m_settings.resolvedDataDir());
     const CacheUsage before = measurePreviewCache(dir);
     if (clearPreviewCache(dir))
-        logInfo(QStringLiteral("🧹 已清除预览缓存（%1）").arg(before.text()));
+        logInfo(tr("🧹 已清除预览缓存（%1）").arg(before.text()));
     else
-        logInfo(QStringLiteral("⚠️ 部分预览缓存无法删除（可能正在使用）"));
+        logInfo(tr("⚠️ 部分预览缓存无法删除（可能正在使用）"));
     m_thumbs->clearMemory();
     m_table->viewport()->update();
     refreshCacheInfo();
@@ -1154,19 +1154,19 @@ void MainWindow::showRowMenu(const QPoint& globalPos)
     const QString suffix = single ? QString() : QStringLiteral(" (%1)").arg(n);
 
     QMenu menu(this);
-    QAction* convert = menu.addAction(QStringLiteral("🚀 转换选中贴纸") + suffix);
-    QAction* emoji = menu.addAction(QStringLiteral("😀 设置选中贴纸的 Emoji") + suffix);
-    QAction* keywords = menu.addAction(QStringLiteral("🏷️ 设置选中贴纸的关键词") + suffix);
-    QAction* ai = menu.addAction(single ? QStringLiteral("✨ AI 识别此项 Emoji") : QStringLiteral("✨ AI 识别选中项") + suffix);
+    QAction* convert = menu.addAction(tr("🚀 转换选中贴纸") + suffix);
+    QAction* emoji = menu.addAction(tr("😀 设置选中贴纸的 Emoji") + suffix);
+    QAction* keywords = menu.addAction(tr("🏷️ 设置选中贴纸的关键词") + suffix);
+    QAction* ai = menu.addAction(single ? tr("✨ AI 识别此项 Emoji") : tr("✨ AI 识别选中项") + suffix);
     QAction* open = nullptr;
     if (single && m_model->taskAt(rows.first()).status == TaskStatus::Succeeded && !m_model->taskAt(rows.first()).outputPath.isEmpty())
-        open = menu.addAction(QStringLiteral("📂 打开所在目录"));
+        open = menu.addAction(tr("📂 打开所在目录"));
     menu.addSeparator();
-    QAction* all = menu.addAction(single ? QStringLiteral("全选（Ctrl+A）") : QStringLiteral("全选"));
-    QAction* invert = menu.addAction(QStringLiteral("反选"));
-    QAction* none = single ? nullptr : menu.addAction(QStringLiteral("取消选择"));
+    QAction* all = menu.addAction(single ? tr("全选（Ctrl+A）") : tr("全选"));
+    QAction* invert = menu.addAction(tr("反选"));
+    QAction* none = single ? nullptr : menu.addAction(tr("取消选择"));
     menu.addSeparator();
-    QAction* remove = menu.addAction(single ? QStringLiteral("🗑️ 移除此项（Del）") : QStringLiteral("🗑️ 移除选中项") + suffix);
+    QAction* remove = menu.addAction(single ? tr("🗑️ 移除此项（Del）") : tr("🗑️ 移除选中项") + suffix);
     // 忙碌时"转换""设置关键词"置灰；移除也不可用
     for (QAction* a : {convert, emoji, keywords, ai, remove})
         a->setEnabled(!busy);
@@ -1199,7 +1199,7 @@ void MainWindow::openKeywordDialog(const QList<int>& rows)
     if (rows.isEmpty())
         return;
     if (m_busy != Busy::None) {
-        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("任务正在进行中，请先停止！"));
+        QMessageBox::warning(this, tr("提示"), tr("任务正在进行中，请先停止！"));
         return;
     }
     QString subtitle;
@@ -1207,7 +1207,7 @@ void MainWindow::openKeywordDialog(const QList<int>& rows)
         const StickerTask& t = m_model->taskAt(rows.first());
         subtitle = (t.emoji.isEmpty() ? QString() : t.emoji + QStringLiteral(" ")) + t.info.fileName;
     } else {
-        subtitle = QStringLiteral("已选 %1 项贴纸").arg(rows.size());
+        subtitle = tr("已选 %n 项贴纸", nullptr, int(rows.size()));
     }
     // 批量：所有选中项的关键词完全相同时预填，否则为空
     QStringList initial = m_model->taskAt(rows.first()).keywords;
@@ -1225,9 +1225,9 @@ void MainWindow::openKeywordDialog(const QList<int>& rows)
     for (const int row : rows)
         m_model->updateTask(row, [&](StickerTask& t) { t.keywords = keywords; });
     if (keywords.isEmpty())
-        logInfo(QStringLiteral("🏷️ 已清空 %1 项的关键词").arg(rows.size()));
+        logInfo(tr("🏷️ 已清空 %n 项的关键词", nullptr, int(rows.size())));
     else
-        logInfo(QStringLiteral("🏷️ 已为 %1 项设置关键词：%2").arg(rows.size()).arg(keywords.join(QStringLiteral("、"))));
+        logInfo(tr("🏷️ 已为 %n 项设置关键词：%1", nullptr, int(rows.size())).arg(keywords.join(tr("、", "关键词之间的分隔符"))));
 }
 
 void MainWindow::openEmojiDialog(const QList<int>& rows)
@@ -1235,14 +1235,14 @@ void MainWindow::openEmojiDialog(const QList<int>& rows)
     if (rows.isEmpty())
         return;
     if (m_busy != Busy::None) {
-        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("任务正在进行中，请先停止！"));
+        QMessageBox::warning(this, tr("提示"), tr("任务正在进行中，请先停止！"));
         return;
     }
     QString subtitle;
     if (rows.size() == 1)
         subtitle = m_model->taskAt(rows.first()).info.fileName;
     else
-        subtitle = QStringLiteral("已选 %1 项贴纸").arg(rows.size());
+        subtitle = tr("已选 %n 项贴纸", nullptr, int(rows.size()));
     // 所有选中项的 Emoji 相同时预填，否则为空
     QString initial = m_model->taskAt(rows.first()).emoji;
     for (const int row : rows) {
@@ -1259,9 +1259,9 @@ void MainWindow::openEmojiDialog(const QList<int>& rows)
     for (const int row : rows)
         m_model->updateTask(row, [&](StickerTask& t) { t.emoji = emoji; });
     if (emoji.isEmpty())
-        logInfo(QStringLiteral("😀 已清除 %1 项的 Emoji").arg(rows.size()));
+        logInfo(tr("😀 已清除 %n 项的 Emoji", nullptr, int(rows.size())));
     else
-        logInfo(QStringLiteral("😀 已为 %1 项设置 Emoji：%2").arg(rows.size()).arg(emoji));
+        logInfo(tr("😀 已为 %n 项设置 Emoji：%1", nullptr, int(rows.size())).arg(emoji));
 }
 
 // ---------------------------------------------------------------- 列表操作
@@ -1274,19 +1274,19 @@ void MainWindow::removeSelected()
     if (rows.isEmpty())
         return;
     m_model->removeTaskRows(rows);
-    logInfo(QStringLiteral("🗑️ 已移除 %1 项").arg(rows.size()));
+    logInfo(tr("🗑️ 已移除 %n 项", nullptr, int(rows.size())));
 }
 
 void MainWindow::clearList()
 {
     if (m_busy != Busy::None) {
-        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("任务正在进行中，请先停止！"));
+        QMessageBox::warning(this, tr("提示"), tr("任务正在进行中，请先停止！"));
         return;
     }
     if (m_model->rowCount() == 0)
         return;
     m_model->clearTasks();
-    logInfo(QStringLiteral("🧹 已清空列表"));
+    logInfo(tr("🧹 已清空列表"));
 }
 
 void MainWindow::requestStop()
@@ -1301,7 +1301,7 @@ void MainWindow::requestStop()
         m_aiMatcher->cancel();
     else if (m_cancel)
         m_cancel->store(true);
-    logInfo(QStringLiteral("🛑 正在停止..."));
+    logInfo(tr("🛑 正在停止..."));
 }
 
 void MainWindow::openOutputDir()
@@ -1355,7 +1355,7 @@ void MainWindow::refreshUi()
     const bool empty = m_model->rowCount() == 0;
     m_listStack->setCurrentWidget(empty ? static_cast<QWidget*>(m_dropZone) : m_table);
     if (empty && (m_busy == Busy::Importing || m_busy == Busy::Restoring)) {
-        const QString title = m_busy == Busy::Restoring ? QStringLiteral("正在恢复上次进度") : QStringLiteral("正在导入");
+        const QString title = m_busy == Busy::Restoring ? tr("正在恢复上次进度") : tr("正在导入");
         m_dropZone->showProgress(title, m_busyHint, m_busyDone, m_busyTotal);
     } else {
         m_dropZone->showIdle();
@@ -1373,9 +1373,9 @@ void MainWindow::updateBadge()
     if (m_busy != Busy::None)
         m_header->setBadge(QStringLiteral("%1 %2 / %3").arg(busyTitle()).arg(m_busyDone).arg(m_busyTotal), false);
     else if (selected > 0)
-        m_header->setBadge(QStringLiteral("已选 %1 / %2 项").arg(selected).arg(total), false);
+        m_header->setBadge(tr("已选 %1 / %2 项").arg(selected).arg(total), false);
     else
-        m_header->setBadge(QStringLiteral("已添加 %1 项").arg(total), total == 0);
+        m_header->setBadge(tr("已添加 %n 项", nullptr, total), total == 0);
 }
 
 void MainWindow::updateLogSummary()
@@ -1392,10 +1392,10 @@ void MainWindow::updateLogSummary()
     QString summary;
     switch (m_busy) {
     case Busy::None:
-        summary = QStringLiteral("就绪: 共 %1 项 (%2 完成, %3 失败)").arg(total).arg(succeeded).arg(failed);
+        summary = tr("就绪: 共 %1 项 (%2 完成, %3 失败)").arg(total).arg(succeeded).arg(failed);
         break;
     case Busy::Converting:
-        summary = QStringLiteral("正在转码: %1 进行中, %2 完成 / 共 %3 项").arg(running).arg(succeeded).arg(total);
+        summary = tr("正在转码: %1 进行中, %2 完成 / 共 %3 项").arg(running).arg(succeeded).arg(total);
         break;
     default:
         summary = QStringLiteral("%1: %2 / %3").arg(busyTitle()).arg(m_busyDone).arg(m_busyTotal);
@@ -1407,17 +1407,17 @@ void MainWindow::updateLogSummary()
 void MainWindow::updateAiButton()
 {
     const int selected = int(selectedRows().size());
-    m_btnAi->setText(selected > 0 ? QStringLiteral("✨ AI 匹配 (%1项)").arg(selected) : QStringLiteral("✨ AI 匹配 Emoji"));
+    m_btnAi->setText(selected > 0 ? tr("✨ AI 匹配 (%n项)", nullptr, selected) : tr("✨ AI 匹配 Emoji"));
 }
 
 QString MainWindow::busyTitle() const
 {
     switch (m_busy) {
-    case Busy::Converting: return QStringLiteral("正在转码");
-    case Busy::Exporting: return QStringLiteral("正在导出");
-    case Busy::Importing: return QStringLiteral("正在导入");
-    case Busy::Restoring: return QStringLiteral("正在恢复");
-    case Busy::AiMatching: return QStringLiteral("AI 识别中");
+    case Busy::Converting: return tr("正在转码");
+    case Busy::Exporting: return tr("正在导出");
+    case Busy::Importing: return tr("正在导入");
+    case Busy::Restoring: return tr("正在恢复");
+    case Busy::AiMatching: return tr("AI 识别中");
     case Busy::None: break;
     }
     return {};

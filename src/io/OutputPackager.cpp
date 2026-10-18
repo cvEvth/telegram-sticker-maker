@@ -4,6 +4,7 @@
 #include "core/StickerTask.h"
 #include "io/ZipWriter.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -60,7 +61,7 @@ void copyProxy(const Item& item, const QString& folder, const QString& fileName,
     const QString target = QDir(folder).filePath(proxyEntryName(fileName));
     QDir().mkpath(QFileInfo(target).absolutePath());
     if (!QFile::copy(item.proxyFile, target))
-        result.logLines << QStringLiteral("⚠️ 无法复制预览缓存 %1").arg(native(target));
+        result.logLines << QCoreApplication::translate("OutputPackager", "⚠️ 无法复制预览缓存 %1").arg(native(target));
 }
 
 // 退回方案：单个文件直接写到各自的目标目录
@@ -72,7 +73,7 @@ void writeLoose(const QList<Item>& items, Result& result)
         if (transfer(item, path))
             result.finalPaths.insert(item.taskId, path);
         else
-            result.logLines << QStringLiteral("❌ 无法写入 %1").arg(native(path));
+            result.logLines << QCoreApplication::translate("OutputPackager", "❌ 无法写入 %1").arg(native(path));
     }
     QStringList dirs;
     for (const Item& item : items) {
@@ -104,10 +105,12 @@ void packageZip(const QList<Item>& items, const QString& zipDir, const QDateTime
         result.locations << zipPath;
         for (const Item& item : items)
             result.finalPaths.insert(item.taskId, zipPath);
-        result.logLines << QStringLiteral("📦 已打包 %1 个%2: %3").arg(items.size()).arg(options.noun, native(zipPath));
+        result.logLines << (options.stickers ? QCoreApplication::translate("OutputPackager", "📦 已打包 %n 个贴纸: %1", nullptr, int(items.size()))
+                                             : QCoreApplication::translate("OutputPackager", "📦 已打包 %n 个文件: %1", nullptr, int(items.size())))
+                                .arg(native(zipPath));
         return;
     }
-    result.logLines << QStringLiteral("⚠️ 打包失败（%1），改为直接写出单个文件").arg(error);
+    result.logLines << QCoreApplication::translate("OutputPackager", "⚠️ 打包失败（%1），改为直接写出单个文件").arg(error);
     writeLoose(items, result);
 }
 
@@ -129,7 +132,7 @@ void packageFolders(const QList<Item>& items, const QDateTime& now, const Option
         QDir().mkpath(dir);
         const QString folder = QDir(dir).filePath(OutputNaming::uniqueFileName(dir, folderName));
         if (!QDir().mkpath(folder)) {
-            result.logLines << QStringLiteral("❌ 无法创建文件夹 %1").arg(native(folder));
+            result.logLines << QCoreApplication::translate("OutputPackager", "❌ 无法创建文件夹 %1").arg(native(folder));
             continue;
         }
         const QStringList names = uniqueNames(group);
@@ -143,7 +146,7 @@ void packageFolders(const QList<Item>& items, const QDateTime& now, const Option
                 written << group.at(i);
                 writtenNames << names.at(i);
             } else {
-                result.logLines << QStringLiteral("❌ 无法写入 %1").arg(native(path));
+                result.logLines << QCoreApplication::translate("OutputPackager", "❌ 无法写入 %1").arg(native(path));
             }
         }
         if (written.isEmpty()) {
@@ -151,9 +154,11 @@ void packageFolders(const QList<Item>& items, const QDateTime& now, const Option
             continue;
         }
         if (!writeFile(QDir(folder).filePath(kJsonName), stickersJson(written, writtenNames)))
-            result.logLines << QStringLiteral("⚠️ 无法写入 %1").arg(native(QDir(folder).filePath(kJsonName)));
+            result.logLines << QCoreApplication::translate("OutputPackager", "⚠️ 无法写入 %1").arg(native(QDir(folder).filePath(kJsonName)));
         result.locations << folder;
-        result.logLines << QStringLiteral("📁 已输出 %1 个%2到: %3").arg(written.size()).arg(options.noun, native(folder));
+        result.logLines << (options.stickers ? QCoreApplication::translate("OutputPackager", "📁 已输出 %n 个贴纸到: %1", nullptr, int(written.size()))
+                                             : QCoreApplication::translate("OutputPackager", "📁 已输出 %n 个文件到: %1", nullptr, int(written.size())))
+                                .arg(native(folder));
     }
     result.ok = !result.finalPaths.isEmpty();
 }
@@ -186,7 +191,8 @@ Result package(const QList<Item>& items, bool asZip, const QString& zipDir, cons
 {
     Result result;
     if (items.isEmpty()) {
-        result.error = QStringLiteral("没有可输出的%1").arg(options.noun);
+        result.error = options.stickers ? QCoreApplication::translate("OutputPackager", "没有可输出的贴纸")
+                                        : QCoreApplication::translate("OutputPackager", "没有可输出的文件");
         return result;
     }
     if (asZip)
@@ -194,7 +200,7 @@ Result package(const QList<Item>& items, bool asZip, const QString& zipDir, cons
     else
         packageFolders(items, now, options, result);
     if (!result.ok && result.error.isEmpty())
-        result.error = QStringLiteral("输出失败");
+        result.error = QCoreApplication::translate("OutputPackager", "输出失败");
     return result;
 }
 

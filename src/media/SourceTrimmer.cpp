@@ -5,6 +5,7 @@
 #include "media/SourceInput.h"
 #include "media/WebpEncoder.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -75,12 +76,12 @@ Result streamCut(const StickerTask& task, const QString& outputBase, const QStri
              << QStringLiteral("-avoid_negative_ts") << QStringLiteral("make_zero") << native(output);
         return FfmpegRun::run(args, duration, cancel, [&](double f) {
             if (progress)
-                progress(from + int(f * (to - from)), QStringLiteral("直接剪切..."));
+                progress(from + int(f * (to - from)), QCoreApplication::translate("SourceTrimmer", "直接剪切..."));
         });
     };
 
     if (progress)
-        progress(5, QStringLiteral("直接剪切..."));
+        progress(5, QCoreApplication::translate("SourceTrimmer", "直接剪切..."));
     FfmpegRun::Result run = attempt({QStringLiteral("-map"), QStringLiteral("0:v:0"), QStringLiteral("-map"), QStringLiteral("0:a?")}, 5, 95);
     if (run.cancelled)
         return Result{false, true};
@@ -94,11 +95,11 @@ Result streamCut(const StickerTask& task, const QString& outputBase, const QStri
         r.ok = true;
         r.file = output;
         r.extension = extension;
-        r.note = QStringLiteral("已导出（直接剪切）");
+        r.note = QCoreApplication::translate("SourceTrimmer", "已导出（直接剪切）");
         return r;
     }
     QFile::remove(output);
-    return copyWhole(task, extension, QStringLiteral("已导出（无法剪切，已复制整个文件）"));
+    return copyWhole(task, extension, QCoreApplication::translate("SourceTrimmer", "已导出（无法剪切，已复制整个文件）"));
 }
 
 Result reencodeVideo(const StickerTask& task, const QString& workDir, const QString& outputBase,
@@ -115,7 +116,7 @@ Result reencodeVideo(const StickerTask& task, const QString& workDir, const QStr
     if (task.cropRadius > 0) {
         mask = QDir(workDir).filePath(QStringLiteral("mask.png"));
         if (!FilterGraph::writeRoundMask(content, task.cropRadius, mask)) {
-            r.error = QStringLiteral("无法生成圆角遮罩");
+            r.error = QCoreApplication::translate("SourceTrimmer", "无法生成圆角遮罩");
             return r;
         }
     }
@@ -148,10 +149,10 @@ Result reencodeVideo(const StickerTask& task, const QString& workDir, const QStr
     args << native(output);
 
     if (progress)
-        progress(5, QStringLiteral("高画质编码..."));
+        progress(5, QCoreApplication::translate("SourceTrimmer", "高画质编码..."));
     const FfmpegRun::Result run = FfmpegRun::run(args, duration, cancel, [&](double f) {
         if (progress)
-            progress(5 + int(f * 90), QStringLiteral("高画质编码..."));
+            progress(5 + int(f * 90), QCoreApplication::translate("SourceTrimmer", "高画质编码..."));
     });
     if (run.cancelled) {
         r.cancelled = true;
@@ -159,13 +160,13 @@ Result reencodeVideo(const StickerTask& task, const QString& workDir, const QStr
     }
     if (!run.ok) {
         QFile::remove(output);
-        r.error = QStringLiteral("编码失败: ") + run.error;
+        r.error = QCoreApplication::translate("SourceTrimmer", "编码失败: ") + run.error;
         return r;
     }
     r.ok = true;
     r.file = output;
     r.extension = QStringLiteral("webm");
-    r.note = QStringLiteral("已导出（高画质 WebM）");
+    r.note = QCoreApplication::translate("SourceTrimmer", "已导出（高画质 WebM）");
     return r;
 }
 
@@ -180,7 +181,7 @@ Result renderImage(const StickerTask& task, const QString& workDir, const QStrin
     if (task.cropRadius > 0) {
         mask = QDir(workDir).filePath(QStringLiteral("mask.png"));
         if (!FilterGraph::writeRoundMask(content, task.cropRadius, mask)) {
-            r.error = QStringLiteral("无法生成圆角遮罩");
+            r.error = QCoreApplication::translate("SourceTrimmer", "无法生成圆角遮罩");
             return r;
         }
     }
@@ -203,14 +204,14 @@ Result renderImage(const StickerTask& task, const QString& workDir, const QStrin
          << QStringLiteral("-frames:v") << QStringLiteral("1") << QStringLiteral("-c:v") << QStringLiteral("png")
          << QStringLiteral("-f") << QStringLiteral("image2") << native(frame);
     if (progress)
-        progress(10, QStringLiteral("处理画面..."));
+        progress(10, QCoreApplication::translate("SourceTrimmer", "处理画面..."));
     const FfmpegRun::Result run = FfmpegRun::run(args, 0, cancel);
     if (run.cancelled) {
         r.cancelled = true;
         return r;
     }
     if (!run.ok) {
-        r.error = QStringLiteral("处理画面失败: ") + run.error;
+        r.error = QCoreApplication::translate("SourceTrimmer", "处理画面失败: ") + run.error;
         return r;
     }
 
@@ -222,7 +223,7 @@ Result renderImage(const StickerTask& task, const QString& workDir, const QStrin
     } else {
         const QImage image(frame);
         if (image.isNull()) {
-            r.error = QStringLiteral("无法读取处理后的画面");
+            r.error = QCoreApplication::translate("SourceTrimmer", "无法读取处理后的画面");
             return r;
         }
         if (extension == u"webp") {
@@ -239,15 +240,15 @@ Result renderImage(const StickerTask& task, const QString& workDir, const QStrin
     }
     if (!saved) {
         if (r.error.isEmpty())
-            r.error = QStringLiteral("无法写入输出文件");
+            r.error = QCoreApplication::translate("SourceTrimmer", "无法写入输出文件");
         return r;
     }
     r.ok = true;
     r.file = output;
     r.extension = extension;
-    r.note = QStringLiteral("已导出（已裁切图片）");
+    r.note = QCoreApplication::translate("SourceTrimmer", "已导出（已裁切图片）");
     if (progress)
-        progress(100, QStringLiteral("处理画面..."));
+        progress(100, QCoreApplication::translate("SourceTrimmer", "处理画面..."));
     return r;
 }
 } // namespace
@@ -275,7 +276,7 @@ Result run(const StickerTask& task, const QString& workDir, const QString& outpu
 {
     if (!QFileInfo(task.inputPath).isFile()) {
         Result r;
-        r.error = QStringLiteral("源文件缺失");
+        r.error = QCoreApplication::translate("SourceTrimmer", "源文件缺失");
         return r;
     }
     QDir().mkpath(workDir);
@@ -284,7 +285,7 @@ Result run(const StickerTask& task, const QString& workDir, const QString& outpu
     Result r;
     switch (d.method) {
     case Method::CopyWhole:
-        r = copyWhole(task, d.extension, task.info.isVideo ? QStringLiteral("已导出（整段复制）") : QStringLiteral("已导出（原图复制）"));
+        r = copyWhole(task, d.extension, task.info.isVideo ? QCoreApplication::translate("SourceTrimmer", "已导出（整段复制）") : QCoreApplication::translate("SourceTrimmer", "已导出（原图复制）"));
         break;
     case Method::StreamCut:
         r = streamCut(task, outputBase, d.extension, cancel, progress);

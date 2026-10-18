@@ -2,6 +2,7 @@
 
 #include "core/Format.h"
 
+#include <QCoreApplication>
 #include <QStringList>
 #include <algorithm>
 #include <array>
@@ -166,7 +167,7 @@ Plan plan(const Input& in)
 
     if (in.motion && p.duration > kShortClipSeconds) {
         const double m = *in.motion;
-        const QString name = m < kStillMotion ? QStringLiteral("静止") : m < kMediumMotion ? QStringLiteral("中运动") : QStringLiteral("高运动");
+        const QString name = m < kStillMotion ? QCoreApplication::translate("EncodePlan", "静止") : m < kMediumMotion ? QCoreApplication::translate("EncodePlan", "中运动") : QCoreApplication::translate("EncodePlan", "高运动");
         p.motionLabel = name + QStringLiteral(" ") + QString::number(m, 'f', 3);
     }
     return p;
@@ -193,18 +194,18 @@ Decision evaluate(const Plan& plan, RetryState& state, qint64 actualBytes)
     if (actualBytes > plan.limitBytes) {
         if (state.retries >= kMaxRetries) {
             d.verdict = Verdict::Fail;
-            d.note = QStringLiteral("无法将体积压缩至 %1KB 以内").arg(plan.limitBytes / 1024);
+            d.note = QCoreApplication::translate("EncodePlan", "无法将体积压缩至 %1KB 以内").arg(plan.limitBytes / 1024);
             return d;
         }
         const int oldRate = state.bitrateKbps;
         const double scaled = oldRate * (double(plan.limitBytes) / actualBytes) * 0.97;
         const int newRate = std::max(kMinBitrateKbps, std::min(int(std::floor(scaled)), oldRate - 1));
         if (state.overshoots == 0) {
-            d.note = QStringLiteral("体积 %1 超限，码率 %2k→%3k...").arg(kb(actualBytes)).arg(oldRate).arg(newRate);
+            d.note = QCoreApplication::translate("EncodePlan", "体积 %1 超限，码率 %2k→%3k...").arg(kb(actualBytes)).arg(oldRate).arg(newRate);
         } else {
             const double oldFps = state.fps;
             state.fps = nextLowerFps(oldFps);
-            d.note = QStringLiteral("体积 %1 超限，%2→%3fps 重压...").arg(kb(actualBytes), fpsText(oldFps), fpsText(state.fps));
+            d.note = QCoreApplication::translate("EncodePlan", "体积 %1 超限，%2→%3fps 重压...").arg(kb(actualBytes), fpsText(oldFps), fpsText(state.fps));
         }
         state.bitrateKbps = newRate;
         ++state.overshoots;
@@ -225,7 +226,7 @@ Decision evaluate(const Plan& plan, RetryState& state, qint64 actualBytes)
             state.raised = true;
             ++state.retries;
             d.verdict = Verdict::Retry;
-            d.note = QStringLiteral("体积 %1 偏低，上调码率 %2k→%3k...").arg(kb(actualBytes)).arg(oldRate).arg(newRate);
+            d.note = QCoreApplication::translate("EncodePlan", "体积 %1 偏低，上调码率 %2k→%3k...").arg(kb(actualBytes)).arg(oldRate).arg(newRate);
             return d;
         }
     }

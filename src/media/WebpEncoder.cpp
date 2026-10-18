@@ -2,6 +2,8 @@
 
 #include <webp/encode.h>
 
+#include <QCoreApplication>
+
 namespace tsm::WebpEncoder {
 
 namespace {
@@ -13,14 +15,14 @@ QByteArray encode(const QImage& image, Mode mode, int quality, QString* error)
     const QImage rgba = image.convertToFormat(QImage::Format_RGBA8888);
     if (rgba.isNull()) {
         if (error)
-            *error = QStringLiteral("图像为空");
+            *error = QCoreApplication::translate("WebpEncoder", "图像为空");
         return {};
     }
 
     WebPConfig config;
     if (!WebPConfigInit(&config)) {
         if (error)
-            *error = QStringLiteral("libwebp 版本不匹配");
+            *error = QCoreApplication::translate("WebpEncoder", "libwebp 版本不匹配");
         return {};
     }
     config.method = 6;
@@ -45,7 +47,7 @@ QByteArray encode(const QImage& image, Mode mode, int quality, QString* error)
     WebPPicture picture;
     if (!WebPPictureInit(&picture)) {
         if (error)
-            *error = QStringLiteral("libwebp 初始化失败");
+            *error = QCoreApplication::translate("WebpEncoder", "libwebp 初始化失败");
         return {};
     }
     picture.use_argb = 1;
@@ -60,10 +62,10 @@ QByteArray encode(const QImage& image, Mode mode, int quality, QString* error)
     QByteArray out;
     if (!WebPPictureImportRGBA(&picture, rgba.constBits(), int(rgba.bytesPerLine()))) {
         if (error)
-            *error = QStringLiteral("WebP 导入像素失败");
+            *error = QCoreApplication::translate("WebpEncoder", "WebP 导入像素失败");
     } else if (!WebPEncode(&config, &picture)) {
         if (error)
-            *error = QStringLiteral("WebP 编码失败 (错误码 %1)").arg(int(picture.error_code));
+            *error = QCoreApplication::translate("WebpEncoder", "WebP 编码失败 (错误码 %1)").arg(int(picture.error_code));
     } else {
         out = QByteArray(reinterpret_cast<const char*>(writer.mem), qsizetype(writer.size));
     }

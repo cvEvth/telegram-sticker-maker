@@ -20,25 +20,25 @@ EditorSettingsDialog::EditorSettingsDialog(AppSettings& settings, QWidget* paren
     : QDialog(parent)
     , m_settings(settings)
 {
-    setWindowTitle(QStringLiteral("窗口设置"));
+    setWindowTitle(tr("窗口设置"));
     setMinimumWidth(380);
 
     m_small = new QDoubleSpinBox;
     m_small->setRange(0.1, 60);
     m_small->setDecimals(2);
     m_small->setSingleStep(0.1);
-    m_small->setSuffix(QStringLiteral(" 秒"));
+    m_small->setSuffix(tr(" 秒"));
     m_big = new QDoubleSpinBox;
     m_big->setRange(0.5, 300);
     m_big->setDecimals(1);
     m_big->setSingleStep(0.5);
-    m_big->setSuffix(QStringLiteral(" 秒"));
+    m_big->setSuffix(tr(" 秒"));
 
     m_aspect = new QComboBox;
     for (int i = 0; i <= int(CropAspect::Portrait9x16); ++i)
         m_aspect->addItem(CropMath::aspectLabel(CropAspect(i)), i);
 
-    m_overview = new QCheckBox(QStringLiteral("显示时间轴总览条"));
+    m_overview = new QCheckBox(tr("显示时间轴总览条"));
 
     m_radius = new QSlider(Qt::Horizontal);
     m_radius->setRange(0, 100);
@@ -51,14 +51,14 @@ EditorSettingsDialog::EditorSettingsDialog(AppSettings& settings, QWidget* paren
 
     auto* form = new QFormLayout;
     form->setSpacing(10);
-    form->addRow(QStringLiteral("小快退 / 快进步长"), m_small);
-    form->addRow(QStringLiteral("大快退 / 快进步长"), m_big);
-    form->addRow(QStringLiteral("默认裁切比例"), m_aspect);
-    form->addRow(QStringLiteral("默认圆角"), radiusRow);
+    form->addRow(tr("小快退 / 快进步长"), m_small);
+    form->addRow(tr("大快退 / 快进步长"), m_big);
+    form->addRow(tr("默认裁切比例"), m_aspect);
+    form->addRow(tr("默认圆角"), radiusRow);
     form->addRow(QString(), m_overview);
 
-    auto* reset = new QPushButton(QStringLiteral("重置默认"));
-    auto* ok = new QPushButton(QStringLiteral("确定"));
+    auto* reset = new QPushButton(tr("重置默认"));
+    auto* ok = new QPushButton(tr("确定"));
     ok->setObjectName(QStringLiteral("PrimaryButton"));
     ok->setMinimumHeight(32);
     ok->setDefault(true);

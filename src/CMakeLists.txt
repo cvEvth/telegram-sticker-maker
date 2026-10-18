@@ -6,6 +6,7 @@ qt_add_library(tsm_core STATIC
     app/BatchConverter.cpp  app/BatchConverter.h
     app/Exporter.cpp        app/Exporter.h
     app/ImportSource.cpp    app/ImportSource.h
+    app/Language.cpp        app/Language.h
     app/ListLoader.cpp      app/ListLoader.h
     app/Logger.cpp          app/Logger.h
     app/SessionStore.cpp    app/SessionStore.h
@@ -79,6 +80,15 @@ qt_add_resources(tsm_ui "app_resources"
           "${PROJECT_SOURCE_DIR}/resources/icons/app.ico")
 target_link_libraries(tsm_ui PUBLIC tsm_core Qt6::Widgets Qt6::Multimedia Qt6::Network)
 
+# 翻译：update_translations 目标用 lupdate 从两个库的源码更新 .ts，构建时 lrelease 生成 .qm 并嵌入资源 :/i18n
+qt_add_translations(tsm_ui
+    SOURCE_TARGETS tsm_core tsm_ui
+    TS_FILES "${PROJECT_SOURCE_DIR}/translations/tsm_en.ts"
+             "${PROJECT_SOURCE_DIR}/translations/tsm_ru.ts"
+    NO_GENERATE_PLURALS_TS_FILE
+    RESOURCE_PREFIX "/i18n"
+    LUPDATE_OPTIONS -no-obsolete -locations none)
+
 qt_add_executable(TelegramStickerMaker WIN32 main.cpp)
 if(WIN32)
     # exe 文件图标（资源管理器、任务栏、快捷方式）
@@ -106,6 +116,8 @@ if(TARGET Qt6::windeployqt AND TARGET Qt6::qtpaths)
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "${QT_TRANSLATIONS_DIR}/qtbase_zh_CN.qm"
             "${QT_TRANSLATIONS_DIR}/qtmultimedia_zh_CN.qm"
+            "${QT_TRANSLATIONS_DIR}/qtbase_ru.qm"
+            "${QT_TRANSLATIONS_DIR}/qtmultimedia_ru.qm"
             "$<TARGET_FILE_DIR:TelegramStickerMaker>/translations"
         COMMENT "Deploying Qt runtime"
         VERBATIM)

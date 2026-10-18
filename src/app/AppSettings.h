@@ -58,6 +58,10 @@ public:
     bool showDoneDialog() const;
     void setShowDoneDialog(bool on);
 
+    // 界面语言："zh_CN" / "en" / "ru"；空字符串表示跟随系统。重启后生效
+    QString language() const;
+    void setLanguage(const QString& language);
+
     QString filePath() const { return m_settings.fileName(); }
 
 private:

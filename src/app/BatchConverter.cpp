@@ -47,7 +47,7 @@ void BatchConverter::start(const QList<ConvertJob>& jobs, const ConvertSettings&
             if (cancel->load()) {
                 EncodeResult skipped;
                 skipped.cancelled = true;
-                skipped.statusText = QStringLiteral("已取消");
+                skipped.statusText = tr("已取消");
                 QMetaObject::invokeMethod(this, [this, job, skipped] { onJobDone(job, skipped, {}); }, Qt::QueuedConnection);
                 return;
             }

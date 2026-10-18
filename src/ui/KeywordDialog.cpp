@@ -27,15 +27,15 @@ KeywordDialog::KeywordDialog(const QString& subtitle, const QStringList& initial
     : QDialog(parent)
     , m_keywords(initial)
 {
-    setWindowTitle(QStringLiteral("编辑关键词"));
+    setWindowTitle(tr("编辑关键词"));
     setObjectName(QStringLiteral("KeywordDialog"));
     setMinimumWidth(460);
 
-    auto* title = new QLabel(QStringLiteral("编辑关键词"));
+    auto* title = new QLabel(tr("编辑关键词"));
     title->setObjectName(QStringLiteral("DialogTitle"));
     auto* sub = new QLabel(subtitle);
     sub->setObjectName(QStringLiteral("Hint"));
-    auto* desc = new QLabel(QStringLiteral("逐个添加搜索关键词，最多 %1 个，合计不超过 %2 字符。仅写入压缩包内的 stickers.json。")
+    auto* desc = new QLabel(tr("逐个添加搜索关键词，最多 %1 个，合计不超过 %2 字符。仅写入压缩包内的 stickers.json。")
                                 .arg(spec::kMaxKeywords)
                                 .arg(spec::kMaxKeywordChars));
     desc->setObjectName(QStringLiteral("Hint"));
@@ -46,13 +46,13 @@ KeywordDialog::KeywordDialog(const QString& subtitle, const QStringList& initial
     m_chipHost->setMinimumHeight(72);
     m_chips = new FlowLayout(m_chipHost, 6);
     m_chips->setContentsMargins(10, 10, 10, 10);
-    m_empty = new QLabel(QStringLiteral("还没有关键词"));
+    m_empty = new QLabel(tr("还没有关键词"));
     m_empty->setObjectName(QStringLiteral("Hint"));
 
     m_input = new QLineEdit;
-    m_input->setPlaceholderText(QStringLiteral("输入关键词，回车添加（可用逗号、顿号、空格分隔多个）"));
+    m_input->setPlaceholderText(tr("输入关键词，回车添加（可用逗号、顿号、空格分隔多个）"));
     m_input->installEventFilter(this);
-    m_add = new QPushButton(QStringLiteral("添加"));
+    m_add = new QPushButton(tr("添加"));
     auto* inputRow = new QHBoxLayout;
     inputRow->addWidget(m_input, 1);
     inputRow->addWidget(m_add);
@@ -66,8 +66,8 @@ KeywordDialog::KeywordDialog(const QString& subtitle, const QStringList& initial
     status->addWidget(m_message, 1);
     status->addWidget(m_counter);
 
-    auto* cancel = new QPushButton(QStringLiteral("取消"));
-    auto* save = new QPushButton(QStringLiteral("保存"));
+    auto* cancel = new QPushButton(tr("取消"));
+    auto* save = new QPushButton(tr("保存"));
     save->setObjectName(QStringLiteral("PrimaryButton"));
     save->setMinimumSize(96, 34);
     auto* buttons = new QHBoxLayout;
@@ -149,7 +149,7 @@ void KeywordDialog::rebuildChips()
         auto* close = new QToolButton;
         close->setObjectName(QStringLiteral("ChipClose"));
         close->setText(QStringLiteral("✕"));
-        close->setToolTip(QStringLiteral("删除"));
+        close->setToolTip(tr("删除"));
         close->setCursor(Qt::PointingHandCursor);
         auto* row = new QHBoxLayout(chip);
         row->setContentsMargins(10, 2, 4, 2);
@@ -174,7 +174,7 @@ void KeywordDialog::refreshState()
     }
     m_input->setEnabled(!full);
     m_add->setEnabled(!full);
-    m_input->setPlaceholderText(full ? QStringLiteral("已达上限") : QStringLiteral("输入关键词，回车添加（可用逗号、顿号、空格分隔多个）"));
+    m_input->setPlaceholderText(full ? tr("已达上限") : tr("输入关键词，回车添加（可用逗号、顿号、空格分隔多个）"));
     if (!full)
         m_input->setFocus();
 }

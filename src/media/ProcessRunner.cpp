@@ -1,5 +1,6 @@
 #include "media/ProcessRunner.h"
 
+#include <QCoreApplication>
 #include <QProcess>
 
 namespace tsm {
@@ -8,17 +9,17 @@ QString ProcessResult::errorSummary() const
 {
     if (!started) {
         const QString detail = QString::fromUtf8(stdErr).trimmed();
-        return detail.isEmpty() ? QStringLiteral("无法启动进程") : QStringLiteral("无法启动进程: ") + detail;
+        return detail.isEmpty() ? QCoreApplication::translate("ProcessRunner", "无法启动进程") : QCoreApplication::translate("ProcessRunner", "无法启动进程: ") + detail;
     }
     if (timedOut)
-        return QStringLiteral("进程超时");
+        return QCoreApplication::translate("ProcessRunner", "进程超时");
     const QStringList lines = QString::fromUtf8(stdErr).split(u'\n', Qt::SkipEmptyParts);
     for (auto it = lines.crbegin(); it != lines.crend(); ++it) {
         const QString line = it->trimmed();
         if (!line.isEmpty())
             return line;
     }
-    return QStringLiteral("退出码 %1").arg(exitCode);
+    return QCoreApplication::translate("ProcessRunner", "退出码 %1").arg(exitCode);
 }
 
 namespace ProcessRunner {

@@ -1,5 +1,6 @@
 #include "io/ZipWriter.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -42,7 +43,7 @@ bool writeStored(const QString& zipPath, const QList<Entry>& entries, QString* e
     for (const Entry& entry : entries) {
         if (!entry.filePath.isEmpty() && !QFileInfo(entry.filePath).isFile()) {
             if (error)
-                *error = QStringLiteral("找不到 %1").arg(QDir::toNativeSeparators(entry.filePath));
+                *error = QCoreApplication::translate("ZipWriter", "找不到 %1").arg(QDir::toNativeSeparators(entry.filePath));
             return false;
         }
     }
@@ -98,7 +99,7 @@ bool writeStored(const QString& zipPath, const QList<Entry>& entries, QString* e
 
     if (zip_close(archive) < 0) {
         if (error)
-            *error = state.cancelled ? QStringLiteral("已取消") : QString::fromLocal8Bit(zip_strerror(archive));
+            *error = state.cancelled ? QCoreApplication::translate("ZipWriter", "已取消") : QString::fromLocal8Bit(zip_strerror(archive));
         zip_discard(archive);
         QFile::remove(zipPath);
         return false;

@@ -125,7 +125,7 @@ void KeywordsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
         painter->setBrush(Qt::NoBrush);
         painter->drawRoundedRect(QRectF(button).adjusted(0.5, 0.5, -0.5, -0.5), 13, 13);
         painter->setPen(QColor(0x8b, 0x93, 0xa7));
-        painter->drawText(button, Qt::AlignCenter, QStringLiteral("+ 设置关键词"));
+        painter->drawText(button, Qt::AlignCenter, tr("+ 设置关键词"));
     } else {
         painter->setPen(QPen(QColor(42, 171, 238, hover ? 200 : 110), 1));
         painter->setBrush(QColor(42, 171, 238, hover ? 50 : 30));
@@ -236,11 +236,11 @@ bool ActionsDelegate::helpEvent(QHelpEvent* event, QAbstractItemView* view, cons
     const int action = actionAt(option, index.row(), event->pos());
     QString tip;
     if (action == Edit)
-        tip = m_model->taskAt(index.row()).info.isVideo ? QStringLiteral("截取画面与视频片段") : QStringLiteral("裁切画面样式");
+        tip = m_model->taskAt(index.row()).info.isVideo ? tr("截取画面与视频片段") : tr("裁切画面样式");
     else if (action == OpenFolder)
-        tip = QStringLiteral("打开所在文件夹");
+        tip = tr("打开所在文件夹");
     else if (action == Remove)
-        tip = QStringLiteral("移除此项");
+        tip = tr("移除此项");
     if (tip.isEmpty())
         return QStyledItemDelegate::helpEvent(event, view, option, index);
     QToolTip::showText(event->globalPos(), tip, view);

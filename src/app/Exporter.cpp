@@ -102,9 +102,9 @@ ExportSummary Exporter::exportSources(const QList<ExportJob>& jobs, const Export
     } else {
         folder = QDir(settings.destDir).filePath(OutputNaming::uniqueFileName(settings.destDir, baseName));
         if (!QDir().mkpath(folder)) {
-            summary.logLines << QStringLiteral("❌ 无法创建文件夹 %1").arg(native(folder));
+            summary.logLines << tr("❌ 无法创建文件夹 %1").arg(native(folder));
             for (const ExportJob& job : jobs)
-                emitFinished(job.task.id, TaskStatus::Failed, QStringLiteral("无法创建导出文件夹"));
+                emitFinished(job.task.id, TaskStatus::Failed, tr("无法创建导出文件夹"));
             summary.failed = int(jobs.size());
             return summary;
         }
@@ -121,7 +121,7 @@ ExportSummary Exporter::exportSources(const QList<ExportJob>& jobs, const Export
         const QString id = job.task.id;
         if (cancel->load()) {
             ++summary.cancelled;
-            emitFinished(id, TaskStatus::Cancelled, QStringLiteral("已取消"));
+            emitFinished(id, TaskStatus::Cancelled, tr("已取消"));
             continue;
         }
         emitStarted(id);
@@ -129,7 +129,7 @@ ExportSummary Exporter::exportSources(const QList<ExportJob>& jobs, const Export
         const QString abs = fi.absoluteFilePath();
         if (!fi.isFile()) {
             ++summary.missing;
-            emitFinished(id, TaskStatus::Failed, QStringLiteral("源文件缺失"));
+            emitFinished(id, TaskStatus::Failed, tr("源文件缺失"));
             continue;
         }
         if (!sourceRel.contains(abs)) {
@@ -144,14 +144,14 @@ ExportSummary Exporter::exportSources(const QList<ExportJob>& jobs, const Export
                 if (hasProxy)
                     entries << ZipWriter::Entry{proxyName, proxy, {}};
             } else {
-                emitProgress(id, 10, QStringLiteral("复制原片..."));
+                emitProgress(id, 10, tr("复制原片..."));
                 if (!copyReplacing(abs, QDir(folder).filePath(rel))) {
                     ++summary.failed;
-                    emitFinished(id, TaskStatus::Failed, QStringLiteral("复制失败"));
+                    emitFinished(id, TaskStatus::Failed, tr("复制失败"));
                     continue;
                 }
                 if (hasProxy && !copyReplacing(proxy, QDir(folder).filePath(proxyName)))
-                    summary.logLines << QStringLiteral("⚠️ 无法复制预览缓存 %1").arg(native(proxy));
+                    summary.logLines << tr("⚠️ 无法复制预览缓存 %1").arg(native(proxy));
             }
             sourceRel.insert(abs, rel);
             if (hasProxy)
@@ -159,7 +159,7 @@ ExportSummary Exporter::exportSources(const QList<ExportJob>& jobs, const Export
         }
         listed << job.task;
         ++summary.exported;
-        emitFinished(id, TaskStatus::Succeeded, QStringLiteral("已导出"), fi.size());
+        emitFinished(id, TaskStatus::Succeeded, tr("已导出"), fi.size());
     }
 
     if (listed.isEmpty()) {
@@ -178,35 +178,35 @@ ExportSummary Exporter::exportSources(const QList<ExportJob>& jobs, const Export
 
     if (settings.asZip) {
         entries << ZipWriter::Entry{listName, {}, json};
-        emitPackaging(QStringLiteral("正在写入压缩包..."));
+        emitPackaging(tr("正在写入压缩包..."));
         int lastPercent = -1;
         QString error;
         const bool ok = ZipWriter::writeStored(zipPath, entries, &error, [&](double f) {
             const int percent = int(f * 100);
             if (percent != lastPercent) {
                 lastPercent = percent;
-                emitPackaging(QStringLiteral("正在写入压缩包 %1%").arg(percent));
+                emitPackaging(tr("正在写入压缩包 %1%").arg(percent));
             }
             return !cancel->load();
         });
         if (!ok) {
-            summary.logLines << QStringLiteral("❌ 打包失败: %1").arg(error);
+            summary.logLines << tr("❌ 打包失败: %1").arg(error);
             const bool stopped = cancel->load();
             for (const StickerTask& t : listed)
                 emitFinished(t.id, stopped ? TaskStatus::Cancelled : TaskStatus::Failed,
-                             stopped ? QStringLiteral("已取消") : QStringLiteral("打包失败"));
+                             stopped ? tr("已取消") : tr("打包失败"));
             (stopped ? summary.cancelled : summary.failed) += summary.exported;
             summary.exported = 0;
             return summary;
         }
         summary.locations << zipPath;
-        summary.logLines << QStringLiteral("📦 已打包 %1 项（%2 个原片）: %3").arg(listed.size()).arg(sourceRel.size()).arg(native(zipPath));
+        summary.logLines << tr("📦 已打包 %1 项（%2 个原片）: %3").arg(listed.size()).arg(sourceRel.size()).arg(native(zipPath));
     } else {
         QSaveFile file(QDir(folder).filePath(listName));
         if (!file.open(QIODevice::WriteOnly) || file.write(json) != json.size() || !file.commit())
-            summary.logLines << QStringLiteral("❌ 无法写入 %1").arg(native(QDir(folder).filePath(listName)));
+            summary.logLines << tr("❌ 无法写入 %1").arg(native(QDir(folder).filePath(listName)));
         summary.locations << folder;
-        summary.logLines << QStringLiteral("📁 已导出 %1 项（%2 个原片）到: %3").arg(listed.size()).arg(sourceRel.size()).arg(native(folder));
+        summary.logLines << tr("📁 已导出 %1 项（%2 个原片）到: %3").arg(listed.size()).arg(sourceRel.size()).arg(native(folder));
     }
     return summary;
 }
@@ -225,13 +225,13 @@ ExportSummary Exporter::exportTrimmed(const QList<ExportJob>& jobs, const Export
         const QString id = job.task.id;
         if (cancel->load()) {
             ++summary.cancelled;
-            emitFinished(id, TaskStatus::Cancelled, QStringLiteral("已取消"));
+            emitFinished(id, TaskStatus::Cancelled, tr("已取消"));
             continue;
         }
         emitStarted(id);
         if (!QFileInfo(job.task.inputPath).isFile()) {
             ++summary.missing;
-            emitFinished(id, TaskStatus::Failed, QStringLiteral("源文件缺失"));
+            emitFinished(id, TaskStatus::Failed, tr("源文件缺失"));
             continue;
         }
         const QString workDir = QDir(batchDir).filePath(QStringLiteral("task_%1").arg(i + 1));
@@ -241,7 +241,7 @@ ExportSummary Exporter::exportTrimmed(const QList<ExportJob>& jobs, const Export
         QDir(workDir).removeRecursively();
         if (r.cancelled) {
             ++summary.cancelled;
-            emitFinished(id, TaskStatus::Cancelled, QStringLiteral("已取消"));
+            emitFinished(id, TaskStatus::Cancelled, tr("已取消"));
             continue;
         }
         if (!r.ok) {
@@ -272,16 +272,16 @@ ExportSummary Exporter::exportTrimmed(const QList<ExportJob>& jobs, const Export
     }
 
     if (!items.isEmpty()) {
-        emitPackaging(QStringLiteral("正在写出文件..."));
+        emitPackaging(tr("正在写出文件..."));
         OutputPackager::Options options;
         options.prefix = QString::fromLatin1(kTrimmedPrefix);
-        options.noun = QStringLiteral("文件");
+        options.stickers = false;
         const OutputPackager::Result result =
             OutputPackager::package(items, settings.asZip, settings.destDir, QDateTime::currentDateTime(), options);
         summary.locations = result.locations;
         summary.logLines << result.logLines;
         if (!result.ok)
-            summary.logLines << QStringLiteral("❌ 导出失败: %1").arg(result.error);
+            summary.logLines << tr("❌ 导出失败: %1").arg(result.error);
     }
     QDir(batchDir).removeRecursively();
     return summary;

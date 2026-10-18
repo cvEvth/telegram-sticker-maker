@@ -1,5 +1,6 @@
 #include "io/ZipReader.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -64,7 +65,7 @@ bool extractAll(const QString& zipPath, const QString& destDir, QString* error,
     for (zip_int64_t i = 0; i < count; ++i) {
         if (cancel && cancel->load()) {
             zip_discard(archive);
-            return fail(QStringLiteral("已取消"));
+            return fail(QCoreApplication::translate("ZipReader", "已取消"));
         }
         const char* rawName = zip_get_name(archive, zip_uint64_t(i), ZIP_FL_ENC_GUESS);
         if (!rawName)
@@ -78,7 +79,7 @@ bool extractAll(const QString& zipPath, const QString& destDir, QString* error,
         const QString relative = safeRelativePath(name);
         if (relative.isEmpty()) {
             zip_discard(archive);
-            return fail(QStringLiteral("压缩包含有不安全的路径: %1").arg(name));
+            return fail(QCoreApplication::translate("ZipReader", "压缩包含有不安全的路径: %1").arg(name));
         }
         const QString target = root.filePath(relative);
         QDir().mkpath(QFileInfo(target).absolutePath());
@@ -87,13 +88,13 @@ bool extractAll(const QString& zipPath, const QString& destDir, QString* error,
         if (!entry) {
             const QString text = QString::fromLocal8Bit(zip_strerror(archive));
             zip_discard(archive);
-            return fail(QStringLiteral("无法读取 %1: %2").arg(name, text));
+            return fail(QCoreApplication::translate("ZipReader", "无法读取 %1: %2").arg(name, text));
         }
         QFile out(target);
         if (!out.open(QIODevice::WriteOnly)) {
             zip_fclose(entry);
             zip_discard(archive);
-            return fail(QStringLiteral("无法写入 %1: %2").arg(QDir::toNativeSeparators(target), out.errorString()));
+            return fail(QCoreApplication::translate("ZipReader", "无法写入 %1: %2").arg(QDir::toNativeSeparators(target), out.errorString()));
         }
         bool ok = true;
         for (;;) {
@@ -115,12 +116,12 @@ bool extractAll(const QString& zipPath, const QString& destDir, QString* error,
         out.close();
         if (!ok) {
             zip_discard(archive);
-            return fail(QStringLiteral("解压 %1 失败").arg(name));
+            return fail(QCoreApplication::translate("ZipReader", "解压 %1 失败").arg(name));
         }
     }
     zip_discard(archive);
     if (cancel && cancel->load())
-        return fail(QStringLiteral("已取消"));
+        return fail(QCoreApplication::translate("ZipReader", "已取消"));
     return true;
 }
 

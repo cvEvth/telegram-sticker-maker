@@ -1,5 +1,6 @@
 #include "app/AppPaths.h"
 #include "app/AppSettings.h"
+#include "app/Language.h"
 #include "app/ListLoader.h"
 #include "core/StickerList.h"
 #include "core/Format.h"
@@ -304,6 +305,26 @@ private slots:
         QCOMPARE(AppPaths::resolveDataDir(tmp.path()), QDir(tmp.path()).absolutePath());
 
         QVERIFY(!AppPaths::resolveDataDir(QString()).isEmpty());
+    }
+
+    // 界面语言：设置值有效时直接用；空或无效时跟随系统，结果总在支持列表里
+    void languageResolve()
+    {
+        QStringList codes;
+        for (const Language::Option& option : Language::available())
+            codes << option.code;
+        QCOMPARE(codes, (QStringList{QStringLiteral("zh_CN"), QStringLiteral("en"), QStringLiteral("ru")}));
+        for (const QString& code : codes)
+            QCOMPARE(Language::resolve(code), code);
+        QVERIFY(codes.contains(Language::resolve(QString())));
+        QCOMPARE(Language::resolve(QStringLiteral("fr")), Language::resolve(QString()));
+
+        QTemporaryDir tmp;
+        QVERIFY(tmp.isValid());
+        const QString ini = QDir(tmp.path()).filePath(QStringLiteral("lang.ini"));
+        QVERIFY(AppSettings(ini).language().isEmpty());
+        AppSettings(ini).setLanguage(QStringLiteral("ru"));
+        QCOMPARE(AppSettings(ini).language(), QStringLiteral("ru"));
     }
 
     void legacyEncodePresetMigrates()

@@ -1,12 +1,11 @@
+#include "app/AppSettings.h"
+#include "app/Language.h"
 #include "app/Logger.h"
 #include "ui/MainWindow.h"
 #include "ui/Theme.h"
 
 #include <QApplication>
 #include <QIcon>
-#include <QLibraryInfo>
-#include <QLocale>
-#include <QTranslator>
 
 int main(int argc, char* argv[])
 {
@@ -16,16 +15,7 @@ int main(int argc, char* argv[])
     // 窗口与弹窗标题栏图标（多尺寸 .ico：大尺寸为完整人物，16~32px 只取甜甜圈和脸）
     QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/app.ico")));
 
-    // Qt 自带对话框 / 按钮的中文翻译：优先程序目录下的 translations（部署后），其次 Qt 安装目录
-    QTranslator qtTranslator;
-    const QLocale zhCN(QLocale::Chinese, QLocale::China);
-    for (const QString& dir : {QCoreApplication::applicationDirPath() + QStringLiteral("/translations"),
-                               QLibraryInfo::path(QLibraryInfo::TranslationsPath)}) {
-        if (qtTranslator.load(zhCN, QStringLiteral("qtbase"), QStringLiteral("_"), dir)) {
-            QApplication::installTranslator(&qtTranslator);
-            break;
-        }
-    }
+    tsm::Language::install(tsm::Language::resolve(tsm::AppSettings().language()));
 
     tsm::Logger::instance(); // 在主线程创建
     tsm::applyDarkTheme(app);

@@ -2,6 +2,7 @@
 
 #include "core/Spec.h"
 
+#include <QCoreApplication>
 #include <QUuid>
 #include <cmath>
 
@@ -79,20 +80,20 @@ void StickerTask::resetRuntimeState()
 QString shapeLabel(double radius)
 {
     if (radius <= 0.0)
-        return QStringLiteral("直角");
+        return QCoreApplication::translate("StickerTask", "直角");
     if (radius >= 1.0)
-        return QStringLiteral("圆形");
-    return QStringLiteral("圆角 %1%").arg(qRound(radius * 100));
+        return QCoreApplication::translate("StickerTask", "圆形");
+    return QCoreApplication::translate("StickerTask", "圆角 %1%").arg(qRound(radius * 100));
 }
 
 QString defaultStatusText(TaskStatus status)
 {
     switch (status) {
-    case TaskStatus::Pending: return QStringLiteral("等待转换");
-    case TaskStatus::Running: return QStringLiteral("正在转码...");
-    case TaskStatus::Succeeded: return QStringLiteral("转换成功");
-    case TaskStatus::Failed: return QStringLiteral("转换失败");
-    case TaskStatus::Cancelled: return QStringLiteral("已取消");
+    case TaskStatus::Pending: return QCoreApplication::translate("StickerTask", "等待转换");
+    case TaskStatus::Running: return QCoreApplication::translate("StickerTask", "正在转码...");
+    case TaskStatus::Succeeded: return QCoreApplication::translate("StickerTask", "转换成功");
+    case TaskStatus::Failed: return QCoreApplication::translate("StickerTask", "转换失败");
+    case TaskStatus::Cancelled: return QCoreApplication::translate("StickerTask", "已取消");
     }
     return {};
 }

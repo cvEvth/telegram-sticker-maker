@@ -115,7 +115,7 @@ QImage ThumbnailService::render(const Request& r, QString* error)
 {
     if (!QFileInfo::exists(r.path)) {
         if (error)
-            *error = QStringLiteral("文件不存在");
+            *error = tr("文件不存在");
         return {};
     }
     QStringList filters;

@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include <QCoreApplication>
+
 namespace tsm::CropMath {
 
 namespace {
@@ -77,11 +79,11 @@ QString aspectLabel(CropAspect aspect)
 {
     switch (aspect) {
     case CropAspect::Square: return QStringLiteral("1:1");
-    case CropAspect::Free: return QStringLiteral("自由比例");
-    case CropAspect::Original: return QStringLiteral("原始比例");
-    case CropAspect::Landscape16x9: return QStringLiteral("16:9（横屏）");
-    case CropAspect::Classic4x3: return QStringLiteral("4:3（经典）");
-    case CropAspect::Portrait9x16: return QStringLiteral("9:16（竖屏）");
+    case CropAspect::Free: return QCoreApplication::translate("CropMath", "自由比例");
+    case CropAspect::Original: return QCoreApplication::translate("CropMath", "原始比例");
+    case CropAspect::Landscape16x9: return QCoreApplication::translate("CropMath", "16:9（横屏）");
+    case CropAspect::Classic4x3: return QCoreApplication::translate("CropMath", "4:3（经典）");
+    case CropAspect::Portrait9x16: return QCoreApplication::translate("CropMath", "9:16（竖屏）");
     }
     return {};
 }

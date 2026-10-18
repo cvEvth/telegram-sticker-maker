@@ -108,7 +108,7 @@ void PreviewCanvas::paintEvent(QPaintEvent*)
     const QRectF d = displayRect();
     if (m_image.isNull()) {
         p.setPen(QColor(0x8b, 0x93, 0xa7));
-        p.drawText(rect(), Qt::AlignCenter, m_placeholder.isEmpty() ? QStringLiteral("加载中...") : m_placeholder);
+        p.drawText(rect(), Qt::AlignCenter, m_placeholder.isEmpty() ? tr("加载中...") : m_placeholder);
         return;
     }
 

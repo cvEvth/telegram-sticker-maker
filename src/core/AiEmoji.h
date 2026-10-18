@@ -27,6 +27,8 @@ QByteArray buildRequest(const QString& model, const QString& prompt, const QByte
 
 // 取 choices[0].message.content；格式不对时返回空并写 error
 QString parseReply(const QByteArray& body, QString* error = nullptr);
+// 回复里既没有内容也没有 error.message 时 parseReply 给出的提示
+QString invalidReplyText();
 
 // "https://api.openai.com/v1" → ".../v1/chat/completions"
 QString endpointFor(const QString& baseUrl);

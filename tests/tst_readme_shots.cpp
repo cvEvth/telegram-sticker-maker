@@ -1,8 +1,10 @@
 // 生成 README 截图（docs/screenshots）：设置 TSM_README_MEDIA（素材目录，取其中的 .mp4）与
 // TSM_SNAPSHOT_DIR（截图输出目录）后运行，否则跳过。会真实转换素材，耗时约半分钟。
 // 输出目录与数据目录放在 TSM_README_ROOT（默认 D:/StickerDemo）下，截图里不出现个人目录；结束后删除。
+// TSM_README_LANG=en / ru 时界面用对应语言（英文 / 俄文 README 的截图）。
 #include "app/AppPaths.h"
 #include "app/AppSettings.h"
+#include "app/Language.h"
 #include "core/TaskListModel.h"
 #include "media/ProxyCache.h"
 #include "media/ThumbnailService.h"
@@ -50,6 +52,8 @@ private slots:
         QVERIFY2(!QDir(m_root).exists(), qPrintable(m_root + QStringLiteral(" already exists; pick another TSM_README_ROOT")));
         QStandardPaths::setTestModeEnabled(true);
         QDir(AppPaths::configDir()).removeRecursively();
+        if (const QString lang = qEnvironmentVariable("TSM_README_LANG"); !lang.isEmpty())
+            Language::install(Language::resolve(lang));
         applyDarkTheme(*qApp);
     }
 
@@ -117,7 +121,7 @@ private slots:
         QTest::qWait(300);
         save(done, QStringLiteral("done-dialog.png"));
         for (QPushButton* b : done->findChildren<QPushButton*>())
-            if (b->text() == QStringLiteral("关闭"))
+            if (b->text() == ConversionDoneDialog::tr("关闭"))
                 b->click();
         QTRY_VERIFY_WITH_TIMEOUT(window.findChild<ConversionDoneDialog*>() == nullptr, 3000);
 

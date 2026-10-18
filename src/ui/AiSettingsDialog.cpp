@@ -18,13 +18,13 @@ AiSettingsDialog::AiSettingsDialog(AppSettings& settings, QWidget* parent)
     : QDialog(parent)
     , m_settings(settings)
 {
-    setWindowTitle(QStringLiteral("AI 设置"));
+    setWindowTitle(tr("AI 设置"));
     setObjectName(QStringLiteral("AiSettingsDialog"));
     setMinimumWidth(480);
 
-    auto* title = new QLabel(QStringLiteral("⚙️ AI 设置"));
+    auto* title = new QLabel(tr("⚙️ AI 设置"));
     title->setObjectName(QStringLiteral("DialogTitle"));
-    auto* desc = new QLabel(QStringLiteral("支持任何兼容 OpenAI 格式的接口 (如 DeepSeek, Moonshot, OneAPI 等)。"));
+    auto* desc = new QLabel(tr("支持任何兼容 OpenAI 格式的接口 (如 DeepSeek, Moonshot, OneAPI 等)。"));
     desc->setObjectName(QStringLiteral("Hint"));
     desc->setWordWrap(true);
 
@@ -45,16 +45,16 @@ AiSettingsDialog::AiSettingsDialog(AppSettings& settings, QWidget* parent)
     form->setVerticalSpacing(10);
     form->addRow(QStringLiteral("API Key"), m_key);
     form->addRow(QStringLiteral("Base URL"), m_baseUrl);
-    form->addRow(QStringLiteral("模型名称"), m_model);
+    form->addRow(tr("模型名称"), m_model);
 
-    auto* localHint = new QLabel(QStringLiteral("Base URL 指向本机（localhost / 127.0.0.1）时可以不填 Key。"));
+    auto* localHint = new QLabel(tr("Base URL 指向本机（localhost / 127.0.0.1）时可以不填 Key。"));
     localHint->setObjectName(QStringLiteral("Hint"));
     localHint->setWordWrap(true);
 
     m_message = new QLabel;
     m_message->setObjectName(QStringLiteral("Hint"));
-    auto* cancel = new QPushButton(QStringLiteral("取消"));
-    m_save = new QPushButton(QStringLiteral("保存"));
+    auto* cancel = new QPushButton(tr("取消"));
+    m_save = new QPushButton(tr("保存"));
     m_save->setObjectName(QStringLiteral("PrimaryButton"));
     m_save->setMinimumSize(96, 34);
     m_save->setDefault(true);
@@ -98,7 +98,7 @@ void AiSettingsDialog::save()
     m_settings.setAiModel(config.model);
     m_settings.setAiApiKey(config.apiKey);
     m_message->setProperty("warning", false);
-    m_message->setText(QStringLiteral("✓ 已保存"));
+    m_message->setText(tr("✓ 已保存"));
     m_message->style()->polish(m_message);
     m_save->setEnabled(false);
     QTimer::singleShot(700, this, &QDialog::accept);

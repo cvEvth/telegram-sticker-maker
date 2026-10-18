@@ -81,7 +81,7 @@ ClipEditorDialog::ClipEditorDialog(AppSettings& settings, ThumbnailService* thum
     m_isVideo = m_base.info.isVideo;
     m_frame = QSize(m_base.info.width, m_base.info.height);
 
-    setWindowTitle(m_isVideo ? QStringLiteral("截取画面与视频片段") : QStringLiteral("裁切画面样式"));
+    setWindowTitle(m_isVideo ? tr("截取画面与视频片段") : tr("裁切画面样式"));
     setObjectName(QStringLiteral("ClipEditor"));
     resize(1380, 860);
     setMinimumSize(1100, 700);
@@ -203,7 +203,7 @@ QWidget* ClipEditorDialog::buildTopBar()
 
     const MediaInfo& info = m_base.info;
     const QString size = QStringLiteral("%1×%2").arg(info.width).arg(info.height);
-    m_infoLabel = new QLabel(m_isVideo ? QStringLiteral("时长: %1 | %2 | %3 fps | %4")
+    m_infoLabel = new QLabel(m_isVideo ? tr("时长: %1 | %2 | %3 fps | %4")
                                              .arg(formatTimecode(info.duration), size, formatFps(info.fps), info.videoCodec)
                                        : size);
     m_infoLabel->setObjectName(QStringLiteral("Hint"));
@@ -216,7 +216,7 @@ QWidget* ClipEditorDialog::buildTopBar()
     layout->addStretch();
 
     if (m_isVideo && m_proxies && ProxyCache::needsProxy(m_base.inputPath)) {
-        m_proxyButton = toolButton(QStringLiteral("缓存代理"), QStringLiteral("在后台生成 480p 流畅预览副本，拖动更顺滑"));
+        m_proxyButton = toolButton(tr("缓存代理"), tr("在后台生成 480p 流畅预览副本，拖动更顺滑"));
         m_proxyButton->setObjectName(QStringLiteral("ProxyButton"));
         connect(m_proxyButton, &QPushButton::clicked, this, [this] {
             m_proxyError.clear();
@@ -226,9 +226,9 @@ QWidget* ClipEditorDialog::buildTopBar()
         connect(m_proxies, &ProxyCache::progress, this, [this](const QString& source, int percent) {
             if (source != m_base.inputPath)
                 return;
-            m_proxyButton->setText(QStringLiteral("缓存中 %1%").arg(percent));
+            m_proxyButton->setText(tr("缓存中 %1%").arg(percent));
             if (!m_usingProxy && ProxyCache::playerCannotDecode(source))
-                m_canvas->setPlaceholder(QStringLiteral("正在生成预览副本 %1%").arg(percent));
+                m_canvas->setPlaceholder(tr("正在生成预览副本 %1%").arg(percent));
         });
         connect(m_proxies, &ProxyCache::finished, this, [this](const QString& source, bool ok, const QString& path, const QString& error) {
             if (source != m_base.inputPath)
@@ -237,7 +237,7 @@ QWidget* ClipEditorDialog::buildTopBar()
             if (ok)
                 switchToProxy(path);
             else if (!m_usingProxy && ProxyCache::playerCannotDecode(source))
-                m_canvas->setPlaceholder(QStringLiteral("无法生成预览：%1").arg(error));
+                m_canvas->setPlaceholder(tr("无法生成预览：%1").arg(error));
             refreshProxyButton();
         });
         layout->addWidget(m_proxyButton);
@@ -257,11 +257,11 @@ QWidget* ClipEditorDialog::buildTimeline()
     m_totalLabel = new QLabel(formatTimecode(m_base.info.duration));
     m_totalLabel->setObjectName(QStringLiteral("Hint"));
 
-    m_overviewButton = toolButton(QStringLiteral("总览"), QStringLiteral("显示 / 隐藏总览条"), true);
+    m_overviewButton = toolButton(tr("总览"), tr("显示 / 隐藏总览条"), true);
     m_overviewButton->setObjectName(QStringLiteral("SmallButton"));
-    m_fitButton = toolButton(QStringLiteral("适应片段"), QStringLiteral("放大到当前片段（F）"));
+    m_fitButton = toolButton(tr("适应片段"), tr("放大到当前片段（F）"));
     m_fitButton->setObjectName(QStringLiteral("SmallButton"));
-    m_fullButton = toolButton(QString(), QStringLiteral("恢复全长（0）"));
+    m_fullButton = toolButton(QString(), tr("恢复全长（0）"));
     m_fullButton->setObjectName(QStringLiteral("SmallButton"));
 
     auto* info = new QHBoxLayout;
@@ -333,14 +333,14 @@ QWidget* ClipEditorDialog::buildControls()
     QHBoxLayout* layout = transport;
 
     if (m_isVideo) {
-        m_backBig = toolButton(QString(), QStringLiteral("后退大步长（Shift+←）"));
-        m_backSmall = toolButton(QString(), QStringLiteral("后退小步长（←）"));
-        m_playButton = toolButton(QStringLiteral("▶️ 播放"), QStringLiteral("播放 / 暂停（空格）"));
+        m_backBig = toolButton(QString(), tr("后退大步长（Shift+←）"));
+        m_backSmall = toolButton(QString(), tr("后退小步长（←）"));
+        m_playButton = toolButton(tr("▶️ 播放"), tr("播放 / 暂停（空格）"));
         m_playButton->setMinimumWidth(84);
-        m_fwdSmall = toolButton(QString(), QStringLiteral("前进小步长（→）"));
-        m_fwdBig = toolButton(QString(), QStringLiteral("前进大步长（Shift+→）"));
-        m_startButton = toolButton(QStringLiteral("🚩 起点"), QStringLiteral("设当前时刻为片段起点（[）"));
-        m_endButton = toolButton(QStringLiteral("🏁 终点"), QStringLiteral("设当前时刻为片段终点（]）"));
+        m_fwdSmall = toolButton(QString(), tr("前进小步长（→）"));
+        m_fwdBig = toolButton(QString(), tr("前进大步长（Shift+→）"));
+        m_startButton = toolButton(tr("🚩 起点"), tr("设当前时刻为片段起点（[）"));
+        m_endButton = toolButton(tr("🏁 终点"), tr("设当前时刻为片段终点（]）"));
         for (QPushButton* b : {m_backBig, m_backSmall, m_playButton, m_fwdSmall, m_fwdBig})
             layout->addWidget(b);
         layout->addSpacing(8);
@@ -358,17 +358,17 @@ QWidget* ClipEditorDialog::buildControls()
     }
     layout = edit;
 
-    m_cropButton = toolButton(QStringLiteral("✂️ 画面裁切"), QStringLiteral("显示 / 隐藏裁切框"), true);
-    m_mirrorButton = toolButton(QStringLiteral("🪞 镜像"), QStringLiteral("水平镜像（M）"), true);
+    m_cropButton = toolButton(tr("✂️ 画面裁切"), tr("显示 / 隐藏裁切框"), true);
+    m_mirrorButton = toolButton(tr("🪞 镜像"), tr("水平镜像（M）"), true);
     layout->addWidget(m_cropButton);
     layout->addWidget(m_mirrorButton);
     connect(m_cropButton, &QPushButton::toggled, this, &ClipEditorDialog::setCropMode);
     connect(m_mirrorButton, &QPushButton::clicked, this, &ClipEditorDialog::toggleMirror);
 
     layout->addSpacing(8);
-    layout->addWidget(new QLabel(QStringLiteral("关联 Emoji:")));
+    layout->addWidget(new QLabel(tr("关联 Emoji:")));
     m_emojiEdit = new QLineEdit;
-    m_emojiEdit->setPlaceholderText(QStringLiteral("可留空"));
+    m_emojiEdit->setPlaceholderText(tr("可留空"));
     m_emojiEdit->setMaximumWidth(90);
     layout->addWidget(m_emojiEdit);
     connect(m_emojiEdit, &QLineEdit::textEdited, this, [this](const QString& text) {
@@ -387,7 +387,7 @@ QWidget* ClipEditorDialog::buildControls()
         m_speed = new QComboBox;
         for (const double s : kSpeeds)
             m_speed->addItem(formatSecondsShort(s) + QStringLiteral("×"), s);
-        m_speed->setToolTip(QStringLiteral("播放倍速（, 减速  . 加速）"));
+        m_speed->setToolTip(tr("播放倍速（, 减速  . 加速）"));
         m_speed->setFocusPolicy(Qt::NoFocus);
         int index = 3;
         for (int i = 0; i < int(kSpeeds.size()); ++i)
@@ -402,18 +402,18 @@ QWidget* ClipEditorDialog::buildControls()
                 m_player->setPlaybackRate(rate);
             }
         });
-        m_muteButton = toolButton(QStringLiteral("🔊"), QStringLiteral("静音"));
+        m_muteButton = toolButton(QStringLiteral("🔊"), tr("静音"));
         connect(m_muteButton, &QPushButton::clicked, this, [this] {
             m_audio->setMuted(!m_audio->isMuted());
             m_muteButton->setText(m_audio->isMuted() ? QStringLiteral("🔇") : QStringLiteral("🔊"));
         });
-        layout->addWidget(new QLabel(QStringLiteral("倍速")));
+        layout->addWidget(new QLabel(tr("倍速")));
         layout->addWidget(m_speed);
         layout->addWidget(m_muteButton);
         rows->addLayout(transport);
     }
 
-    auto* settingsButton = toolButton(QStringLiteral("⚙️ 窗口设置"), QStringLiteral("步长、默认裁切比例与圆角、总览条"));
+    auto* settingsButton = toolButton(tr("⚙️ 窗口设置"), tr("步长、默认裁切比例与圆角、总览条"));
     connect(settingsButton, &QPushButton::clicked, this, &ClipEditorDialog::openSettings);
     edit->addWidget(settingsButton);
     rows->addLayout(edit);
@@ -438,16 +438,16 @@ QWidget* ClipEditorDialog::buildCropBar()
     m_aspect->setFocusPolicy(Qt::NoFocus);
     connect(m_aspect, &QComboBox::activated, this, &ClipEditorDialog::onAspectChanged);
 
-    auto* reset = toolButton(QStringLiteral("🔄 重置居中"), QStringLiteral("按当前比例重置为居中的最大尺寸"));
+    auto* reset = toolButton(tr("🔄 重置居中"), tr("按当前比例重置为居中的最大尺寸"));
     connect(reset, &QPushButton::clicked, this, &ClipEditorDialog::resetCropCenter);
     layout->addWidget(m_aspect);
     layout->addWidget(reset);
     if (m_isVideo) {
-        m_syncButton = toolButton(QStringLiteral("📐 同步形状"), QStringLiteral("把当前片段的裁切宽高和圆角应用到所有片段（各片段保留自己的位置）"));
+        m_syncButton = toolButton(tr("📐 同步形状"), tr("把当前片段的裁切宽高和圆角应用到所有片段（各片段保留自己的位置）"));
         connect(m_syncButton, &QPushButton::clicked, this, &ClipEditorDialog::syncShapeToAll);
         layout->addWidget(m_syncButton);
     }
-    auto* clear = toolButton(QStringLiteral("🗑️ 清除裁切"), QStringLiteral("清除当前片段的裁切框和圆角"));
+    auto* clear = toolButton(tr("🗑️ 清除裁切"), tr("清除当前片段的裁切框和圆角"));
     connect(clear, &QPushButton::clicked, this, &ClipEditorDialog::clearCrop);
     layout->addWidget(clear);
 
@@ -457,13 +457,13 @@ QWidget* ClipEditorDialog::buildCropBar()
     layout->addWidget(m_cropSize);
     layout->addStretch();
 
-    auto* left = new QLabel(QStringLiteral("直角"));
+    auto* left = new QLabel(tr("直角"));
     left->setObjectName(QStringLiteral("Hint"));
     m_radius = new QSlider(Qt::Horizontal);
     m_radius->setRange(0, 100);
     m_radius->setFixedWidth(180);
     m_radius->setFocusPolicy(Qt::NoFocus);
-    auto* right = new QLabel(QStringLiteral("圆形"));
+    auto* right = new QLabel(tr("圆形"));
     right->setObjectName(QStringLiteral("Hint"));
     m_radiusLabel = new QLabel;
     m_radiusLabel->setMinimumWidth(64);
@@ -494,7 +494,7 @@ QWidget* ClipEditorDialog::buildFooter()
     layout->setContentsMargins(0, 0, 0, 0);
     m_hint = new QLabel;
     m_hint->setObjectName(QStringLiteral("Hint"));
-    auto* cancel = new QPushButton(QStringLiteral("取消"));
+    auto* cancel = new QPushButton(tr("取消"));
     cancel->setFocusPolicy(Qt::NoFocus);
     m_confirm = new QPushButton;
     m_confirm->setObjectName(QStringLiteral("PrimaryButton"));
@@ -548,7 +548,7 @@ void ClipEditorDialog::setupPlayer()
     });
     connect(m_player, &QMediaPlayer::playbackStateChanged, this, [this](QMediaPlayer::PlaybackState s) {
         const bool playing = s == QMediaPlayer::PlayingState;
-        m_playButton->setText(playing ? QStringLiteral("⏸️ 暂停") : QStringLiteral("▶️ 播放"));
+        m_playButton->setText(playing ? tr("⏸️ 暂停") : tr("▶️ 播放"));
         if (playing) {
             resyncClock(m_player->position() / 1000.0);
             m_tick->start();
@@ -579,8 +579,8 @@ void ClipEditorDialog::setupPlayer()
         }
     });
     connect(m_player, &QMediaPlayer::errorOccurred, this, [this](QMediaPlayer::Error, const QString& message) {
-        m_canvas->setPlaceholder(QStringLiteral("无法播放：%1").arg(message));
-        showHint(QStringLiteral("无法播放：%1%2").arg(message, m_proxyButton ? QStringLiteral("（可尝试“缓存代理”）") : QString()), true);
+        m_canvas->setPlaceholder(tr("无法播放：%1").arg(message));
+        showHint(tr("无法播放：%1%2").arg(message, m_proxyButton ? tr("（可尝试“缓存代理”）") : QString()), true);
     });
 
     m_tick = new QTimer(this);
@@ -597,7 +597,7 @@ void ClipEditorDialog::setupPlayer()
     }
     // 动态 WebP 播放器解不了：不直接打开原文件，自动生成预览副本，完成后切过去
     if (!m_usingProxy && m_proxies && ProxyCache::playerCannotDecode(source)) {
-        m_canvas->setPlaceholder(QStringLiteral("正在生成预览副本..."));
+        m_canvas->setPlaceholder(tr("正在生成预览副本..."));
         if (!m_proxies->isGenerating(source))
             m_proxies->generate(source, m_base.info.duration);
         refreshProxyButton();
@@ -609,7 +609,7 @@ void ClipEditorDialog::setupPlayer()
 
 void ClipEditorDialog::loadStillImage()
 {
-    m_canvas->setPlaceholder(QStringLiteral("加载中..."));
+    m_canvas->setPlaceholder(tr("加载中..."));
     ThumbnailService::Request request;
     request.path = m_base.inputPath;
     request.box = QSize(2048, 2048);
@@ -617,7 +617,7 @@ void ClipEditorDialog::loadStillImage()
     connect(watcher, &QFutureWatcher<QImage>::finished, this, [this, watcher] {
         const QImage image = watcher->result();
         if (image.isNull())
-            m_canvas->setPlaceholder(QStringLiteral("无法加载图片"));
+            m_canvas->setPlaceholder(tr("无法加载图片"));
         else
             m_canvas->setImage(image);
         watcher->deleteLater();
@@ -685,7 +685,7 @@ void ClipEditorDialog::addClip()
     clip.resetRuntimeState();
     m_clips << clip;
     selectClip(int(m_clips.size()) - 1, false);
-    showHint(QStringLiteral("已从 %1 添加片段，用 ] 设置终点").arg(formatTimecode(*clip.startTime)));
+    showHint(tr("已从 %1 添加片段，用 ] 设置终点").arg(formatTimecode(*clip.startTime)));
     scheduleThumbnails();
 }
 
@@ -694,7 +694,7 @@ void ClipEditorDialog::deleteClip(int index)
     if (index < 0 || index >= m_clips.size())
         return;
     if (m_clips.size() <= 1) {
-        QMessageBox::warning(this, QStringLiteral("提示"), QStringLiteral("请至少保留一个片段！"));
+        QMessageBox::warning(this, tr("提示"), tr("请至少保留一个片段！"));
         return;
     }
     if (m_playIndex == index)
@@ -712,7 +712,7 @@ void ClipEditorDialog::setStartHere()
 {
     StickerTask* c = current();
     if (!c)
-        return showHint(QStringLiteral("请先选择一个片段"), true);
+        return showHint(tr("请先选择一个片段"), true);
     c->startTime = m_state.playhead();
     if (c->endTime && *c->endTime <= *c->startTime)
         c->endTime.reset(); // 终点不晚于新起点时清空
@@ -724,10 +724,10 @@ void ClipEditorDialog::setEndHere()
 {
     StickerTask* c = current();
     if (!c)
-        return showHint(QStringLiteral("请先选择一个片段"), true);
+        return showHint(tr("请先选择一个片段"), true);
     const double t = m_state.playhead();
     if (t <= c->startTime.value_or(0))
-        return showHint(QStringLiteral("终点必须晚于起点"), true);
+        return showHint(tr("终点必须晚于起点"), true);
     c->endTime = t;
     refreshAll();
 }
@@ -739,7 +739,7 @@ void ClipEditorDialog::editStart(int index, const QString& text)
     StickerTask& c = m_clips[index];
     const auto t = parseTimecode(text);
     if (!t || *t > m_base.info.duration) {
-        showHint(QStringLiteral("起点格式无效：%1").arg(text), true);
+        showHint(tr("起点格式无效：%1").arg(text), true);
     } else if (std::abs(*t - c.startTime.value_or(0)) > 1e-6) {
         c.startTime = *t;
         if (c.endTime && *c.endTime <= *t)
@@ -762,7 +762,7 @@ void ClipEditorDialog::editEnd(int index, const QString& text)
         const auto t = parseTimecode(text);
         // 非法或不晚于起点：恢复原值
         if (!t || *t <= c.startTime.value_or(0) || *t > m_base.info.duration + 1e-3)
-            showHint(QStringLiteral("终点无效，已恢复原值"), true);
+            showHint(tr("终点无效，已恢复原值"), true);
         else
             c.endTime = std::min(*t, m_base.info.duration);
     }
@@ -784,13 +784,13 @@ void ClipEditorDialog::showClipMenu(int index, const QPoint& globalPos)
     QMenu menu(this);
     const bool playing = m_playIndex == index && m_playMode == PlayMode::Clip;
     const bool looping = m_playIndex == index && m_playMode == PlayMode::Loop;
-    QAction* play = menu.addAction(playing ? QStringLiteral("⏹️ 停止播放") : QStringLiteral("▶️ 播放"));
-    QAction* loop = menu.addAction(looping ? QStringLiteral("⏹️ 停止循环") : QStringLiteral("🔁 循环播放"));
+    QAction* play = menu.addAction(playing ? tr("⏹️ 停止播放") : tr("▶️ 播放"));
+    QAction* loop = menu.addAction(looping ? tr("⏹️ 停止循环") : tr("🔁 循环播放"));
     const bool hasEnd = m_clips.at(index).endTime.has_value();
     play->setEnabled(hasEnd || playing);
     loop->setEnabled(hasEnd || looping);
     menu.addSeparator();
-    QAction* remove = menu.addAction(QStringLiteral("🗑️ 删除"));
+    QAction* remove = menu.addAction(tr("🗑️ 删除"));
     QAction* chosen = menu.exec(globalPos);
     if (chosen == play)
         playing ? stopClipPlayback() : playClip(index, PlayMode::Clip);
@@ -876,7 +876,7 @@ void ClipEditorDialog::syncShapeToAll()
 {
     const StickerTask* src = current();
     if (!src || !src->crop)
-        return showHint(QStringLiteral("当前片段没有裁切框"), true);
+        return showHint(tr("当前片段没有裁切框"), true);
     const QSize size = src->crop->size();
     const double radius = src->cropRadius;
     for (int i = 0; i < m_clips.size(); ++i) {
@@ -889,7 +889,7 @@ void ClipEditorDialog::syncShapeToAll()
         c.crop = CropMath::withSize(base, size, m_frame);
         c.cropRadius = radius;
     }
-    showHint(QStringLiteral("已将 %1×%2 %3 应用到全部 %4 个片段").arg(size.width()).arg(size.height()).arg(shapeLabel(radius)).arg(m_clips.size()));
+    showHint(tr("已将 %1×%2 %3 应用到全部 %n 个片段", nullptr, int(m_clips.size())).arg(size.width()).arg(size.height()).arg(shapeLabel(radius)));
     refreshAll();
     scheduleThumbnails();
 }
@@ -909,7 +909,7 @@ void ClipEditorDialog::toggleMirror()
     StickerTask* c = current();
     if (!c) {
         refreshControls();
-        return showHint(QStringLiteral("请先选择一个片段"), true);
+        return showHint(tr("请先选择一个片段"), true);
     }
     c->mirror = !c->mirror;
     // 镜像与裁切联动：框的 x 也水平镜像，框住的还是同一块内容
@@ -939,7 +939,7 @@ void ClipEditorDialog::playClip(int index, PlayMode mode)
     m_loopRestartPending = false;
     const StickerTask& c = m_clips.at(index);
     if (!c.endTime)
-        return showHint(QStringLiteral("请先为片段设置终点"), true);
+        return showHint(tr("请先为片段设置终点"), true);
     m_playMode = mode;
     m_playIndex = index;
     seek(c.startTime.value_or(0));
@@ -1004,7 +1004,7 @@ void ClipEditorDialog::changeSpeed(int delta)
     if (!m_speed)
         return;
     m_speed->setCurrentIndex(std::clamp(m_speed->currentIndex() + delta, 0, m_speed->count() - 1));
-    showHint(QStringLiteral("播放倍速 %1").arg(m_speed->currentText()));
+    showHint(tr("播放倍速 %1").arg(m_speed->currentText()));
 }
 
 void ClipEditorDialog::resyncClock(double seconds)
@@ -1100,16 +1100,16 @@ void ClipEditorDialog::refreshProxyButton()
         return;
     bool ok = false;
     if (m_usingProxy) {
-        m_proxyButton->setText(QStringLiteral("已缓存"));
-        m_proxyButton->setToolTip(QStringLiteral("正在使用 480p 预览副本"));
+        m_proxyButton->setText(tr("已缓存"));
+        m_proxyButton->setToolTip(tr("正在使用 480p 预览副本"));
         ok = true;
     } else if (m_proxies->isGenerating(m_base.inputPath)) {
-        m_proxyButton->setText(QStringLiteral("缓存中 0%"));
+        m_proxyButton->setText(tr("缓存中 0%"));
     } else if (!m_proxyError.isEmpty()) {
-        m_proxyButton->setText(QStringLiteral("缓存失败 · 重试"));
+        m_proxyButton->setText(tr("缓存失败 · 重试"));
         m_proxyButton->setToolTip(m_proxyError);
     } else {
-        m_proxyButton->setText(QStringLiteral("缓存代理"));
+        m_proxyButton->setText(tr("缓存代理"));
     }
     m_proxyButton->setEnabled(!ok && !m_proxies->isGenerating(m_base.inputPath));
     m_proxyButton->setProperty("state", ok ? QStringLiteral("ok") : m_proxyError.isEmpty() ? QString() : QStringLiteral("error"));
@@ -1162,18 +1162,18 @@ void ClipEditorDialog::refreshControls()
 {
     const StickerTask* c = m_selected >= 0 && m_selected < m_clips.size() ? &m_clips.at(m_selected) : nullptr;
     const bool has = c != nullptr;
-    const QString needClip = QStringLiteral("请先选择一个片段");
+    const QString needClip = tr("请先选择一个片段");
 
     if (m_isVideo) {
         m_startButton->setEnabled(has);
         const bool canEnd = has && m_state.playhead() > c->startTime.value_or(0);
         m_endButton->setEnabled(canEnd);
-        m_endButton->setToolTip(!has ? needClip : canEnd ? QStringLiteral("设当前时刻为片段终点（]）") : QStringLiteral("终点必须晚于起点"));
+        m_endButton->setToolTip(!has ? needClip : canEnd ? tr("设当前时刻为片段终点（]）") : tr("终点必须晚于起点"));
         m_fitButton->setEnabled(has);
         m_syncButton->setEnabled(has && c->crop && m_clips.size() > 1);
-        m_confirm->setText(QStringLiteral("✔ 确认并添加到贴纸列表 (共 %1 个)").arg(m_clips.size()));
+        m_confirm->setText(tr("✔ 确认并添加到贴纸列表 (共 %n 个)", nullptr, int(m_clips.size())));
     } else {
-        m_confirm->setText(QStringLiteral("✔ 确认裁切"));
+        m_confirm->setText(tr("✔ 确认裁切"));
     }
     m_mirrorButton->setEnabled(has);
     m_emojiEdit->setEnabled(has);
@@ -1188,9 +1188,9 @@ void ClipEditorDialog::refreshControls()
     }
     if (!m_emojiEdit->hasFocus())
         m_emojiEdit->setText(has ? c->emoji : QString());
-    m_emojiEdit->setPlaceholderText(has ? QStringLiteral("可留空") : needClip);
+    m_emojiEdit->setPlaceholderText(has ? tr("可留空") : needClip);
     m_cropSize->setText(has && c->crop ? QStringLiteral("📍 %1×%2").arg(c->crop->width()).arg(c->crop->height())
-                                       : QStringLiteral("📍 未裁切"));
+                                       : tr("📍 未裁切"));
     {
         const QSignalBlocker block(m_radius);
         m_radius->setValue(has ? qRound(c->cropRadius * 100) : 0);
@@ -1206,13 +1206,13 @@ void ClipEditorDialog::refreshInfoRow()
         return;
     m_timeLabel->setText(formatTimecode(m_state.playhead()));
     if (const auto hover = m_state.hover()) {
-        m_contextLabel->setText(QStringLiteral("悬停 %1").arg(formatTimecode(*hover)));
+        m_contextLabel->setText(tr("悬停 %1").arg(formatTimecode(*hover)));
     } else if (m_selected >= 0 && m_selected < m_clips.size()) {
         const StickerTask& c = m_clips.at(m_selected);
         const double start = c.startTime.value_or(0);
-        QString text = QStringLiteral("片段 %1 – ").arg(formatTimecode(start));
+        QString text = tr("片段 %1 – ").arg(formatTimecode(start));
         text += c.endTime ? QStringLiteral("%1 (%2s)").arg(formatTimecode(*c.endTime)).arg(*c.endTime - start, 0, 'f', 2)
-                          : QStringLiteral("未设终点");
+                          : tr("未设终点");
         if (!c.emoji.isEmpty())
             text += QStringLiteral(" (%1)").arg(c.emoji);
         m_contextLabel->setText(text);
@@ -1220,7 +1220,7 @@ void ClipEditorDialog::refreshInfoRow()
         m_contextLabel->clear();
     }
     m_fullButton->setVisible(m_state.isZoomed());
-    m_fullButton->setText(QStringLiteral("全长 %1s").arg(formatSecondsShort(m_base.info.duration)));
+    m_fullButton->setText(tr("全长 %1s").arg(formatSecondsShort(m_base.info.duration)));
 }
 
 void ClipEditorDialog::refreshStepLabels()
@@ -1278,8 +1278,8 @@ void ClipEditorDialog::confirm()
             const StickerTask& c = m_clips.at(i);
             if (!c.endTime || *c.endTime <= c.startTime.value_or(0)) {
                 selectClip(i, true);
-                QMessageBox::warning(this, QStringLiteral("提示"),
-                                     QStringLiteral("时间区间无效：请为片段设置结束时间（起点 %1）").arg(formatTimecode(c.startTime.value_or(0))));
+                QMessageBox::warning(this, tr("提示"),
+                                     tr("时间区间无效：请为片段设置结束时间（起点 %1）").arg(formatTimecode(c.startTime.value_or(0))));
                 return;
             }
         }

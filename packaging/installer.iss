@@ -42,12 +42,22 @@ SolidCompression=yes
 LZMAUseSeparateProcess=yes
 WizardStyle=modern
 CloseApplications=yes
+; 按系统界面语言自动选择，匹配不到时才弹出语言选择框
+ShowLanguageDialog=auto
 
 [Languages]
+; 第一项是系统语言都不匹配时的默认语言
+Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "chinesesimp"; MessagesFile: "ChineseSimplified.isl"
+Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
+
+[CustomMessages]
+english.VisitSite=Visit cvevth.top to learn how to create a Telegram sticker pack
+chinesesimp.VisitSite=访问 cvevth.top，了解如何创建 Telegram 贴纸包
+russian.VisitSite=Открыть cvevth.top и узнать, как создать набор стикеров Telegram
 
 [Tasks]
-Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "附加快捷方式："
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -57,7 +67,7 @@ Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#AppExe}"; Description: "运行 {#AppName}"; Flags: nowait postinstall skipifsilent
-Filename: "{#SiteUrl}"; Description: "访问 cvevth.top，了解如何创建 Telegram 贴纸包"; Flags: shellexec nowait postinstall skipifsilent unchecked
+Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+Filename: "{#SiteUrl}"; Description: "{cm:VisitSite}"; Flags: shellexec nowait postinstall skipifsilent unchecked
 
 ; 卸载时保留 %LOCALAPPDATA%\TelegramStickerMaker 下的设置与会话，重新安装后可继续使用

@@ -18,7 +18,7 @@ QString nameText(const StickerTask& t)
     if (t.info.isVideo && t.isTrimmed())
         tags << t.clipLabel();
     if (t.mirror)
-        tags << QStringLiteral("🪞 镜像");
+        tags << TaskListModel::tr("🪞 镜像");
     if (const QString crop = t.cropTag(); !crop.isEmpty())
         tags << crop;
     if (tags.isEmpty())
@@ -36,13 +36,13 @@ QString specText(const StickerTask& t)
             text += QStringLiteral(" 🟢Alpha");
         return text;
     }
-    return size + QStringLiteral(" | 静态图") + (t.info.hasAlpha ? QStringLiteral(" 🟢透明") : QString());
+    return size + TaskListModel::tr(" | 静态图") + (t.info.hasAlpha ? TaskListModel::tr(" 🟢透明") : QString());
 }
 
 QString keywordsText(const StickerTask& t)
 {
     if (t.keywords.isEmpty())
-        return QStringLiteral("+ 设置关键词");
+        return TaskListModel::tr("+ 设置关键词");
     if (t.keywords.size() == 1)
         return t.keywords.first();
     return QStringLiteral("%1 +%2").arg(t.keywords.first()).arg(t.keywords.size() - 1);
@@ -99,7 +99,7 @@ QVariant TaskListModel::data(const QModelIndex& index, int role) const
         if (role == Qt::DisplayRole)
             return specText(t);
         if (role == Qt::ToolTipRole && t.info.isVideo && t.isTrimmed()) {
-            return QStringLiteral("有效时长: %1s (原片: %2s)")
+            return tr("有效时长: %1s (原片: %2s)")
                 .arg(t.effectiveDuration(), 0, 'f', 2)
                 .arg(t.info.duration, 0, 'f', 2);
         }
@@ -111,14 +111,14 @@ QVariant TaskListModel::data(const QModelIndex& index, int role) const
             return t.emoji;
         if (role == Qt::ToolTipRole) {
             const QString path = QDir(targetDirectory(row)).filePath(targetFileName(row));
-            return QDir::toNativeSeparators(path) + QStringLiteral("\n双击可修改关联 Emoji");
+            return QDir::toNativeSeparators(path) + tr("\n双击可修改关联 Emoji");
         }
         break;
     case ColKeywords:
         if (role == Qt::DisplayRole)
             return keywordsText(t);
         if (role == Qt::ToolTipRole && !t.keywords.isEmpty())
-            return t.keywords.join(QStringLiteral("、"));
+            return t.keywords.join(tr("、", "关键词之间的分隔符"));
         break;
     case ColStatus:
         if (role == Qt::DisplayRole) {
@@ -149,7 +149,7 @@ QVariant TaskListModel::data(const QModelIndex& index, int role) const
             return icons.join(QStringLiteral("  "));
         }
         if (role == Qt::ToolTipRole)
-            return t.info.isVideo ? QStringLiteral("截取画面与视频片段") : QStringLiteral("裁切画面样式");
+            return t.info.isVideo ? tr("截取画面与视频片段") : tr("裁切画面样式");
         if (role == Qt::TextAlignmentRole)
             return int(Qt::AlignCenter);
         break;
@@ -167,9 +167,9 @@ QVariant TaskListModel::headerData(int section, Qt::Orientation orientation, int
     if (orientation != Qt::Horizontal || role != Qt::DisplayRole)
         return {};
     static const QStringList titles{
-        QStringLiteral("预览"),     QStringLiteral("原文件名"), QStringLiteral("规格"),
-        QStringLiteral("目标文件名"), QStringLiteral("关键词"),   QStringLiteral("进度与状态"),
-        QStringLiteral("体积"),     QStringLiteral("操作"),
+        tr("预览"),     tr("原文件名"), tr("规格"),
+        tr("目标文件名"), tr("关键词"),   tr("进度与状态"),
+        tr("体积"),     tr("操作"),
     };
     return section >= 0 && section < titles.size() ? QVariant(titles.at(section)) : QVariant();
 }

@@ -2,6 +2,7 @@
 
 #include "core/Spec.h"
 
+#include <QCoreApplication>
 #include <QRegularExpression>
 
 namespace tsm::Keywords {
@@ -40,21 +41,21 @@ AddResult add(QStringList& keywords, const QString& input)
     };
     for (const QString& word : split(input)) {
         if (keywords.contains(word)) {
-            fail(QStringLiteral("「%1」已存在").arg(word));
+            fail(QCoreApplication::translate("Keywords", "「%1」已存在").arg(word));
             continue;
         }
         if (keywords.size() >= spec::kMaxKeywords) {
-            fail(QStringLiteral("最多 %1 个关键词").arg(spec::kMaxKeywords));
+            fail(QCoreApplication::translate("Keywords", "最多 %1 个关键词").arg(spec::kMaxKeywords));
             break;
         }
         const int remaining = spec::kMaxKeywordChars - totalChars(keywords);
         if (remaining <= 0) {
-            fail(QStringLiteral("总长度已满 %1 字符").arg(spec::kMaxKeywordChars));
+            fail(QCoreApplication::translate("Keywords", "总长度已满 %1 字符").arg(spec::kMaxKeywordChars));
             break;
         }
         const int need = charCount(word);
         if (need > remaining) {
-            fail(QStringLiteral("「%1」需要 %2 字符，还剩 %3").arg(word).arg(need).arg(remaining));
+            fail(QCoreApplication::translate("Keywords", "「%1」需要 %2 字符，还剩 %3").arg(word).arg(need).arg(remaining));
             continue; // 后面更短的词也许还放得下
         }
         keywords << word;

@@ -17,7 +17,7 @@ HeaderBar::HeaderBar(QWidget* parent)
 
     auto* title = new QLabel(QStringLiteral("✨ Telegram Sticker Maker"));
     title->setObjectName(QStringLiteral("AppTitle"));
-    auto* subtitle = new QLabel(QStringLiteral("Telegram 贴纸批量转换工具 | 支持 WebM 视频贴纸与 WebP 静态贴纸"));
+    auto* subtitle = new QLabel(tr("Telegram 贴纸批量转换工具 | 支持 WebM 视频贴纸与 WebP 静态贴纸"));
     subtitle->setObjectName(QStringLiteral("AppSubtitle"));
 
     auto* texts = new QVBoxLayout;
@@ -29,10 +29,10 @@ HeaderBar::HeaderBar(QWidget* parent)
     m_badge->setObjectName(QStringLiteral("Badge"));
 
     // 配合使用的网站：在线创建 Telegram 贴纸包
-    auto* site = new QPushButton(QStringLiteral("🌐 cvevth.top 在线创建贴纸包"));
+    auto* site = new QPushButton(tr("🌐 cvevth.top 在线创建贴纸包"));
     site->setObjectName(QStringLiteral("SiteLink"));
     site->setCursor(Qt::PointingHandCursor);
-    site->setToolTip(QStringLiteral("前往 %1 创建 Telegram 贴纸包\n也可以把转换好的压缩包直接发给 %2")
+    site->setToolTip(tr("前往 %1 创建 Telegram 贴纸包\n也可以把转换好的压缩包直接发给 %2")
                          .arg(BotPromo::galleryUrl(), BotPromo::handle()));
     connect(site, &QPushButton::clicked, this, &BotPromo::openGallery);
 
