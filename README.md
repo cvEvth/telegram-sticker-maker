@@ -10,13 +10,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/OnonokiYotsuki/telegram-sticker-maker/releases/latest"><img src="https://img.shields.io/github/v/release/OnonokiYotsuki/telegram-sticker-maker?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC" alt="最新版本"></a>
-  <a href="https://github.com/OnonokiYotsuki/telegram-sticker-maker/releases"><img src="https://img.shields.io/github/downloads/OnonokiYotsuki/telegram-sticker-maker/total?label=%E4%B8%8B%E8%BD%BD" alt="下载次数"></a>
+  <a href="https://github.com/cvEvth/telegram-sticker-maker/releases/latest"><img src="https://img.shields.io/github/v/release/cvEvth/telegram-sticker-maker?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC" alt="最新版本"></a>
+  <a href="https://github.com/cvEvth/telegram-sticker-maker/releases"><img src="https://img.shields.io/github/downloads/cvEvth/telegram-sticker-maker/total?label=%E4%B8%8B%E8%BD%BD" alt="下载次数"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078d4" alt="Windows 10 / 11">
 </p>
 
 <p align="center">
-  <a href="https://github.com/OnonokiYotsuki/telegram-sticker-maker/releases/latest"><b>⬇️ 下载最新版</b></a>
+  <a href="https://github.com/cvEvth/telegram-sticker-maker/releases/latest"><b>⬇️ 下载最新版</b></a>
   ·
   <a href="https://www.cvevth.top/sticker"><b>🌐 在线创建贴纸包</b></a>
 </p>
@@ -36,7 +36,7 @@
 
 ## 下载安装
 
-到 [Releases](https://github.com/OnonokiYotsuki/telegram-sticker-maker/releases/latest) 下载：
+到 [Releases](https://github.com/cvEvth/telegram-sticker-maker/releases/latest) 下载：
 
 | 文件 | 说明 |
 |---|---|
