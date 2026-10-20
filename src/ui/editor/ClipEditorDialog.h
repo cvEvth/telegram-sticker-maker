@@ -8,6 +8,7 @@
 #include <QDialog>
 #include <QElapsedTimer>
 #include <QHash>
+#include <QImage>
 
 class QAudioOutput;
 class QCheckBox;
@@ -131,6 +132,17 @@ private:
     QMediaPlayer* m_player = nullptr;
     QAudioOutput* m_audio = nullptr;
     QVideoSink* m_sink = nullptr;
+    // 循环用的备用播放器：提前暂停在片段起点，到终点时直接接着播（不用等跳转解码），
+    // 原播放器转为备用并在后台跳回起点；两者轮流，衔接处不卡顿
+    QMediaPlayer* m_standby = nullptr;
+    QAudioOutput* m_standbyAudio = nullptr;
+    QVideoSink* m_standbySink = nullptr;
+    qint64 m_standbyTargetMs = -1; // 备用播放器要停在的位置
+    QImage m_standbyFrame;         // 备用播放器已就绪的起点画面，为空表示还没就绪
+    double m_standbyFrameTime = -1;
+    void connectPlayer(QMediaPlayer* player, QVideoSink* sink);
+    void prepareStandby();
+    bool swapToStandby(double start);
     QTimer* m_tick = nullptr;
     // 播放时的平滑时钟：播放器的位置只在每解出一帧时更新（25fps 即 40ms 跳一次），
     // 放大时间轴后指针会明显跳动；这里用计时器连续推算，再用真实位置慢慢校正

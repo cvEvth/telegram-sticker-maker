@@ -187,8 +187,10 @@ ClipEditorDialog::ClipEditorDialog(AppSettings& settings, ThumbnailService* thum
 ClipEditorDialog::~ClipEditorDialog()
 {
     qApp->removeEventFilter(this);
-    if (m_player)
+    if (m_player) {
         m_player->stop();
+        m_standby->stop();
+    }
 }
 
 // ---------------------------------------------------------------- 界面搭建
@@ -402,11 +404,13 @@ QWidget* ClipEditorDialog::buildControls()
             if (m_player) {
                 resyncClock(m_state.playhead()); // 倍速变了，从当前位置重新计时
                 m_player->setPlaybackRate(rate);
+                m_standby->setPlaybackRate(rate);
             }
         });
         m_muteButton = toolButton(QStringLiteral("🔊"), tr("静音"));
         connect(m_muteButton, &QPushButton::clicked, this, [this] {
             m_audio->setMuted(!m_audio->isMuted());
+            m_standbyAudio->setMuted(m_audio->isMuted());
             m_muteButton->setText(m_audio->isMuted() ? QStringLiteral("🔇") : QStringLiteral("🔊"));
         });
         layout->addWidget(new QLabel(tr("倍速")));
@@ -513,77 +517,18 @@ QWidget* ClipEditorDialog::buildFooter()
 
 void ClipEditorDialog::setupPlayer()
 {
-    m_player = new QMediaPlayer(this);
-    m_audio = new QAudioOutput(this);
-    m_audio->setVolume(0.5f); // 默认音量 50%
-    m_player->setAudioOutput(m_audio);
-    m_sink = new QVideoSink(this);
-    m_player->setVideoSink(m_sink);
-    m_player->setPlaybackRate(m_settings.playbackRate());
-    connect(m_sink, &QVideoSink::videoFrameChanged, this, [this](const QVideoFrame& frame) {
-        if (!frame.isValid())
-            return;
-        const double frameTime = frame.startTime() >= 0 ? frame.startTime() / 1e6 : -1.0;
-        // 片段播放 / 循环时按画面时间戳把关：终点之后的画面不显示（跳回起点是异步的，
-        // 跳转生效前播放器还会送来几帧片段外的画面）
-        if (m_playMode != PlayMode::Free && m_playIndex >= 0 && m_playIndex < m_clips.size() && frameTime >= 0) {
-            const StickerTask& c = m_clips.at(m_playIndex);
-            const double start = c.startTime.value_or(0);
-            const double end = c.endTime.value_or(m_base.info.duration);
-            if (frameTime >= end - 1e-3) {
-                if (!m_loopRestartPending)
-                    onClipEnd();
-                return;
-            }
-            if (m_loopRestartPending) {
-                if (frameTime < start - 0.05)
-                    return;
-                m_loopRestartPending = false;
-            }
-        }
-        m_lastFrameTime = frameTime;
-        m_canvas->setImage(frame.toImage());
-    });
-    connect(m_player, &QMediaPlayer::positionChanged, this, [this](qint64 ms) {
-        if (m_player->playbackState() != QMediaPlayer::PlayingState)
-            m_state.setPlayhead(ms / 1000.0);
-    });
-    connect(m_player, &QMediaPlayer::playbackStateChanged, this, [this](QMediaPlayer::PlaybackState s) {
-        const bool playing = s == QMediaPlayer::PlayingState;
-        m_playButton->setText(playing ? tr("⏸️ 暂停") : tr("▶️ 播放"));
-        if (playing) {
-            resyncClock(m_player->position() / 1000.0);
-            m_tick->start();
-        } else {
-            m_tick->stop();
-        }
-        if (!playing && m_playMode != PlayMode::Free) {
-            m_playMode = PlayMode::Free;
-            m_playIndex = -1;
-            refreshClipPanel();
-        }
-    });
-    connect(m_player, &QMediaPlayer::mediaStatusChanged, this, [this](QMediaPlayer::MediaStatus status) {
-        if (status != QMediaPlayer::LoadedMedia)
-            return;
-        if (m_restorePositionMs >= 0) {
-            // 切换到缓存副本：保持当前播放位置，原来在播放就继续播放
-            m_player->setPosition(m_restorePositionMs);
-            if (m_restorePlaying)
-                m_player->play();
-            else
-                m_player->pause();
-            m_restorePositionMs = -1;
-        } else if (m_player->playbackState() == QMediaPlayer::StoppedState) {
-            // 停止状态不出画面：进入暂停状态并定位到播放头，显示当前帧
-            m_player->setPosition(qint64(std::llround(m_state.playhead() * 1000)));
-            m_player->pause();
-        }
-    });
-    connect(m_player, &QMediaPlayer::errorOccurred, this, [this](QMediaPlayer::Error, const QString& message) {
-        m_canvas->setPlaceholder(tr("无法播放：%1").arg(message));
-        showHint(tr("无法播放：%1%2").arg(message, m_proxyButton ? tr("（可尝试“缓存代理”）") : QString()), true);
-    });
+    const auto createPlayer = [this](QMediaPlayer*& player, QAudioOutput*& audio, QVideoSink*& sink) {
+        player = new QMediaPlayer(this);
+        audio = new QAudioOutput(this);
+        audio->setVolume(0.5f); // 默认音量 50%
+        player->setAudioOutput(audio);
+        sink = new QVideoSink(this);
+        player->setVideoSink(sink);
+        player->setPlaybackRate(m_settings.playbackRate());
+        connectPlayer(player, sink);
+    };
+    createPlayer(m_player, m_audio, m_sink);
+    createPlayer(m_standby, m_standbyAudio, m_standbySink);
 
     m_tick = new QTimer(this);
     m_tick->setInterval(16);
@@ -607,6 +552,96 @@ void ClipEditorDialog::setupPlayer()
     }
     m_player->setSource(QUrl::fromLocalFile(source));
     refreshProxyButton();
+}
+
+void ClipEditorDialog::connectPlayer(QMediaPlayer* player, QVideoSink* sink)
+{
+    // 两个播放器共用这些处理；只有当前播放器（m_player）的事件生效，备用的只用来备好起点画面
+    connect(sink, &QVideoSink::videoFrameChanged, this, [this, sink](const QVideoFrame& frame) {
+        if (!frame.isValid())
+            return;
+        const double frameTime = frame.startTime() >= 0 ? frame.startTime() / 1e6 : -1.0;
+        if (sink != m_sink) {
+            // 备用播放器：停到起点附近的画面才算就绪（跳转前可能还会送来旧位置的画面）
+            if (sink == m_standbySink && m_standbyTargetMs >= 0 && frameTime >= 0
+                && std::abs(frameTime - m_standbyTargetMs / 1000.0) <= 0.1) {
+                m_standbyFrame = frame.toImage();
+                m_standbyFrameTime = frameTime;
+            }
+            return;
+        }
+        // 片段播放 / 循环时按画面时间戳把关：终点之后的画面不显示（跳回起点是异步的，
+        // 跳转生效前播放器还会送来几帧片段外的画面）
+        if (m_playMode != PlayMode::Free && m_playIndex >= 0 && m_playIndex < m_clips.size() && frameTime >= 0) {
+            const StickerTask& c = m_clips.at(m_playIndex);
+            const double start = c.startTime.value_or(0);
+            const double end = c.endTime.value_or(m_base.info.duration);
+            if (frameTime >= end - 1e-3) {
+                if (!m_loopRestartPending)
+                    onClipEnd();
+                return;
+            }
+            if (m_loopRestartPending) {
+                if (frameTime < start - 0.05)
+                    return;
+                m_loopRestartPending = false;
+            }
+        }
+        m_lastFrameTime = frameTime;
+        m_canvas->setImage(frame.toImage());
+    });
+    connect(player, &QMediaPlayer::positionChanged, this, [this, player](qint64 ms) {
+        if (player == m_player && player->playbackState() != QMediaPlayer::PlayingState)
+            m_state.setPlayhead(ms / 1000.0);
+    });
+    connect(player, &QMediaPlayer::playbackStateChanged, this, [this, player](QMediaPlayer::PlaybackState s) {
+        if (player != m_player)
+            return;
+        const bool playing = s == QMediaPlayer::PlayingState;
+        m_playButton->setText(playing ? tr("⏸️ 暂停") : tr("▶️ 播放"));
+        if (playing) {
+            resyncClock(m_player->position() / 1000.0);
+            m_tick->start();
+        } else {
+            m_tick->stop();
+        }
+        if (!playing && m_playMode != PlayMode::Free) {
+            m_playMode = PlayMode::Free;
+            m_playIndex = -1;
+            refreshClipPanel();
+        }
+    });
+    connect(player, &QMediaPlayer::mediaStatusChanged, this, [this, player](QMediaPlayer::MediaStatus status) {
+        if (status != QMediaPlayer::LoadedMedia)
+            return;
+        if (player != m_player) {
+            // 备用播放器打开了文件：停到要备好的位置
+            if (player == m_standby && m_standbyTargetMs >= 0) {
+                player->setPosition(m_standbyTargetMs);
+                player->pause();
+            }
+            return;
+        }
+        if (m_restorePositionMs >= 0) {
+            // 切换到缓存副本：保持当前播放位置，原来在播放就继续播放
+            m_player->setPosition(m_restorePositionMs);
+            if (m_restorePlaying)
+                m_player->play();
+            else
+                m_player->pause();
+            m_restorePositionMs = -1;
+        } else if (m_player->playbackState() == QMediaPlayer::StoppedState) {
+            // 停止状态不出画面：进入暂停状态并定位到播放头，显示当前帧
+            m_player->setPosition(qint64(std::llround(m_state.playhead() * 1000)));
+            m_player->pause();
+        }
+    });
+    connect(player, &QMediaPlayer::errorOccurred, this, [this, player](QMediaPlayer::Error, const QString& message) {
+        if (player != m_player)
+            return;
+        m_canvas->setPlaceholder(tr("无法播放：%1").arg(message));
+        showHint(tr("无法播放：%1%2").arg(message, m_proxyButton ? tr("（可尝试“缓存代理”）") : QString()), true);
+    });
 }
 
 void ClipEditorDialog::loadStillImage()
@@ -946,6 +981,7 @@ void ClipEditorDialog::playClip(int index, PlayMode mode)
     m_playIndex = index;
     seek(c.startTime.value_or(0));
     m_player->play();
+    prepareStandby();
     refreshClipPanel();
 }
 
@@ -972,6 +1008,7 @@ void ClipEditorDialog::loopClip(int index, bool fromStart)
         seek(c.startTime.value_or(0));
     if (m_player->playbackState() != QMediaPlayer::PlayingState)
         m_player->play();
+    prepareStandby();
     refreshClipPanel();
 }
 
@@ -1054,16 +1091,58 @@ void ClipEditorDialog::onClipEnd()
     const double start = c.startTime.value_or(0);
     const double end = c.endTime.value_or(m_base.info.duration);
     if (m_playMode == PlayMode::Loop) {
+        if (swapToStandby(start))
+            return;
         m_loopRestartPending = true;
         m_player->setPosition(qint64(std::llround(start * 1000)));
         resyncClock(start);
         m_state.setPlayhead(start);
+        prepareStandby();
         return;
     }
     // 播到终点自动停，停在片段最后一帧（终点那一帧已不属于片段）
     const double frame = m_base.info.fps > 0 ? 1.0 / m_base.info.fps : 0.04;
     m_player->pause();
     seek(std::max(start, end - frame));
+}
+
+void ClipEditorDialog::prepareStandby()
+{
+    m_standbyFrame = QImage();
+    m_standbyFrameTime = -1;
+    m_standbyTargetMs = -1;
+    if (!m_standby || m_playMode != PlayMode::Loop || m_playIndex < 0 || m_playIndex >= m_clips.size())
+        return;
+    m_standbyTargetMs = qint64(std::llround(m_clips.at(m_playIndex).startTime.value_or(0) * 1000));
+    m_standby->setPlaybackRate(m_player->playbackRate());
+    if (m_standby->source() != m_player->source()) {
+        m_standby->setSource(m_player->source()); // 打开后在 mediaStatusChanged 里定位
+        return;
+    }
+    m_standby->setPosition(m_standbyTargetMs);
+    m_standby->pause();
+}
+
+bool ClipEditorDialog::swapToStandby(double start)
+{
+    if (!m_standby || m_standbyFrame.isNull() || m_standbyTargetMs != qint64(std::llround(start * 1000))
+        || m_standby->source() != m_player->source())
+        return false;
+    QMediaPlayer* old = m_player;
+    std::swap(m_player, m_standby);
+    std::swap(m_audio, m_standbyAudio);
+    std::swap(m_sink, m_standbySink);
+    m_audio->setVolume(m_standbyAudio->volume());
+    m_audio->setMuted(m_standbyAudio->isMuted());
+    m_player->play();
+    old->pause();
+    m_loopRestartPending = false;
+    m_lastFrameTime = m_standbyFrameTime;
+    m_canvas->setImage(m_standbyFrame);
+    resyncClock(start);
+    m_state.setPlayhead(start);
+    prepareStandby(); // 换下来的播放器在后台跳回起点，备好下一圈
+    return true;
 }
 
 void ClipEditorDialog::onTick()
@@ -1286,8 +1365,10 @@ void ClipEditorDialog::confirm()
             }
         }
     }
-    if (m_player)
+    if (m_player) {
         m_player->stop();
+        m_standby->stop();
+    }
     accept();
 }
 
@@ -1348,8 +1429,10 @@ void ClipEditorDialog::keyPressEvent(QKeyEvent* event)
 
 void ClipEditorDialog::closeEvent(QCloseEvent* event)
 {
-    if (m_player)
+    if (m_player) {
         m_player->stop();
+        m_standby->stop();
+    }
     QDialog::closeEvent(event);
 }
 
