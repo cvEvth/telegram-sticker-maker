@@ -312,8 +312,10 @@ QWidget* ClipEditorDialog::buildTimeline()
     connect(m_track, &TimelineTrack::clipPressed, this, [this](int i) {
         if (i != m_selected)
             selectClip(i, false);
-        // 点在片段上：从点击位置开始在片段内循环（随后的 scrubbed 会定位到点击处）
-        loopClip(i, false);
+        // 播放中点在片段上：从点击位置开始在片段内循环（随后的 scrubbed 会定位到点击处）；
+        // 暂停时只选中并定位，保持暂停
+        if (isPlaying())
+            loopClip(i, false);
     });
     connect(&m_state, &TimelineState::changed, this, &ClipEditorDialog::refreshInfoRow);
     return box;
