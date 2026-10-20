@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.25)
 if(DEFINED ENV{TSM_VERSION} AND NOT "$ENV{TSM_VERSION}" STREQUAL "")
     set(TSM_VERSION "$ENV{TSM_VERSION}")
 else()
-    set(TSM_VERSION 0.3.1)
+    set(TSM_VERSION 0.3.2)
 endif()
 
 project(TelegramStickerMaker
