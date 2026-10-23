@@ -1,21 +1,27 @@
 #include "ui/HeaderBar.h"
 
+#include "app/AppSettings.h"
+#include "app/Language.h"
 #include "ui/BotPromo.h"
+#include "ui/Theme.h"
 
 #include <QActionGroup>
+#include <QApplication>
 #include <QDesktopServices>
 #include <QIcon>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QStyle>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <functional>
 
 namespace tsm {
 
-HeaderBar::HeaderBar(QWidget* parent)
+HeaderBar::HeaderBar(AppSettings& settings, QWidget* parent)
     : QFrame(parent)
 {
     setObjectName(QStringLiteral("HeaderBar"));
@@ -50,23 +56,59 @@ HeaderBar::HeaderBar(QWidget* parent)
     m_update->hide();
     connect(m_update, &QPushButton::clicked, this, [this] { QDesktopServices::openUrl(QUrl(m_updateUrl)); });
 
-    // 主题切换：跟随系统 / 浅色 / 深色
-    m_theme = new QPushButton(QStringLiteral("🎨"));
-    m_theme->setObjectName(QStringLiteral("ThemeButton"));
-    m_theme->setCursor(Qt::PointingHandCursor);
-    m_theme->setToolTip(tr("界面主题"));
-    auto* themeMenu = new QMenu(m_theme);
-    auto* themeGroup = new QActionGroup(themeMenu);
-    const std::pair<ThemeMode, QString> modes[] = {
-        {ThemeMode::System, tr("跟随系统")}, {ThemeMode::Light, tr("浅色")}, {ThemeMode::Dark, tr("深色")}};
-    for (const auto& [mode, text] : modes) {
-        QAction* action = themeMenu->addAction(text);
-        action->setCheckable(true);
-        themeGroup->addAction(action);
-        m_themeActions << action;
-        connect(action, &QAction::triggered, this, [this, mode] { emit themeModeChosen(mode); });
-    }
-    m_theme->setMenu(themeMenu);
+    // 程序偏好（与转换无关的设置）：主题立即生效，语言重启后生效
+    m_prefs = new QPushButton(QStringLiteral("⚙"));
+    m_prefs->setObjectName(QStringLiteral("PrefsButton"));
+    m_prefs->setCursor(Qt::PointingHandCursor);
+    m_prefs->setToolTip(tr("设置"));
+    auto* menu = new QMenu(m_prefs);
+    menu->setToolTipsVisible(true);
+    const auto addHeading = [menu](const QString& text) {
+        QAction* heading = menu->addAction(text);
+        heading->setEnabled(false);
+    };
+    // 一组单选项；current 为当前值，选中后调用 apply
+    const auto addChoices = [this, menu](const QList<std::pair<QString, QString>>& choices, const QString& current,
+                                         const std::function<void(const QString&)>& apply) {
+        auto* group = new QActionGroup(menu);
+        for (const auto& [value, text] : choices) {
+            QAction* action = menu->addAction(text);
+            action->setCheckable(true);
+            action->setChecked(value == current);
+            action->setData(value);
+            group->addAction(action);
+            connect(action, &QAction::triggered, this, [apply, value] { apply(value); });
+        }
+    };
+
+    addHeading(tr("界面主题"));
+    addChoices({{QStringLiteral("system"), tr("跟随系统")},
+                {QStringLiteral("light"), tr("浅色")},
+                {QStringLiteral("dark"), tr("深色")}},
+               themeModeToString(themeModeFromString(settings.theme())), [&settings](const QString& value) {
+                   settings.setTheme(value);
+                   applyTheme(*qApp, themeModeFromString(value));
+               });
+
+    menu->addSeparator();
+    addHeading(tr("界面语言"));
+    QList<std::pair<QString, QString>> languages{{QString(), tr("跟随系统")}};
+    for (const Language::Option& option : Language::available())
+        languages.append({option.code, option.nativeName});
+    addChoices(languages, settings.language(), [this, &settings](const QString& code) {
+        if (code == settings.language())
+            return;
+        settings.setLanguage(code);
+        QMessageBox::information(window(), tr("界面语言"), tr("重启程序后生效"));
+    });
+
+    menu->addSeparator();
+    QAction* updates = menu->addAction(tr("启动时检查新版本"));
+    updates->setCheckable(true);
+    updates->setChecked(settings.checkUpdates());
+    updates->setToolTip(tr("每天最多联网查询一次 GitHub 上的最新版本，只提醒，不会自动下载。"));
+    connect(updates, &QAction::toggled, this, [&settings](bool on) { settings.setCheckUpdates(on); });
+    m_prefs->setMenu(menu);
 
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(18, 10, 18, 10);
@@ -80,12 +122,7 @@ HeaderBar::HeaderBar(QWidget* parent)
     layout->addSpacing(10);
     layout->addWidget(m_badge, 0, Qt::AlignVCenter);
     layout->addSpacing(4);
-    layout->addWidget(m_theme, 0, Qt::AlignVCenter);
-}
-
-void HeaderBar::setThemeMode(ThemeMode mode)
-{
-    m_themeActions.at(int(mode))->setChecked(true);
+    layout->addWidget(m_prefs, 0, Qt::AlignVCenter);
 }
 
 void HeaderBar::setBadge(const QString& text, bool muted)

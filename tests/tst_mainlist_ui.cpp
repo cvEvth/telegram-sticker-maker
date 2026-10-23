@@ -2,6 +2,7 @@
 // 设置环境变量 TSM_SNAPSHOT_DIR 时保存截图。
 #include "app/AppPaths.h"
 #include "app/AppSettings.h"
+#include "app/Language.h"
 #include "app/Logger.h"
 #include "core/StickerList.h"
 #include "core/TaskListModel.h"
@@ -117,35 +118,57 @@ private slots:
         QCOMPARE(ru.translate("tsm::MainWindow", "已添加 %n 项", nullptr, 21), QStringLiteral("%n элемент"));
     }
 
-    // 主题：标题栏菜单切换后立即换配色并记住，重开窗口沿用
-    void themeSwitch()
+    // 标题栏设置菜单：主题立即换配色并记住，重开窗口沿用；语言与检查更新也在这里
+    void preferencesMenu()
     {
         QDir(AppPaths::configDir()).removeRecursively();
         const ThemeMode initial = themeModeFromString(qEnvironmentVariable("TSM_THEME", QStringLiteral("dark")));
+        const auto menuOf = [](QWidget& window) {
+            auto* button = window.findChild<QPushButton*>(QStringLiteral("PrefsButton"));
+            return button ? button->menu() : nullptr;
+        };
+        const auto actionFor = [](QMenu* menu, const QString& data) -> QAction* {
+            for (QAction* a : menu->actions())
+                if (a->isCheckable() && a->data().toString() == data)
+                    return a;
+            return nullptr;
+        };
         {
             MainWindow window;
             window.show();
-            auto* button = window.findChild<QPushButton*>(QStringLiteral("ThemeButton"));
-            QVERIFY(button && button->menu());
-            const QList<QAction*> actions = button->menu()->actions();
-            QCOMPARE(actions.size(), 3);
-            QVERIFY(actions.at(0)->isChecked()); // 默认跟随系统
+            QMenu* menu = menuOf(window);
+            QVERIFY(menu);
+            QVERIFY(actionFor(menu, QStringLiteral("system"))->isChecked()); // 默认跟随系统
+            for (const Language::Option& option : Language::available())
+                QVERIFY(actionFor(menu, option.code));
 
-            actions.at(1)->trigger();
+            actionFor(menu, QStringLiteral("light"))->trigger();
             QVERIFY(!theme().dark);
             QVERIFY(qApp->styleSheet().contains(theme().bg.name()));
             QCOMPARE(AppSettings().theme(), QStringLiteral("light"));
-            actions.at(2)->trigger();
+            actionFor(menu, QStringLiteral("dark"))->trigger();
             QVERIFY(theme().dark);
             QVERIFY(qApp->styleSheet().contains(theme().bg.name()));
             QVERIFY(!qApp->styleSheet().contains(QStringLiteral("${")));
+
+            QAction* updates = nullptr;
+            for (QAction* a : menu->actions())
+                if (a->isCheckable() && a->data().isNull())
+                    updates = a;
+            QVERIFY(updates && updates->isChecked());
+            updates->trigger();
+            QVERIFY(!AppSettings().checkUpdates());
+            menu->popup(window.mapToGlobal(QPoint(window.width() - 260, 50)));
+            QTest::qWaitForWindowExposed(menu);
+            snapshot(menu, QStringLiteral("prefs_menu.png"));
+            menu->hide();
         }
         {
             MainWindow window;
-            auto* button = window.findChild<QPushButton*>(QStringLiteral("ThemeButton"));
-            QVERIFY(button->menu()->actions().at(2)->isChecked());
+            QVERIFY(actionFor(menuOf(window), QStringLiteral("dark"))->isChecked());
         }
         AppSettings().setTheme(QStringLiteral("system"));
+        AppSettings().setCheckUpdates(true);
         applyTheme(*qApp, initial);
     }
 

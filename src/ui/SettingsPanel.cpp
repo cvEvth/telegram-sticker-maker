@@ -2,7 +2,6 @@
 
 #include "app/AppPaths.h"
 #include "app/AppSettings.h"
-#include "app/Language.h"
 
 #include <QButtonGroup>
 #include <QCheckBox>
@@ -147,24 +146,6 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
     connect(openData, &QPushButton::clicked, this, &SettingsPanel::openDataDirRequested);
     connect(m_clearCache, &QPushButton::clicked, this, &SettingsPanel::clearCacheRequested);
 
-    // 5. 界面语言（重启后生效）
-    m_language = new QComboBox;
-    m_language->addItem(tr("跟随系统"), QString());
-    for (const Language::Option& option : Language::available())
-        m_language->addItem(option.nativeName, option.code);
-    m_language->setCurrentIndex(qMax(0, m_language->findData(m_s.language())));
-    m_languageHint = makeHint(tr("重启程序后生效"));
-    m_languageHint->hide();
-    connect(m_language, &QComboBox::currentIndexChanged, this, [this] {
-        m_s.setLanguage(m_language->currentData().toString());
-        m_languageHint->show();
-    });
-
-    // 6. 检查更新
-    m_checkUpdates = new QCheckBox(tr("启动时检查新版本"));
-    m_checkUpdates->setChecked(m_s.checkUpdates());
-    connect(m_checkUpdates, &QCheckBox::toggled, this, [this](bool on) { m_s.setCheckUpdates(on); });
-
     auto* sections = new QWidget;
     auto* sectionsLayout = new QVBoxLayout(sections);
     sectionsLayout->setContentsMargins(0, 0, 4, 0);
@@ -176,10 +157,6 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
         4, tr("数据目录"), "DATA",
         {makeHint(tr("实际写入所选路径下的 telegram_sticker_maker 文件夹。留空则用配置目录。")),
          makeRow({m_dataDir, m_browseData}, 0), m_dataResolved, makeRow({openData, m_clearCache, m_cacheInfo}, 2)}));
-    sectionsLayout->addWidget(makeSection(5, tr("界面语言"), "LANGUAGE", {m_language, m_languageHint}));
-    sectionsLayout->addWidget(makeSection(
-        6, tr("检查更新"), "UPDATES",
-        {m_checkUpdates, makeHint(tr("每天最多联网查询一次 GitHub 上的最新版本，只提醒，不会自动下载。"))}));
     sectionsLayout->addStretch();
 
     auto* scroll = new QScrollArea;

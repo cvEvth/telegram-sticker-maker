@@ -1355,6 +1355,26 @@ You can also send the converted zip straight to %2</translation>
         <source>点击前往下载页面</source>
         <translation>Open the download page</translation>
     </message>
+    <message>
+        <source>设置</source>
+        <translation>Settings</translation>
+    </message>
+    <message>
+        <source>界面语言</source>
+        <translation>Language</translation>
+    </message>
+    <message>
+        <source>重启程序后生效</source>
+        <translation>Takes effect after restarting the app</translation>
+    </message>
+    <message>
+        <source>启动时检查新版本</source>
+        <translation>Check for new versions at startup</translation>
+    </message>
+    <message>
+        <source>每天最多联网查询一次 GitHub 上的最新版本，只提醒，不会自动下载。</source>
+        <translation>Checks GitHub for the latest version at most once a day. It only notifies you and never downloads anything.</translation>
+    </message>
 </context>
 <context>
     <name>tsm::KeywordDialog</name>
@@ -2036,14 +2056,6 @@ You can also send the converted zip straight to %2</translation>
         <translation>Choose data folder</translation>
     </message>
     <message>
-        <source>跟随系统</source>
-        <translation>System default</translation>
-    </message>
-    <message>
-        <source>重启程序后生效</source>
-        <translation>Takes effect after restarting the app</translation>
-    </message>
-    <message>
         <source>输出规格</source>
         <translation>Output format</translation>
     </message>
@@ -2062,10 +2074,6 @@ You can also send the converted zip straight to %2</translation>
     <message>
         <source>实际写入所选路径下的 telegram_sticker_maker 文件夹。留空则用配置目录。</source>
         <translation>Data goes into a telegram_sticker_maker folder inside the chosen path. Leave empty to use the config folder.</translation>
-    </message>
-    <message>
-        <source>界面语言</source>
-        <translation>Language</translation>
     </message>
     <message>
         <source>🚀 开始转换</source>
@@ -2114,18 +2122,6 @@ You can also send the converted zip straight to %2</translation>
     <message>
         <source>实际路径：</source>
         <translation>Actual path: </translation>
-    </message>
-    <message>
-        <source>启动时检查新版本</source>
-        <translation>Check for new versions at startup</translation>
-    </message>
-    <message>
-        <source>检查更新</source>
-        <translation>Updates</translation>
-    </message>
-    <message>
-        <source>每天最多联网查询一次 GitHub 上的最新版本，只提醒，不会自动下载。</source>
-        <translation>Checks GitHub for the latest version at most once a day. It only notifies you and never downloads anything.</translation>
     </message>
 </context>
 <context>

@@ -1364,6 +1364,26 @@
         <source>点击前往下载页面</source>
         <translation>Открыть страницу загрузки</translation>
     </message>
+    <message>
+        <source>设置</source>
+        <translation>Настройки</translation>
+    </message>
+    <message>
+        <source>界面语言</source>
+        <translation>Язык</translation>
+    </message>
+    <message>
+        <source>重启程序后生效</source>
+        <translation>Вступит в силу после перезапуска программы</translation>
+    </message>
+    <message>
+        <source>启动时检查新版本</source>
+        <translation>Проверять новые версии при запуске</translation>
+    </message>
+    <message>
+        <source>每天最多联网查询一次 GitHub 上的最新版本，只提醒，不会自动下载。</source>
+        <translation>Не чаще раза в день проверяет последнюю версию на GitHub. Только уведомляет, ничего не скачивает.</translation>
+    </message>
 </context>
 <context>
     <name>tsm::KeywordDialog</name>
@@ -2071,14 +2091,6 @@
         <translation>Выберите папку данных</translation>
     </message>
     <message>
-        <source>跟随系统</source>
-        <translation>Как в системе</translation>
-    </message>
-    <message>
-        <source>重启程序后生效</source>
-        <translation>Вступит в силу после перезапуска программы</translation>
-    </message>
-    <message>
         <source>输出规格</source>
         <translation>Формат вывода</translation>
     </message>
@@ -2097,10 +2109,6 @@
     <message>
         <source>实际写入所选路径下的 telegram_sticker_maker 文件夹。留空则用配置目录。</source>
         <translation>Данные хранятся в папке telegram_sticker_maker внутри выбранного пути. Если пусто — в папке настроек.</translation>
-    </message>
-    <message>
-        <source>界面语言</source>
-        <translation>Язык</translation>
     </message>
     <message>
         <source>🚀 开始转换</source>
@@ -2149,18 +2157,6 @@
     <message>
         <source>实际路径：</source>
         <translation>Фактический путь: </translation>
-    </message>
-    <message>
-        <source>启动时检查新版本</source>
-        <translation>Проверять новые версии при запуске</translation>
-    </message>
-    <message>
-        <source>检查更新</source>
-        <translation>Обновления</translation>
-    </message>
-    <message>
-        <source>每天最多联网查询一次 GitHub 上的最新版本，只提醒，不会自动下载。</source>
-        <translation>Не чаще раза в день проверяет последнюю версию на GitHub. Только уведомляет, ничего не скачивает.</translation>
     </message>
 </context>
 <context>

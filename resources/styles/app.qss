@@ -23,12 +23,12 @@ QToolTip { background: ${elevated}; color: ${ink}; border: 1px solid ${lineStron
 #SiteLink:hover { background: ${accentBg}; }
 #UpdateLink { background: ${bg}; color: ${ok}; border: 2px solid ${ok}; border-radius: 10px; padding: 5px 14px; font-size: 12px; font-weight: 700; }
 #UpdateLink:hover { background: ${soft}; }
-QPushButton#ThemeButton {
+QPushButton#PrefsButton {
     background: ${bg}; border: 1px solid ${lineStrong}; border-radius: 16px; padding: 0; font-size: 15px;
     min-width: 32px; max-width: 32px; min-height: 32px; max-height: 32px;
 }
-QPushButton#ThemeButton:hover { border-color: ${accent}; background: ${soft}; }
-QPushButton#ThemeButton::menu-indicator { width: 0; }
+QPushButton#PrefsButton:hover { border-color: ${accent}; background: ${soft}; }
+QPushButton#PrefsButton::menu-indicator { width: 0; }
 
 /* 按钮 */
 QPushButton {
@@ -89,7 +89,6 @@ QMenu::item { padding: 6px 18px; border-radius: 6px; }
 QMenu::item:selected { background: ${accentBg}; color: ${accentFg}; }
 QMenu::item:disabled { color: ${muted}; }
 QMenu::item:checked { color: ${accent}; font-weight: 700; }
-QMenu::indicator { width: 0; }
 QMenu::separator { height: 1px; background: ${line}; margin: 4px 6px; }
 
 QScrollArea { background: transparent; border: none; }
