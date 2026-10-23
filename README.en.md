@@ -36,7 +36,8 @@
 - **Emoji and keywords**: double-click to set an emoji, or right-click to set emoji and keywords in bulk; you can also connect an OpenAI-compatible vision model to match emoji to the mood of each frame automatically
 - **Lots of input formats**: MP4, MKV, WebM, MOV, AVI, FLV, GIF, APNG, animated WebP, PNG, JPG, WebP, BMP, TIFF, HEIC; transparency in videos, GIFs and PNGs is preserved
 - **Custom emoji**: switch to 100×100 mode to make a whole Custom Emoji set at once
-- **English, Simplified Chinese and Russian interface**: follows your system language by default; switch it under "🌐 Language" in the settings panel
+- **English, Simplified Chinese and Russian interface**: follows your system language by default; switch it from the ⚙ menu in the top-right corner
+- **Light and dark themes**: follows your system by default, or pick light or dark from the ⚙ menu; the change applies right away
 - **Safe from interruptions**: the list and every edit are saved automatically and restored exactly when you reopen the app; you can also export the source files with a settings manifest and continue on another computer
 
 ## Download
