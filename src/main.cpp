@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     tsm::Language::install(tsm::Language::resolve(tsm::AppSettings().language()));
 
     tsm::Logger::instance(); // 在主线程创建
-    tsm::applyDarkTheme(app);
+    tsm::applyTheme(app, tsm::themeModeFromString(tsm::AppSettings().theme()));
 
     tsm::MainWindow window;
     window.show();

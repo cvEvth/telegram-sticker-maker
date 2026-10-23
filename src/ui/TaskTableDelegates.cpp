@@ -3,6 +3,7 @@
 #include "core/Format.h"
 #include "core/TaskListModel.h"
 #include "media/ThumbnailService.h"
+#include "ui/Theme.h"
 
 #include <QAbstractItemView>
 #include <QApplication>
@@ -56,7 +57,7 @@ void PreviewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     painter->setRenderHint(QPainter::SmoothPixmapTransform);
     if (image.isNull()) {
         painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(0x22, 0x26, 0x2e));
+        painter->setBrush(theme().soft);
         painter->drawRoundedRect(QRectF(cell.center().x() - 27, cell.center().y() - 20, 54, 40), 6, 6);
     } else {
         QSizeF size = QSizeF(image.size()) / dpr;
@@ -121,30 +122,30 @@ void KeywordsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     const QFontMetrics fm(f);
 
     if (keywords.isEmpty()) {
-        painter->setPen(QPen(QColor(hover ? 0x5a : 0x3a, hover ? 0x62 : 0x40, hover ? 0x75 : 0x4d), 1, Qt::DashLine));
+        painter->setPen(QPen(hover ? theme().accent : theme().lineStrong, 1, Qt::DashLine));
         painter->setBrush(Qt::NoBrush);
         painter->drawRoundedRect(QRectF(button).adjusted(0.5, 0.5, -0.5, -0.5), 13, 13);
-        painter->setPen(QColor(0x8b, 0x93, 0xa7));
+        painter->setPen(hover ? theme().accent : theme().muted);
         painter->drawText(button, Qt::AlignCenter, tr("+ 设置关键词"));
     } else {
-        painter->setPen(QPen(QColor(42, 171, 238, hover ? 200 : 110), 1));
-        painter->setBrush(QColor(42, 171, 238, hover ? 50 : 30));
+        painter->setPen(QPen(hover ? theme().accent : theme().chipLine, 1));
+        painter->setBrush(theme().chipBg);
         painter->drawRoundedRect(QRectF(button).adjusted(0.5, 0.5, -0.5, -0.5), 13, 13);
         // 右侧数量角标
         const QString count = QString::number(keywords.size());
         const int badgeW = std::max(18, fm.horizontalAdvance(count) + 10);
         const QRect badge(button.right() - badgeW - 4, button.center().y() - 9, badgeW, 18);
         painter->setPen(Qt::NoPen);
-        painter->setBrush(QColor(0x2a, 0xab, 0xee));
+        painter->setBrush(theme().accent);
         painter->drawRoundedRect(badge, 9, 9);
-        painter->setPen(Qt::white);
+        painter->setPen(theme().onAccent);
         painter->drawText(badge, Qt::AlignCenter, count);
 
         QString text = keywords.first();
         if (keywords.size() > 1)
             text += QStringLiteral(" +%1").arg(keywords.size() - 1);
         const QRect textRect(button.left() + 10, button.top(), badge.left() - button.left() - 14, button.height());
-        painter->setPen(QColor(0xcf, 0xe9, 0xfb));
+        painter->setPen(theme().accentFg);
         painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, fm.elidedText(text, Qt::ElideRight, textRect.width()));
     }
     painter->restore();

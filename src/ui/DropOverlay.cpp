@@ -1,5 +1,7 @@
 #include "ui/DropOverlay.h"
 
+#include "ui/Theme.h"
+
 #include <QPainter>
 #include <QPainterPath>
 
@@ -16,19 +18,22 @@ void DropOverlay::paintEvent(QPaintEvent*)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
-    painter.fillRect(rect(), QColor(10, 12, 16, 200));
+    const ThemeColors& c = theme();
+    QColor scrim = c.bg;
+    scrim.setAlpha(215);
+    painter.fillRect(rect(), scrim);
 
     const QRectF box = QRectF(rect()).adjusted(28, 28, -28, -28);
-    QPen pen(QColor(0x2a, 0xab, 0xee), 2, Qt::DashLine);
+    QPen pen(c.accent, 2.5, Qt::DashLine);
     painter.setPen(pen);
-    painter.setBrush(QColor(42, 171, 238, 20));
+    painter.setBrush(c.accentBg);
     painter.drawRoundedRect(box, 18, 18);
 
     QFont font = painter.font();
     font.setPointSizeF(font.pointSizeF() * 2.2);
     font.setBold(true);
     painter.setFont(font);
-    painter.setPen(QColor(0xe6, 0xe8, 0xee));
+    painter.setPen(c.ink);
     painter.drawText(box, Qt::AlignCenter, tr("📥\n松开鼠标立即导入文件"));
 }
 

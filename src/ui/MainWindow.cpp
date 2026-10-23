@@ -26,6 +26,7 @@
 #include "ui/KeywordDialog.h"
 #include "ui/TaskTableDelegates.h"
 #include "ui/TaskTableView.h"
+#include "ui/Theme.h"
 #include "ui/editor/ClipEditorDialog.h"
 
 #include <QCloseEvent>
@@ -229,6 +230,13 @@ void MainWindow::configureTable()
 void MainWindow::connectSignals()
 {
     connect(&Logger::instance(), &Logger::lineAdded, m_log, &LogPanel::appendLine);
+
+    // 标题栏主题切换：立即生效并记住
+    m_header->setThemeMode(themeModeFromString(m_settings.theme()));
+    connect(m_header, &HeaderBar::themeModeChosen, this, [this](ThemeMode mode) {
+        m_settings.setTheme(themeModeToString(mode));
+        applyTheme(*qApp, mode);
+    });
 
     // 工具栏
     connect(m_btnAddFiles, &QPushButton::clicked, this, &MainWindow::addFilesDialog);

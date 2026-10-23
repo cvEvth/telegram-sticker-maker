@@ -1131,8 +1131,8 @@
         <translation>Сохранено в: %1</translation>
     </message>
     <message>
-        <source>前往 &lt;a href=&quot;%1&quot; style=&quot;color:#5ec2ff; text-decoration:none;&quot;&gt;&lt;b&gt;www.cvevth.top/sticker&lt;/b&gt;&lt;/a&gt; 创建你的 Telegram 贴纸包</source>
-        <translation>Откройте &lt;a href=&quot;%1&quot; style=&quot;color:#5ec2ff; text-decoration:none;&quot;&gt;&lt;b&gt;www.cvevth.top/sticker&lt;/b&gt;&lt;/a&gt;, чтобы создать свой набор стикеров Telegram</translation>
+        <source>前往 &lt;a href=&quot;%1&quot; style=&quot;text-decoration:none;&quot;&gt;&lt;b&gt;www.cvevth.top/sticker&lt;/b&gt;&lt;/a&gt; 创建你的 Telegram 贴纸包</source>
+        <translation>Откройте &lt;a href=&quot;%1&quot; style=&quot;text-decoration:none;&quot;&gt;&lt;b&gt;www.cvevth.top/sticker&lt;/b&gt;&lt;/a&gt;, чтобы создать свой набор стикеров Telegram</translation>
     </message>
 </context>
 <context>
@@ -1167,8 +1167,8 @@
         <translation>📥 Импорт</translation>
     </message>
     <message>
-        <source>做好的贴纸可前往 &lt;a href=&quot;%1&quot; style=&quot;color:#5ec2ff; text-decoration:none;&quot;&gt;www.cvevth.top/sticker&lt;/a&gt; 创建 Telegram 贴纸包 · 也可把压缩包发给 &lt;a href=&quot;%2&quot; style=&quot;color:#5ec2ff; text-decoration:none;&quot;&gt;%3&lt;/a&gt;</source>
-        <translation>Создайте набор стикеров Telegram на &lt;a href=&quot;%1&quot; style=&quot;color:#5ec2ff; text-decoration:none;&quot;&gt;www.cvevth.top/sticker&lt;/a&gt; · или отправьте архив боту &lt;a href=&quot;%2&quot; style=&quot;color:#5ec2ff; text-decoration:none;&quot;&gt;%3&lt;/a&gt;</translation>
+        <source>做好的贴纸可前往 &lt;a href=&quot;%1&quot; style=&quot;text-decoration:none;&quot;&gt;www.cvevth.top/sticker&lt;/a&gt; 创建 Telegram 贴纸包 · 也可把压缩包发给 &lt;a href=&quot;%2&quot; style=&quot;text-decoration:none;&quot;&gt;%3&lt;/a&gt;</source>
+        <translation>Создайте набор стикеров Telegram на &lt;a href=&quot;%1&quot; style=&quot;text-decoration:none;&quot;&gt;www.cvevth.top/sticker&lt;/a&gt; · или отправьте архив боту &lt;a href=&quot;%2&quot; style=&quot;text-decoration:none;&quot;&gt;%3&lt;/a&gt;</translation>
     </message>
 </context>
 <context>
@@ -1326,6 +1326,22 @@
 </context>
 <context>
     <name>tsm::HeaderBar</name>
+    <message>
+        <source>界面主题</source>
+        <translation>Тема</translation>
+    </message>
+    <message>
+        <source>跟随系统</source>
+        <translation>Как в системе</translation>
+    </message>
+    <message>
+        <source>浅色</source>
+        <translation>Светлая</translation>
+    </message>
+    <message>
+        <source>深色</source>
+        <translation>Тёмная</translation>
+    </message>
     <message>
         <source>Telegram 贴纸批量转换工具 | 支持 WebM 视频贴纸与 WebP 静态贴纸</source>
         <translation>Пакетный конвертер стикеров Telegram | Видеостикеры WebM и статичные стикеры WebP</translation>
@@ -2063,28 +2079,28 @@
         <translation>Вступит в силу после перезапуска программы</translation>
     </message>
     <message>
-        <source>🎯 输出规格</source>
-        <translation>🎯 Формат вывода</translation>
+        <source>输出规格</source>
+        <translation>Формат вывода</translation>
     </message>
     <message>
-        <source>🎨 编码预设</source>
-        <translation>🎨 Пресет кодирования</translation>
+        <source>编码预设</source>
+        <translation>Пресет кодирования</translation>
     </message>
     <message>
-        <source>📁 输出目录</source>
-        <translation>📁 Папка вывода</translation>
+        <source>输出目录</source>
+        <translation>Папка вывода</translation>
     </message>
     <message>
-        <source>💾 数据目录</source>
-        <translation>💾 Папка данных</translation>
+        <source>数据目录</source>
+        <translation>Папка данных</translation>
     </message>
     <message>
         <source>实际写入所选路径下的 telegram_sticker_maker 文件夹。留空则用配置目录。</source>
         <translation>Данные хранятся в папке telegram_sticker_maker внутри выбранного пути. Если пусто — в папке настроек.</translation>
     </message>
     <message>
-        <source>🌐 界面语言</source>
-        <translation>🌐 Язык</translation>
+        <source>界面语言</source>
+        <translation>Язык</translation>
     </message>
     <message>
         <source>🚀 开始转换</source>
@@ -2139,8 +2155,8 @@
         <translation>Проверять новые версии при запуске</translation>
     </message>
     <message>
-        <source>🔄 检查更新</source>
-        <translation>🔄 Обновления</translation>
+        <source>检查更新</source>
+        <translation>Обновления</translation>
     </message>
     <message>
         <source>每天最多联网查询一次 GitHub 上的最新版本，只提醒，不会自动下载。</source>

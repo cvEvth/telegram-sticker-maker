@@ -21,16 +21,27 @@
 namespace tsm {
 
 namespace {
-QWidget* makeSection(const QString& title, std::initializer_list<QWidget*> rows)
+// 分区卡片：粉色编号 + 标题 + 右侧小号英文标签（装饰，不翻译）
+QWidget* makeSection(int index, const QString& title, const char* tag, std::initializer_list<QWidget*> rows)
 {
     auto* box = new QFrame;
     box->setObjectName(QStringLiteral("Section"));
     auto* layout = new QVBoxLayout(box);
     layout->setContentsMargins(14, 12, 14, 12);
     layout->setSpacing(8);
+    auto* number = new QLabel(QStringLiteral("%1").arg(index, 2, 10, QChar(u'0')));
+    number->setObjectName(QStringLiteral("SectionIndex"));
     auto* label = new QLabel(title);
     label->setObjectName(QStringLiteral("SectionTitle"));
-    layout->addWidget(label);
+    auto* english = new QLabel(QString::fromLatin1(tag));
+    english->setObjectName(QStringLiteral("SectionTag"));
+    auto* head = new QHBoxLayout;
+    head->setSpacing(8);
+    head->addWidget(number, 0, Qt::AlignBaseline);
+    head->addWidget(label, 0, Qt::AlignBaseline);
+    head->addStretch();
+    head->addWidget(english, 0, Qt::AlignBaseline);
+    layout->addLayout(head);
     for (QWidget* row : rows)
         layout->addWidget(row);
     return box;
@@ -158,16 +169,16 @@ SettingsPanel::SettingsPanel(AppSettings& settings, QWidget* parent)
     auto* sectionsLayout = new QVBoxLayout(sections);
     sectionsLayout->setContentsMargins(0, 0, 4, 0);
     sectionsLayout->setSpacing(10);
-    sectionsLayout->addWidget(makeSection(tr("🎯 输出规格"), {makeRow({m_modeSticker, m_modeEmoji})}));
-    sectionsLayout->addWidget(makeSection(tr("🎨 编码预设"), {m_preset}));
-    sectionsLayout->addWidget(makeSection(tr("📁 输出目录"), {m_besideSource, m_outputRow}));
+    sectionsLayout->addWidget(makeSection(1, tr("输出规格"), "FORMAT", {makeRow({m_modeSticker, m_modeEmoji})}));
+    sectionsLayout->addWidget(makeSection(2, tr("编码预设"), "PRESET", {m_preset}));
+    sectionsLayout->addWidget(makeSection(3, tr("输出目录"), "OUTPUT", {m_besideSource, m_outputRow}));
     sectionsLayout->addWidget(makeSection(
-        tr("💾 数据目录"),
+        4, tr("数据目录"), "DATA",
         {makeHint(tr("实际写入所选路径下的 telegram_sticker_maker 文件夹。留空则用配置目录。")),
          makeRow({m_dataDir, m_browseData}, 0), m_dataResolved, makeRow({openData, m_clearCache, m_cacheInfo}, 2)}));
-    sectionsLayout->addWidget(makeSection(tr("🌐 界面语言"), {m_language, m_languageHint}));
+    sectionsLayout->addWidget(makeSection(5, tr("界面语言"), "LANGUAGE", {m_language, m_languageHint}));
     sectionsLayout->addWidget(makeSection(
-        tr("🔄 检查更新"),
+        6, tr("检查更新"), "UPDATES",
         {m_checkUpdates, makeHint(tr("每天最多联网查询一次 GitHub 上的最新版本，只提醒，不会自动下载。"))}));
     sectionsLayout->addStretch();
 

@@ -2,6 +2,7 @@
 
 #include "core/Format.h"
 #include "core/TimelineState.h"
+#include "ui/Theme.h"
 
 #include <QMouseEvent>
 #include <QPainter>
@@ -17,12 +18,11 @@ constexpr double kSideMargin = 8;
 constexpr double kLabelHeight = 16;
 constexpr double kFooterHeight = 16;
 
-const QColor kTrackBg(0x1b, 0x1e, 0x25);
-const QColor kTickColor(0x3a, 0x40, 0x4d);
-const QColor kLabelColor(0x8b, 0x93, 0xa7);
-const QColor kPlayedColor(42, 171, 238, 38);
-const QColor kPlayhead(0xff, 0x5f, 0x6d);
-const QColor kHover(255, 255, 255, 90);
+QColor withAlpha(QColor c, int alpha)
+{
+    c.setAlpha(alpha);
+    return c;
+}
 
 QString tickLabel(double t, double step)
 {
@@ -43,8 +43,9 @@ double wheelSteps(const QWheelEvent* e)
 
 QColor clipColor(int index)
 {
-    static const QColor palette[] = {QColor(0x2a, 0xab, 0xee), QColor(0xf5, 0xa6, 0x23), QColor(0x3e, 0xcf, 0x8e),
-                                     QColor(0xc0, 0x7c, 0xff), QColor(0xff, 0x7a, 0x90), QColor(0x4f, 0xd1, 0xd9)};
+    // 深浅主题都放深色文字，所以都取明亮色
+    static const QColor palette[] = {QColor(0xff, 0x6b, 0x95), QColor(0xf5, 0xb8, 0x2e), QColor(0x46, 0xc4, 0x86),
+                                     QColor(0xb4, 0x8c, 0xff), QColor(0x5a, 0xb8, 0xf0), QColor(0x4f, 0xd1, 0xc4)};
     return palette[std::abs(index) % 6];
 }
 
@@ -90,21 +91,22 @@ void TimelineTrack::paintEvent(QPaintEvent*)
 
     QPainterPath bg;
     bg.addRoundedRect(track, 6, 6);
-    p.fillPath(bg, kTrackBg);
+    const ThemeColors& c = theme();
+    p.fillPath(bg, c.soft);
     p.save();
     p.setClipPath(bg);
 
     // 已播放部分高亮
     const double playX = xAt(m_state->playhead());
     if (playX > track.left())
-        p.fillRect(QRectF(track.left(), track.top(), std::min(playX, track.right()) - track.left(), track.height()), kPlayedColor);
+        p.fillRect(QRectF(track.left(), track.top(), std::min(playX, track.right()) - track.left(), track.height()), withAlpha(c.accent, 40));
 
     // 刻度
     QFont small = font();
     small.setPointSizeF(small.pointSizeF() * 0.85);
     const double step = TimelineState::tickStep(m_state->viewSpan());
     const double first = std::ceil(vs / step) * step;
-    p.setPen(QPen(kTickColor, 1));
+    p.setPen(QPen(c.lineStrong, 1));
     for (double t = first; t <= ve + 1e-9; t += step) {
         const double x = xAt(t);
         p.drawLine(QPointF(x, track.top()), QPointF(x, track.top() + 6));
@@ -119,13 +121,12 @@ void TimelineTrack::paintEvent(QPaintEvent*)
         const double x0 = xAt(s.start);
         if (s.end) {
             const QRectF block(x0, track.top() + 10, std::max(2.0, xAt(*s.end) - x0), track.height() - 18);
-            QColor fill = color;
-            fill.setAlpha(selected ? 150 : 80);
-            p.setPen(selected ? QPen(color.lighter(130), 2) : QPen(color, 1));
-            p.setBrush(fill);
-            p.drawRoundedRect(block, 4, 4);
+            // 选中的片段：实色 + 粗描边（硬投影风格）
+            p.setPen(selected ? QPen(c.shadow, 2) : QPen(color, 1));
+            p.setBrush(selected ? color : withAlpha(color, c.dark ? 120 : 150));
+            p.drawRoundedRect(block, 5, 5);
             if (block.width() > 24) {
-                p.setPen(Qt::white);
+                p.setPen(selected || !c.dark ? c.onAccent : c.ink);
                 p.setFont(small);
                 const QString label = QString::number(i + 1) + (s.emoji.isEmpty() ? QString() : QStringLiteral(" ") + s.emoji);
                 p.drawText(block.adjusted(5, 0, -3, 0), Qt::AlignLeft | Qt::AlignVCenter, label);
@@ -143,7 +144,7 @@ void TimelineTrack::paintEvent(QPaintEvent*)
 
     // 悬停竖线
     if (const auto hover = m_state->hover()) {
-        p.setPen(QPen(kHover, 1, Qt::DashLine));
+        p.setPen(QPen(withAlpha(c.ink, 110), 1, Qt::DashLine));
         const double x = xAt(*hover);
         p.drawLine(QPointF(x, track.top()), QPointF(x, track.bottom()));
     }
@@ -151,18 +152,18 @@ void TimelineTrack::paintEvent(QPaintEvent*)
 
     // 播放头
     if (playX >= track.left() - 1 && playX <= track.right() + 1) {
-        p.setPen(QPen(kPlayhead, 2));
+        p.setPen(QPen(c.ink, 2));
         p.drawLine(QPointF(playX, track.top() - 2), QPointF(playX, track.bottom()));
         QPolygonF head;
         head << QPointF(playX - 5, track.top() - 6) << QPointF(playX + 5, track.top() - 6) << QPointF(playX, track.top() + 1);
-        p.setBrush(kPlayhead);
+        p.setBrush(c.ink);
         p.setPen(Qt::NoPen);
         p.drawPolygon(head);
     }
 
     // 刻度标签
     p.setFont(small);
-    p.setPen(kLabelColor);
+    p.setPen(c.muted);
     const QFontMetricsF fm(small);
     for (double t = first; t <= ve + 1e-9; t += step) {
         const QString label = tickLabel(t, step);
@@ -292,7 +293,8 @@ void TimelineOverview::paintEvent(QPaintEvent*)
     p.setRenderHint(QPainter::Antialiasing);
     const QRectF bar(kSideMargin, 4, width() - 2 * kSideMargin, height() - 8);
     p.setPen(Qt::NoPen);
-    p.setBrush(QColor(0x22, 0x26, 0x2e));
+    const ThemeColors& tc = theme();
+    p.setBrush(tc.soft);
     p.drawRoundedRect(bar, 3, 3);
 
     const auto& spans = m_state->spans();
@@ -307,11 +309,11 @@ void TimelineOverview::paintEvent(QPaintEvent*)
     }
 
     const QRectF view(xAt(m_state->viewStart()), 1, std::max(4.0, xAt(m_state->viewEnd()) - xAt(m_state->viewStart())), height() - 2);
-    p.setBrush(QColor(255, 255, 255, 25));
-    p.setPen(QPen(QColor(255, 255, 255, 160), 1));
+    p.setBrush(withAlpha(tc.ink, 25));
+    p.setPen(QPen(withAlpha(tc.ink, 170), 1));
     p.drawRoundedRect(view, 3, 3);
 
-    p.setPen(QPen(kPlayhead, 2));
+    p.setPen(QPen(tc.ink, 2));
     const double px = xAt(m_state->playhead());
     p.drawLine(QPointF(px, 1), QPointF(px, height() - 1));
 }

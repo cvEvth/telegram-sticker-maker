@@ -32,7 +32,7 @@ scripts\build.bat release test
 
 - `tst_core` / `tst_plan` / `tst_editor`：规则单元测试（命名、画质规划、裁切计算、时间轴等）
 - `tst_media` / `tst_convert` / `tst_export` / `tst_ai`：用 FFmpeg 现场生成素材，测试解析、转换、导入导出、AI 请求（本机假接口）
-- `tst_editor_ui` / `tst_mainlist_ui`：打开真实窗口模拟点击和按键；设置 `TSM_SNAPSHOT_DIR` 会把界面截图存到该目录
+- `tst_editor_ui` / `tst_mainlist_ui`：打开真实窗口模拟点击和按键；设置 `TSM_SNAPSHOT_DIR` 会把界面截图存到该目录，另设 `TSM_THEME=light` 时用浅色主题截图（默认深色）
 
 ### 重新生成 README 截图
 
@@ -44,7 +44,7 @@ set TSM_SNAPSHOT_DIR=D:\Code\s\docs\screenshots
 build\dev\bin\tst_readme_shots.exe
 ```
 
-它会转换这些素材并保存 `main-window.png`、`editor.png`、`done-dialog.png`。另设 `TSM_README_LANG=en` 或 `ru` 时界面换成英语 / 俄语。输出目录和数据目录临时放在 `TSM_README_ROOT`（默认 `D:\StickerDemo`，必须是不存在的目录）下，截图里不会出现个人路径，结束后自动删除。
+它会转换这些素材并保存 `main-window.png`、`editor.png`、`done-dialog.png`。另设 `TSM_README_LANG=en` 或 `ru` 时界面换成英语 / 俄语，`TSM_THEME=light` 时用浅色主题。输出目录和数据目录临时放在 `TSM_README_ROOT`（默认 `D:\StickerDemo`，必须是不存在的目录）下，截图里不会出现个人路径，结束后自动删除。
 
 ## 打包
 

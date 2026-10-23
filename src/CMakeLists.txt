@@ -77,7 +77,7 @@ qt_add_library(tsm_ui STATIC
 qt_add_resources(tsm_ui "app_resources"
     PREFIX "/"
     BASE "${PROJECT_SOURCE_DIR}/resources"
-    FILES "${PROJECT_SOURCE_DIR}/resources/styles/dark.qss"
+    FILES "${PROJECT_SOURCE_DIR}/resources/styles/app.qss"
           "${PROJECT_SOURCE_DIR}/resources/icons/app.ico")
 target_link_libraries(tsm_ui PUBLIC tsm_core Qt6::Widgets Qt6::Multimedia Qt6::Network)
 

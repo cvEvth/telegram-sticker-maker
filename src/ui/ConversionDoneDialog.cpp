@@ -34,7 +34,7 @@ ConversionDoneDialog::ConversionDoneDialog(int succeeded, int failed, const QStr
     auto* promoTitle = new QLabel(tr("下一步：创建 Telegram 贴纸包"));
     promoTitle->setObjectName(QStringLiteral("SectionTitle"));
     auto* promoText = new QLabel(
-        tr("前往 <a href=\"%1\" style=\"color:#5ec2ff; text-decoration:none;\"><b>www.cvevth.top/sticker</b></a>"
+        tr("前往 <a href=\"%1\" style=\"text-decoration:none;\"><b>www.cvevth.top/sticker</b></a>"
            " 创建你的 Telegram 贴纸包")
             .arg(BotPromo::galleryUrl()));
     promoText->setObjectName(QStringLiteral("SitePromoText"));

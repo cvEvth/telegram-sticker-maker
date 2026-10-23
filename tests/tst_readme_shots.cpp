@@ -54,7 +54,7 @@ private slots:
         QDir(AppPaths::configDir()).removeRecursively();
         if (const QString lang = qEnvironmentVariable("TSM_README_LANG"); !lang.isEmpty())
             Language::install(Language::resolve(lang));
-        applyDarkTheme(*qApp);
+        applyTheme(*qApp, themeModeFromString(qEnvironmentVariable("TSM_THEME", QStringLiteral("dark")))); // TSM_THEME=light 截浅色界面
     }
 
     void screenshots()

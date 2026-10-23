@@ -1122,8 +1122,8 @@
         <translation>Saved to: %1</translation>
     </message>
     <message>
-        <source>前往 &lt;a href=&quot;%1&quot; style=&quot;color:#5ec2ff; text-decoration:none;&quot;&gt;&lt;b&gt;www.cvevth.top/sticker&lt;/b&gt;&lt;/a&gt; 创建你的 Telegram 贴纸包</source>
-        <translation>Go to &lt;a href=&quot;%1&quot; style=&quot;color:#5ec2ff; text-decoration:none;&quot;&gt;&lt;b&gt;www.cvevth.top/sticker&lt;/b&gt;&lt;/a&gt; to create your Telegram sticker pack</translation>
+        <source>前往 &lt;a href=&quot;%1&quot; style=&quot;text-decoration:none;&quot;&gt;&lt;b&gt;www.cvevth.top/sticker&lt;/b&gt;&lt;/a&gt; 创建你的 Telegram 贴纸包</source>
+        <translation>Go to &lt;a href=&quot;%1&quot; style=&quot;text-decoration:none;&quot;&gt;&lt;b&gt;www.cvevth.top/sticker&lt;/b&gt;&lt;/a&gt; to create your Telegram sticker pack</translation>
     </message>
 </context>
 <context>
@@ -1158,8 +1158,8 @@ Release to import the files</translation>
         <translation>📥 Import</translation>
     </message>
     <message>
-        <source>做好的贴纸可前往 &lt;a href=&quot;%1&quot; style=&quot;color:#5ec2ff; text-decoration:none;&quot;&gt;www.cvevth.top/sticker&lt;/a&gt; 创建 Telegram 贴纸包 · 也可把压缩包发给 &lt;a href=&quot;%2&quot; style=&quot;color:#5ec2ff; text-decoration:none;&quot;&gt;%3&lt;/a&gt;</source>
-        <translation>Create a Telegram sticker pack from your stickers at &lt;a href=&quot;%1&quot; style=&quot;color:#5ec2ff; text-decoration:none;&quot;&gt;www.cvevth.top/sticker&lt;/a&gt; · or send the zip to &lt;a href=&quot;%2&quot; style=&quot;color:#5ec2ff; text-decoration:none;&quot;&gt;%3&lt;/a&gt;</translation>
+        <source>做好的贴纸可前往 &lt;a href=&quot;%1&quot; style=&quot;text-decoration:none;&quot;&gt;www.cvevth.top/sticker&lt;/a&gt; 创建 Telegram 贴纸包 · 也可把压缩包发给 &lt;a href=&quot;%2&quot; style=&quot;text-decoration:none;&quot;&gt;%3&lt;/a&gt;</source>
+        <translation>Create a Telegram sticker pack from your stickers at &lt;a href=&quot;%1&quot; style=&quot;text-decoration:none;&quot;&gt;www.cvevth.top/sticker&lt;/a&gt; · or send the zip to &lt;a href=&quot;%2&quot; style=&quot;text-decoration:none;&quot;&gt;%3&lt;/a&gt;</translation>
     </message>
 </context>
 <context>
@@ -1317,6 +1317,22 @@ Release to import the files</translation>
 </context>
 <context>
     <name>tsm::HeaderBar</name>
+    <message>
+        <source>界面主题</source>
+        <translation>Theme</translation>
+    </message>
+    <message>
+        <source>跟随系统</source>
+        <translation>System</translation>
+    </message>
+    <message>
+        <source>浅色</source>
+        <translation>Light</translation>
+    </message>
+    <message>
+        <source>深色</source>
+        <translation>Dark</translation>
+    </message>
     <message>
         <source>Telegram 贴纸批量转换工具 | 支持 WebM 视频贴纸与 WebP 静态贴纸</source>
         <translation>Batch converter for Telegram stickers | WebM video stickers and WebP static stickers</translation>
@@ -2028,28 +2044,28 @@ You can also send the converted zip straight to %2</translation>
         <translation>Takes effect after restarting the app</translation>
     </message>
     <message>
-        <source>🎯 输出规格</source>
-        <translation>🎯 Output format</translation>
+        <source>输出规格</source>
+        <translation>Output format</translation>
     </message>
     <message>
-        <source>🎨 编码预设</source>
-        <translation>🎨 Encoding preset</translation>
+        <source>编码预设</source>
+        <translation>Encoding preset</translation>
     </message>
     <message>
-        <source>📁 输出目录</source>
-        <translation>📁 Output folder</translation>
+        <source>输出目录</source>
+        <translation>Output folder</translation>
     </message>
     <message>
-        <source>💾 数据目录</source>
-        <translation>💾 Data folder</translation>
+        <source>数据目录</source>
+        <translation>Data folder</translation>
     </message>
     <message>
         <source>实际写入所选路径下的 telegram_sticker_maker 文件夹。留空则用配置目录。</source>
         <translation>Data goes into a telegram_sticker_maker folder inside the chosen path. Leave empty to use the config folder.</translation>
     </message>
     <message>
-        <source>🌐 界面语言</source>
-        <translation>🌐 Language</translation>
+        <source>界面语言</source>
+        <translation>Language</translation>
     </message>
     <message>
         <source>🚀 开始转换</source>
@@ -2104,8 +2120,8 @@ You can also send the converted zip straight to %2</translation>
         <translation>Check for new versions at startup</translation>
     </message>
     <message>
-        <source>🔄 检查更新</source>
-        <translation>🔄 Updates</translation>
+        <source>检查更新</source>
+        <translation>Updates</translation>
     </message>
     <message>
         <source>每天最多联网查询一次 GitHub 上的最新版本，只提醒，不会自动下载。</source>

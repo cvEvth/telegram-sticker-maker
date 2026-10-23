@@ -63,6 +63,10 @@ public:
     QString language() const;
     void setLanguage(const QString& language);
 
+    // 界面主题："system" / "light" / "dark"，切换后立即生效
+    QString theme() const;
+    void setTheme(const QString& theme);
+
     // 启动时检查新版本；上次确认已是最新版的时间（一天内不重复检查）
     bool checkUpdates() const;
     void setCheckUpdates(bool on);

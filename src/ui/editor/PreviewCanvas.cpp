@@ -1,5 +1,7 @@
 #include "ui/editor/PreviewCanvas.h"
 
+#include "ui/Theme.h"
+
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -103,11 +105,11 @@ void PreviewCanvas::paintEvent(QPaintEvent*)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
     p.setRenderHint(QPainter::SmoothPixmapTransform);
-    p.fillRect(rect(), QColor(0x0f, 0x11, 0x15));
+    p.fillRect(rect(), theme().canvas);
 
     const QRectF d = displayRect();
     if (m_image.isNull()) {
-        p.setPen(QColor(0x8b, 0x93, 0xa7));
+        p.setPen(theme().muted);
         p.drawText(rect(), Qt::AlignCenter, m_placeholder.isEmpty() ? tr("加载中...") : m_placeholder);
         return;
     }
@@ -115,10 +117,10 @@ void PreviewCanvas::paintEvent(QPaintEvent*)
     // 透明素材显示棋盘格背景
     if (m_image.hasAlphaChannel()) {
         QPixmap checker(16, 16);
-        checker.fill(QColor(0x2a, 0x2e, 0x37));
+        checker.fill(theme().soft);
         QPainter cp(&checker);
-        cp.fillRect(0, 0, 8, 8, QColor(0x22, 0x25, 0x2d));
-        cp.fillRect(8, 8, 8, 8, QColor(0x22, 0x25, 0x2d));
+        cp.fillRect(0, 0, 8, 8, theme().bg2);
+        cp.fillRect(8, 8, 8, 8, theme().bg2);
         cp.end();
         p.fillRect(d, QBrush(checker));
     }
@@ -162,7 +164,7 @@ void PreviewCanvas::paintEvent(QPaintEvent*)
     p.drawPath(cropPath);
 
     // 四角 L 形把手
-    const QColor accent(0x2a, 0xab, 0xee);
+    const QColor accent = theme().accent;
     p.setPen(QPen(accent, 3, Qt::SolidLine, Qt::RoundCap));
     const double len = std::min({kCornerLen, c.width() / 3, c.height() / 3});
     const QPointF corners[] = {c.topLeft(), c.topRight(), c.bottomRight(), c.bottomLeft()};

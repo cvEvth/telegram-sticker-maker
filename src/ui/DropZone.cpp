@@ -65,8 +65,8 @@ DropZone::DropZone(QWidget* parent)
 
     // 配合使用的机器人与贴纸库
     auto* promo = centeredLabel(
-        tr("做好的贴纸可前往 <a href=\"%1\" style=\"color:#5ec2ff; text-decoration:none;\">www.cvevth.top/sticker</a>"
-           " 创建 Telegram 贴纸包 · 也可把压缩包发给 <a href=\"%2\" style=\"color:#5ec2ff; text-decoration:none;\">%3</a>")
+        tr("做好的贴纸可前往 <a href=\"%1\" style=\"text-decoration:none;\">www.cvevth.top/sticker</a>"
+           " 创建 Telegram 贴纸包 · 也可把压缩包发给 <a href=\"%2\" style=\"text-decoration:none;\">%3</a>")
             .arg(BotPromo::galleryUrl(), BotPromo::botUrl(), BotPromo::handle()),
         QStringLiteral("PromoLine"));
     promo->setTextFormat(Qt::RichText);

@@ -86,7 +86,7 @@ private slots:
     {
         QStandardPaths::setTestModeEnabled(true); // 不碰真实配置目录
         QVERIFY(m_dir.isValid());
-        applyDarkTheme(*qApp);
+        applyTheme(*qApp, themeModeFromString(qEnvironmentVariable("TSM_THEME", QStringLiteral("dark")))); // TSM_THEME=light 截浅色界面
     }
 
     // 窗口图标：多尺寸 .ico 能从资源读出全部尺寸
@@ -115,6 +115,38 @@ private slots:
         QCOMPARE(ru.translate("tsm::MainWindow", "已添加 %n 项", nullptr, 3), QStringLiteral("%n элемента"));
         QCOMPARE(ru.translate("tsm::MainWindow", "已添加 %n 项", nullptr, 11), QStringLiteral("%n элементов"));
         QCOMPARE(ru.translate("tsm::MainWindow", "已添加 %n 项", nullptr, 21), QStringLiteral("%n элемент"));
+    }
+
+    // 主题：标题栏菜单切换后立即换配色并记住，重开窗口沿用
+    void themeSwitch()
+    {
+        QDir(AppPaths::configDir()).removeRecursively();
+        const ThemeMode initial = themeModeFromString(qEnvironmentVariable("TSM_THEME", QStringLiteral("dark")));
+        {
+            MainWindow window;
+            window.show();
+            auto* button = window.findChild<QPushButton*>(QStringLiteral("ThemeButton"));
+            QVERIFY(button && button->menu());
+            const QList<QAction*> actions = button->menu()->actions();
+            QCOMPARE(actions.size(), 3);
+            QVERIFY(actions.at(0)->isChecked()); // 默认跟随系统
+
+            actions.at(1)->trigger();
+            QVERIFY(!theme().dark);
+            QVERIFY(qApp->styleSheet().contains(theme().bg.name()));
+            QCOMPARE(AppSettings().theme(), QStringLiteral("light"));
+            actions.at(2)->trigger();
+            QVERIFY(theme().dark);
+            QVERIFY(qApp->styleSheet().contains(theme().bg.name()));
+            QVERIFY(!qApp->styleSheet().contains(QStringLiteral("${")));
+        }
+        {
+            MainWindow window;
+            auto* button = window.findChild<QPushButton*>(QStringLiteral("ThemeButton"));
+            QVERIFY(button->menu()->actions().at(2)->isChecked());
+        }
+        AppSettings().setTheme(QStringLiteral("system"));
+        applyTheme(*qApp, initial);
     }
 
     // 网站推广：标题栏链接、空列表提示、转换成功弹窗（可勾选不再弹出）

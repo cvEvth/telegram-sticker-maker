@@ -83,7 +83,7 @@ private slots:
         m_thumbs->setCacheDir(m_dir.filePath(QStringLiteral("thumbs")));
         m_proxies = new ProxyCache(this);
         m_proxies->setCacheDir(m_dir.filePath(QStringLiteral("proxies")));
-        applyDarkTheme(*qApp);
+        applyTheme(*qApp, themeModeFromString(qEnvironmentVariable("TSM_THEME", QStringLiteral("dark")))); // TSM_THEME=light 截浅色界面
     }
 
     void videoClipEditing()

@@ -3,6 +3,7 @@
 #include "core/StickerTask.h"
 
 #include <QAbstractTableModel>
+#include <QColor>
 #include <functional>
 
 namespace tsm {
@@ -16,6 +17,9 @@ public:
     enum Role { TaskIdRole = Qt::UserRole + 1, ProgressRole, StatusRole };
 
     explicit TaskListModel(QObject* parent = nullptr);
+
+    // 状态列文字颜色（随界面主题变化）
+    static void setStatusColors(const QColor& succeeded, const QColor& failed, const QColor& cancelled);
 
     int rowCount(const QModelIndex& parent = {}) const override;
     int columnCount(const QModelIndex& parent = {}) const override;

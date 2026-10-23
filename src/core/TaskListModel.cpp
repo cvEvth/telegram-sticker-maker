@@ -48,16 +48,27 @@ QString keywordsText(const StickerTask& t)
     return QStringLiteral("%1 +%2").arg(t.keywords.first()).arg(t.keywords.size() - 1);
 }
 
+QColor g_succeededColor(0x46, 0xc4, 0x86);
+QColor g_failedColor(0xff, 0x6b, 0x7f);
+QColor g_cancelledColor(0x95, 0x8e, 0x98);
+
 QVariant statusColor(TaskStatus status)
 {
     switch (status) {
-    case TaskStatus::Succeeded: return QColor(0x3e, 0xcf, 0x8e);
-    case TaskStatus::Failed: return QColor(0xf0, 0x5d, 0x5e);
-    case TaskStatus::Cancelled: return QColor(0x8b, 0x93, 0xa7);
+    case TaskStatus::Succeeded: return g_succeededColor;
+    case TaskStatus::Failed: return g_failedColor;
+    case TaskStatus::Cancelled: return g_cancelledColor;
     default: return {};
     }
 }
 } // namespace
+
+void TaskListModel::setStatusColors(const QColor& succeeded, const QColor& failed, const QColor& cancelled)
+{
+    g_succeededColor = succeeded;
+    g_failedColor = failed;
+    g_cancelledColor = cancelled;
+}
 
 TaskListModel::TaskListModel(QObject* parent)
     : QAbstractTableModel(parent)
