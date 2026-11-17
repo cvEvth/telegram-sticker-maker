@@ -1,11 +1,14 @@
 # 自动发版：推送 v1.2.3 这样的标签 → Windows 和 macOS 分别构建、测试、打包，
 # 然后创建 GitHub Release，上传 Windows 安装包、便携 zip 和 macOS DMG。
 # 在 Actions 页面手动运行时只构建打包，产物作为构建附件保留 7 天，不发布 Release（用来试跑）。
+# 向 master 提 PR 时同样在 Windows / macOS 上构建、测试、打包，作为合并前的检查；版本号用 CMakeLists.txt 里的默认值，不发布。
 name: Release
 
 on:
   push:
     tags: ['v*.*.*']
+  pull_request:
+    branches: [master]
   workflow_dispatch:
     inputs:
       version:
@@ -18,7 +21,8 @@ permissions:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: false
+  # PR 推了新提交时取消上一次没跑完的检查；发版从不取消
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   QT_VERSION: 6.8.3
@@ -39,7 +43,9 @@ jobs:
       - name: Version
         shell: pwsh
         run: |
-          $v = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { '${{ inputs.version }}' }
+          $v = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') }
+               elseif ($env:GITHUB_EVENT_NAME -eq 'pull_request') { [regex]::Match((Get-Content CMakeLists.txt -Raw), 'set\(TSM_VERSION (\d+\.\d+\.\d+)\)').Groups[1].Value }
+               else { '${{ inputs.version }}' }
           if ($v -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid version '$v' (expected x.y.z)" }
           "TSM_VERSION=$v" >> $env:GITHUB_ENV
           Write-Host "Version $v"
@@ -119,7 +125,9 @@ jobs:
       - name: Version
         shell: bash
         run: |
-          if [ "$GITHUB_REF_TYPE" = tag ]; then v="${GITHUB_REF_NAME#v}"; else v='${{ inputs.version }}'; fi
+          if [ "$GITHUB_REF_TYPE" = tag ]; then v="${GITHUB_REF_NAME#v}"
+          elif [ "$GITHUB_EVENT_NAME" = pull_request ]; then v=$(grep -oE 'set\(TSM_VERSION [0-9]+\.[0-9]+\.[0-9]+\)' CMakeLists.txt | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          else v='${{ inputs.version }}'; fi
           [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version '$v' (expected x.y.z)" >&2; exit 1; }
           echo "TSM_VERSION=$v" >> "$GITHUB_ENV"
           echo "Version $v"
@@ -235,7 +243,9 @@ jobs:
       - name: Version
         shell: bash
         run: |
-          if [ "$GITHUB_REF_TYPE" = tag ]; then v="${GITHUB_REF_NAME#v}"; else v='${{ inputs.version }}'; fi
+          if [ "$GITHUB_REF_TYPE" = tag ]; then v="${GITHUB_REF_NAME#v}"
+          elif [ "$GITHUB_EVENT_NAME" = pull_request ]; then v=$(grep -oE 'set\(TSM_VERSION [0-9]+\.[0-9]+\.[0-9]+\)' CMakeLists.txt | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          else v='${{ inputs.version }}'; fi
           echo "TSM_VERSION=$v" >> "$GITHUB_ENV"
 
       - name: Download packages
