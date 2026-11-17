@@ -266,7 +266,7 @@ jobs:
           }
           $notes = (Get-Content packaging/release-notes.md -Raw -Encoding UTF8).Replace('{{VERSION}}', $env:TSM_VERSION).Replace('{{CHANGES}}', $changes)
           $fence = '```'
-          $notes += "`n## SHA-256`n`n$fence`n" + ($sums -join "`n") + "`n$fence`n"
+          $notes += "`n## 🔐 SHA-256`n`n$fence`n" + ($sums -join "`n") + "`n$fence`n"
           Set-Content dist/release-notes.md $notes -Encoding UTF8
 
       - name: Upload build artifacts

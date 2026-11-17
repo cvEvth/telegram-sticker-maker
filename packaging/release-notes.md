@@ -1,10 +1,10 @@
 Telegram 贴纸批量制作工具：把视频、动图、图片一键转换成符合 Telegram 规范的贴纸。
 
-## 更新内容
+## ✨ 更新内容
 
 {{CHANGES}}
 
-## 下载
+## 📦 下载
 
 | 文件 | 说明 |
 |---|---|
@@ -14,7 +14,7 @@ Telegram 贴纸批量制作工具：把视频、动图、图片一键转换成�
 
 系统要求：Windows 10 / 11 64 位（两个包都自带 VC++ 运行库，不需要另外安装）；macOS 12 及以上，Apple Silicon（M 系列芯片）。
 
-## 说明
+## 📌 说明
 
 - 程序没有代码签名，首次运行时 Windows SmartScreen 可能提示"未知发布者"，点"更多信息" → "仍要运行"即可。
 - macOS 版没有经过 Apple 公证，第一次打开会提示无法验证开发者：在「系统设置 → 隐私与安全性」里点「仍要打开」，或在终端执行 `xattr -dr com.apple.quarantine /Applications/TelegramStickerMaker.app`。
