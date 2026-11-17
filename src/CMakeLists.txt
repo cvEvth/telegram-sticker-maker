@@ -90,12 +90,39 @@ qt_add_translations(tsm_ui
     RESOURCE_PREFIX "/i18n"
     LUPDATE_OPTIONS -no-obsolete -locations none)
 
-qt_add_executable(TelegramStickerMaker WIN32 main.cpp)
+# Windows 是普通 exe，macOS 打成 .app（Finder 里双击、拖进「应用程序」）
+if(WIN32)
+    set(TSM_EXECUTABLE_KIND WIN32)
+elseif(APPLE)
+    set(TSM_EXECUTABLE_KIND MACOSX_BUNDLE)
+else()
+    set(TSM_EXECUTABLE_KIND "")
+endif()
+
+qt_add_executable(TelegramStickerMaker ${TSM_EXECUTABLE_KIND} main.cpp)
 if(WIN32)
     # exe 文件图标与版本信息（资源管理器、任务栏、快捷方式、文件属性）
     set(TSM_RC_ICON "${PROJECT_SOURCE_DIR}/resources/icons/app.ico")
     configure_file("${PROJECT_SOURCE_DIR}/resources/icons/app.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/app.rc" @ONLY)
     target_sources(TelegramStickerMaker PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/app.rc")
+endif()
+if(APPLE)
+    # .app 图标与 Info.plist；版本号来自 CMakeLists.txt 的 TSM_VERSION
+    target_sources(TelegramStickerMaker PRIVATE "${PROJECT_SOURCE_DIR}/resources/icons/AppIcon.icns")
+    set_source_files_properties("${PROJECT_SOURCE_DIR}/resources/icons/AppIcon.icns"
+        PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+    # 第三方组件许可证说明（Qt / FFmpeg 是 LGPL）
+    target_sources(TelegramStickerMaker PRIVATE "${PROJECT_SOURCE_DIR}/packaging/macos/THIRD_PARTY_NOTICES.txt")
+    set_source_files_properties("${PROJECT_SOURCE_DIR}/packaging/macos/THIRD_PARTY_NOTICES.txt"
+        PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+    set_target_properties(TelegramStickerMaker PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST "${PROJECT_SOURCE_DIR}/packaging/macos/Info.plist.in"
+        MACOSX_BUNDLE_BUNDLE_NAME "Telegram Sticker Maker"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "top.cvevth.telegram-sticker-maker"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_ICON_FILE "AppIcon.icns"
+        MACOSX_BUNDLE_COPYRIGHT "cvEvth")
 endif()
 target_link_libraries(TelegramStickerMaker PRIVATE tsm_ui)
 target_compile_definitions(TelegramStickerMaker PRIVATE APP_VERSION="${PROJECT_VERSION}")
@@ -105,6 +132,18 @@ add_custom_command(TARGET TelegramStickerMaker POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${FFMPEG_RUNTIME_FILES} "$<TARGET_FILE_DIR:TelegramStickerMaker>"
     COMMENT "Copying FFmpeg runtime"
     VERBATIM)
+if(APPLE)
+    # 测试程序在 build/bin 里，按「程序目录优先」找 ffmpeg，所以这里也放一份。
+    # 用 ALL 目标而不是 POST_BUILD：FFmpeg 更新但主程序没有重新链接时也要刷新。
+    add_custom_target(tsm_deploy_ffmpeg ALL
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${FFMPEG_RUNTIME_FILES}
+            "$<TARGET_BUNDLE_CONTENT_DIR:TelegramStickerMaker>/MacOS"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${FFMPEG_RUNTIME_FILES}
+            "${CMAKE_BINARY_DIR}/bin"
+        DEPENDS ${FFMPEG_RUNTIME_FILES} TelegramStickerMaker
+        COMMENT "Copying FFmpeg runtime"
+        VERBATIM)
+endif()
 if(TARGET Qt6::windeployqt AND TARGET Qt6::qtpaths)
     # windeployqt 默认从 PATH 找 qtpaths，这里显式指定，构建时不依赖 PATH。
     # 它合并翻译需要 qttools 的 lconvert，所以关掉翻译部署，改为下面直接复制 .qm。
@@ -123,5 +162,23 @@ if(TARGET Qt6::windeployqt AND TARGET Qt6::qtpaths)
             "${QT_TRANSLATIONS_DIR}/qtmultimedia_ru.qm"
             "$<TARGET_FILE_DIR:TelegramStickerMaker>/translations"
         COMMENT "Deploying Qt runtime"
+        VERBATIM)
+endif()
+if(APPLE)
+    # macOS：macdeployqt 把 Qt 框架和插件拷进 .app；Qt 自带翻译放到 Resources/translations
+    find_program(TSM_MACDEPLOYQT NAMES macdeployqt
+        HINTS "${Qt6_DIR}/../../../bin" "${QT6_INSTALL_PREFIX}/bin" REQUIRED)
+    get_filename_component(QT_TRANSLATIONS_DIR "${Qt6_DIR}/../../../translations" ABSOLUTE)
+    add_custom_command(TARGET TelegramStickerMaker POST_BUILD
+        COMMAND "${TSM_MACDEPLOYQT}" "$<TARGET_BUNDLE_DIR:TelegramStickerMaker>" -always-overwrite -verbose=1
+        COMMAND "${CMAKE_COMMAND}" -E make_directory
+            "$<TARGET_BUNDLE_CONTENT_DIR:TelegramStickerMaker>/Resources/translations"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${QT_TRANSLATIONS_DIR}/qtbase_zh_CN.qm"
+            "${QT_TRANSLATIONS_DIR}/qtmultimedia_zh_CN.qm"
+            "${QT_TRANSLATIONS_DIR}/qtbase_ru.qm"
+            "${QT_TRANSLATIONS_DIR}/qtmultimedia_ru.qm"
+            "$<TARGET_BUNDLE_CONTENT_DIR:TelegramStickerMaker>/Resources/translations"
+        COMMENT "Deploying Qt runtime (macdeployqt)"
         VERBATIM)
 endif()

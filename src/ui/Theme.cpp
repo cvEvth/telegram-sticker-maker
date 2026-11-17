@@ -171,8 +171,14 @@ void applyTheme(QApplication& app, ThemeMode mode)
                 applyTheme(app, ThemeMode::System);
         });
         app.setStyle(QStyleFactory::create(QStringLiteral("Fusion")));
+#ifdef Q_OS_MACOS
+        // macOS 没有微软雅黑，用系统自带的苹方；字号也按 macOS 的习惯略大
+        QFont font(QStringLiteral("PingFang SC"));
+        font.setPointSizeF(12.0);
+#else
         QFont font(QStringLiteral("Microsoft YaHei UI"));
         font.setPointSizeF(9.5);
+#endif
         app.setFont(font);
     }
 

@@ -1,7 +1,7 @@
 # 开发指南
 
 技术栈：C++20 · Qt 6.8 Widgets / Multimedia · FFmpeg 8.1（LGPL 共享库）· libwebp · libzip · CMake + Ninja + vcpkg。
-目前只做了 Windows 版，代码按跨平台写（没有用 Windows 专有界面 API），macOS / Linux 需要补构建脚本与打包。
+Windows 和 macOS 都能构建（macOS 见下面「macOS 构建与打包」），Linux 还没验过。
 
 版本改动见 [CHANGELOG.md](../CHANGELOG.md)。
 
@@ -58,6 +58,32 @@ powershell -ExecutionPolicy Bypass -File scripts\package.ps1
 - `TelegramStickerMaker-<版本>-win64-setup.exe`：Inno Setup 安装程序（找不到 `ISCC.exe` 时跳过）；默认按当前用户安装，不需要管理员权限
 
 版本号默认取 `CMakeLists.txt` 里的 `set(TSM_VERSION x.y.z)`，设置环境变量 `TSM_VERSION` 可以覆盖。
+
+## macOS 构建与打包
+
+macOS 用同一套 CMake 工程生成 `.app`，`scripts/build-macos.sh` 负责构建、`scripts/package-macos.sh` 负责打 DMG。
+
+| 依赖 | 说明 |
+|---|---|
+| Xcode Command Line Tools | 提供 clang 与 SDK |
+| CMake 3.25+、Ninja | `brew install cmake ninja` |
+| Qt 6.8 macOS kit | 需要 Qt Multimedia、Qt Image Formats；`QT_ROOT` 指向 `Qt/6.8.x/macos` |
+| libwebp、libzip | 任意带 `WebPConfig.cmake`、`libzip-config.cmake` 的前缀；用 `TSM_DEPS_PREFIX` 指定（vcpkg 装在 `$VCPKG_ROOT/installed/arm64-osx`） |
+| FFmpeg 8.x | 需要带 `libvpx`、`libwebp` 的构建（`brew install ffmpeg` 即可）；`FFMPEG_ROOT` 指向带 `bin/ffmpeg`、`bin/ffprobe` 的目录，不设置时用 PATH 里的 |
+
+macOS 版只通过命令行调用 ffmpeg / ffprobe，不链接 libav*，所以 FFmpeg 目录只需要两个可执行文件。构建后 `macdeployqt` 会把 Qt 框架、插件和翻译拷进 `.app`，ffmpeg / ffprobe 也复制到 `Contents/MacOS`。
+
+```bash
+export QT_ROOT=~/Qt/6.8.3/macos
+export TSM_DEPS_PREFIX=~/deps        # 里面有 WebPConfig.cmake 和 libzip-config.cmake
+export FFMPEG_ROOT=~/deps/ffmpeg    # bin/ffmpeg、bin/ffprobe
+scripts/build-macos.sh release test # 构建并跑全部测试
+scripts/package-macos.sh            # 生成 dist/TelegramStickerMaker-<版本>-macos-<arch>.dmg
+```
+
+DMG 里是 `.app` 和「应用程序」快捷方式，拖进去即可安装。这里没有开发者证书，打包脚本做 ad-hoc 签名、不做公证：换一台 Mac 第一次打开会提示「无法验证开发者」，在「系统设置 → 隐私与安全性」里点「仍要打开」，或执行 `xattr -dr com.apple.quarantine /Applications/TelegramStickerMaker.app`。
+
+Qt 6.8 的 `FindWrapOpenGL.cmake` 会链接 macOS 15+ 已移除的 `AGL.framework`，顶层 `CMakeLists.txt` 里已经把它从链接项去掉。
 
 ## 发版
 

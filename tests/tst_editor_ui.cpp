@@ -15,7 +15,9 @@
 #include <QApplication>
 #include <QDir>
 #include <QElapsedTimer>
+#include <QFileInfo>
 #include <QLabel>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QTemporaryDir>
 #include <QTest>
@@ -160,18 +162,34 @@ private slots:
     void missingEndBlocksConfirm()
     {
         const QString src = m_dir.filePath(QStringLiteral("clip.mp4"));
+        if (!QFileInfo::exists(src))
+            generate(QStringLiteral("clip.mp4"),
+                     {QStringLiteral("-f"), QStringLiteral("lavfi"), QStringLiteral("-i"),
+                      QStringLiteral("testsrc2=size=1280x720:rate=30:duration=8"), QStringLiteral("-pix_fmt"),
+                      QStringLiteral("yuv420p"), QStringLiteral("-c:v"), QStringLiteral("mpeg4")});
         StickerTask task = taskFor(src);
         task.endTime.reset();
         ClipEditorDialog dialog(*m_settings, m_thumbs, m_proxies, {task}, 0);
         dialog.show();
         QVERIFY(QTest::qWaitForWindowExposed(&dialog));
-        // 自动关闭校验弹窗
-        QTimer::singleShot(300, [] {
-            if (QWidget* box = QApplication::activeModalWidget())
-                if (qobject_cast<QDialog*>(box) && box->windowTitle() == QStringLiteral("提示"))
-                    box->close();
+        // 自动关闭校验弹窗。macOS 上弹窗可能晚于固定延时才出现，用重复定时器更稳。
+        QTimer closer;
+        closer.setInterval(50);
+        QObject::connect(&closer, &QTimer::timeout, [&dialog] {
+            for (QMessageBox* box : dialog.findChildren<QMessageBox*>()) {
+                if (box->isVisible()) {
+                    box->done(QMessageBox::Ok);
+                    return;
+                }
+            }
+            if (auto* box = qobject_cast<QMessageBox*>(QApplication::activeModalWidget()))
+                box->done(QMessageBox::Ok);
         });
-        buttonWithText(&dialog, QStringLiteral("✔ 确认并添加"))->click();
+        closer.start();
+        QPushButton* confirm = buttonWithText(&dialog, QStringLiteral("✔ 确认并添加"));
+        QVERIFY(confirm);
+        confirm->click();
+        closer.stop();
         QCOMPARE(dialog.result(), int(QDialog::Rejected));
         QVERIFY(dialog.isVisible());
     }
@@ -305,7 +323,9 @@ private slots:
             QTest::qWait(16);
             samples << dialog.playhead();
         }
-        buttonWithText(&dialog, QStringLiteral("⏸️ 暂停"))->click();
+        QPushButton* pause = nullptr;
+        QTRY_VERIFY_WITH_TIMEOUT((pause = buttonWithText(&dialog, QStringLiteral("⏸️ 暂停"))) != nullptr, 5000);
+        pause->click();
 
         double maxStep = 0;
         int moved = 0;

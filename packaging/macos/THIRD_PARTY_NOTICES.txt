@@ -1,0 +1,32 @@
+Telegram Sticker Maker - Third-party components (macOS build)
+=============================================================
+
+This program is distributed together with the following libraries and tools.
+Each one keeps its own license.
+
+Qt 6.8.3 (Core, Gui, Widgets, Multimedia, Network, Svg, plugins)
+  License: GNU Lesser General Public License v3
+  Source:  https://download.qt.io/archive/qt/6.8/6.8.3/submodules/
+  Qt is bundled as unmodified frameworks under Contents/Frameworks/Qt*.framework;
+  you may replace them with your own compatible build of the same version.
+
+FFmpeg 8.1.3 (ffmpeg, ffprobe) - LGPL build with libvpx, libwebp and libopus
+  License: GNU Lesser General Public License v2.1 or later
+  Source:  https://ffmpeg.org/download.html
+  FFmpeg runs as separate unmodified executables (Contents/MacOS/ffmpeg, ffprobe).
+
+libwebp 1.5.0 (linked statically into the application)
+  License: BSD 3-Clause
+  Source:  https://chromium.googlesource.com/webm/libwebp
+
+libzip 1.11.4 (linked statically into the application)
+  License: BSD 3-Clause
+  Source:  https://libzip.org/
+
+libvpx 1.15.0 (linked statically into ffmpeg)
+  License: BSD 3-Clause
+  Source:  https://chromium.googlesource.com/webm/libvpx
+
+libopus 1.5.2 (linked statically into ffmpeg)
+  License: BSD 3-Clause
+  Source:  https://opus-codec.org/
