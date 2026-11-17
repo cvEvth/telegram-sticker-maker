@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  A Windows desktop tool that turns videos, GIFs and images into Telegram stickers in bulk<br>
+  A desktop tool for Windows and macOS that turns videos, GIFs and images into Telegram stickers in bulk<br>
   Trim clips, crop the frame, set emoji and keywords, then convert everything to spec-compliant WebM / WebP stickers in one click
 </p>
 
@@ -17,6 +17,7 @@
   <a href="https://github.com/cvEvth/telegram-sticker-maker/releases/latest"><img src="https://img.shields.io/github/v/release/cvEvth/telegram-sticker-maker?label=latest" alt="Latest release"></a>
   <a href="https://github.com/cvEvth/telegram-sticker-maker/releases"><img src="https://img.shields.io/github/downloads/cvEvth/telegram-sticker-maker/total?label=downloads" alt="Downloads"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078d4" alt="Windows 10 / 11">
+  <img src="https://img.shields.io/badge/macOS-12%2B%20(Apple%20Silicon)-000000" alt="macOS 12+ (Apple Silicon)">
 </p>
 
 <p align="center">
@@ -48,8 +49,9 @@ Get it from [Releases](https://github.com/cvEvth/telegram-sticker-maker/releases
 |---|---|
 | `TelegramStickerMaker-x.y.z-win64-setup.exe` | Installer; installs for the current user by default, no admin rights needed |
 | `TelegramStickerMaker-x.y.z-win64.zip` | Portable version; unzip and double-click `TelegramStickerMaker.exe` |
+| `TelegramStickerMaker-x.y.z-macos-arm64.dmg` | macOS version; open it and drag the app into Applications |
 
-Requirements: Windows 10 / 11, 64-bit. Both packages bundle their runtimes, nothing else to install.
+Requirements: Windows 10 / 11, 64-bit; or macOS 12 or later on Apple Silicon (M-series chips). Every package bundles its runtimes, nothing else to install.
 
 ## Quick start
 
@@ -86,6 +88,12 @@ Output automatically follows the official requirements:
 <summary><b>Windows says "Windows protected your PC" when I open it</b></summary>
 
 The app isn't signed with a paid code-signing certificate, so Windows SmartScreen reports an "unknown publisher". Click "More info" → "Run anyway". Every release lists SHA-256 checksums in its notes so you can verify your download.
+</details>
+
+<details>
+<summary><b>macOS says the developer cannot be verified / the app can't be opened</b></summary>
+
+The macOS version isn't notarized by Apple, so macOS blocks it the first time. Go to System Settings → Privacy & Security and click "Open Anyway", or run `xattr -dr com.apple.quarantine /Applications/TelegramStickerMaker.app` in Terminal and open it again. You only need to do this once.
 </details>
 
 <details>

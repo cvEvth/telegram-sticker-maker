@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  把视频、动图、图片批量做成 Telegram 贴纸的 Windows 桌面工具<br>
+  把视频、动图、图片批量做成 Telegram 贴纸的桌面工具（Windows / macOS）<br>
   截取片段、裁切画面、配好 Emoji 和关键词，一键转换成符合官方规格的 WebM / WebP 贴纸
 </p>
 
@@ -17,6 +17,7 @@
   <a href="https://github.com/cvEvth/telegram-sticker-maker/releases/latest"><img src="https://img.shields.io/github/v/release/cvEvth/telegram-sticker-maker?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC" alt="最新版本"></a>
   <a href="https://github.com/cvEvth/telegram-sticker-maker/releases"><img src="https://img.shields.io/github/downloads/cvEvth/telegram-sticker-maker/total?label=%E4%B8%8B%E8%BD%BD" alt="下载次数"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078d4" alt="Windows 10 / 11">
+  <img src="https://img.shields.io/badge/macOS-12%2B%20(Apple%20Silicon)-000000" alt="macOS 12+ (Apple Silicon)">
 </p>
 
 <p align="center">
@@ -48,8 +49,9 @@
 |---|---|
 | `TelegramStickerMaker-x.y.z-win64-setup.exe` | 安装程序，默认装到当前用户，不需要管理员权限 |
 | `TelegramStickerMaker-x.y.z-win64.zip` | 便携版，解压后双击 `TelegramStickerMaker.exe` 即可运行 |
+| `TelegramStickerMaker-x.y.z-macos-arm64.dmg` | macOS 版，打开后把程序拖进「应用程序」文件夹 |
 
-系统要求：Windows 10 / 11 64 位。两个包都自带运行库，不需要另外安装任何东西。
+系统要求：Windows 10 / 11 64 位；macOS 12 及以上，Apple Silicon（M 系列芯片）。所有安装包都自带运行库，不需要另外安装任何东西。
 
 ## 快速上手
 
@@ -86,6 +88,12 @@
 <summary><b>打开时 Windows 提示"已保护你的电脑"</b></summary>
 
 程序没有购买代码签名证书，Windows SmartScreen 会提示"未知发布者"。点「更多信息」→「仍要运行」即可。每个版本都在 Release 说明里附了 SHA-256，可以核对下载的文件。
+</details>
+
+<details>
+<summary><b>macOS 提示无法验证开发者 / 无法打开</b></summary>
+
+macOS 版没有经过 Apple 公证，第一次打开会被拦下。到「系统设置 → 隐私与安全性」里点「仍要打开」，或在终端执行 `xattr -dr com.apple.quarantine /Applications/TelegramStickerMaker.app` 后再打开。只需要处理一次。
 </details>
 
 <details>
