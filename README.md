@@ -18,6 +18,7 @@
   <a href="https://github.com/cvEvth/telegram-sticker-maker/releases"><img src="https://img.shields.io/github/downloads/cvEvth/telegram-sticker-maker/total?label=%E4%B8%8B%E8%BD%BD" alt="下载次数"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078d4" alt="Windows 10 / 11">
   <img src="https://img.shields.io/badge/macOS-12%2B%20(Apple%20Silicon)-000000" alt="macOS 12+ (Apple Silicon)">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-GPL--3.0-blue" alt="GPL-3.0"></a>
 </p>
 
 <p align="center">
@@ -135,3 +136,7 @@ C++20 · Qt 6.8 · FFmpeg 8.1 · libwebp · libzip · CMake + vcpkg。构建、�
 ## 🙏 致谢
 
 本程序使用了 [Qt](https://www.qt.io/)（LGPL v3）、[FFmpeg](https://ffmpeg.org/)（LGPL）、[libwebp](https://chromium.googlesource.com/webm/libwebp)、[libzip](https://libzip.org/) 等开源组件，许可证随安装包附带，见 `THIRD_PARTY_NOTICES.txt`。
+
+## 📄 许可证
+
+本项目以 [GPL-3.0](LICENSE) 许可证开源：可以自由使用、修改和分发，但分发修改版或基于它的软件时，必须同样以 GPL-3.0 公开源代码。

@@ -18,6 +18,7 @@
   <a href="https://github.com/cvEvth/telegram-sticker-maker/releases"><img src="https://img.shields.io/github/downloads/cvEvth/telegram-sticker-maker/total?label=downloads" alt="Downloads"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078d4" alt="Windows 10 / 11">
   <img src="https://img.shields.io/badge/macOS-12%2B%20(Apple%20Silicon)-000000" alt="macOS 12+ (Apple Silicon)">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0"></a>
 </p>
 
 <p align="center">
@@ -135,3 +136,7 @@ C++20 · Qt 6.8 · FFmpeg 8.1 · libwebp · libzip · CMake + vcpkg. See [docs/d
 ## 🙏 Acknowledgements
 
 This app uses open-source components including [Qt](https://www.qt.io/) (LGPL v3), [FFmpeg](https://ffmpeg.org/) (LGPL), [libwebp](https://chromium.googlesource.com/webm/libwebp) and [libzip](https://libzip.org/). Their licenses ship with the installer; see `THIRD_PARTY_NOTICES.txt`.
+
+## 📄 License
+
+This project is licensed under [GPL-3.0](LICENSE): you are free to use, modify and distribute it, but if you distribute a modified version or software based on it, you must release its source code under GPL-3.0 as well.

@@ -18,6 +18,7 @@
   <a href="https://github.com/cvEvth/telegram-sticker-maker/releases"><img src="https://img.shields.io/github/downloads/cvEvth/telegram-sticker-maker/total?label=%D0%B7%D0%B0%D0%B3%D1%80%D1%83%D0%B7%D0%BA%D0%B8" alt="Загрузки"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078d4" alt="Windows 10 / 11">
   <img src="https://img.shields.io/badge/macOS-12%2B%20(Apple%20Silicon)-000000" alt="macOS 12+ (Apple Silicon)">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/%D0%BB%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F-GPL--3.0-blue" alt="GPL-3.0"></a>
 </p>
 
 <p align="center">
@@ -135,3 +136,7 @@ C++20 · Qt 6.8 · FFmpeg 8.1 · libwebp · libzip · CMake + vcpkg. Сборк�
 ## 🙏 Благодарности
 
 Программа использует компоненты с открытым исходным кодом, в том числе [Qt](https://www.qt.io/) (LGPL v3), [FFmpeg](https://ffmpeg.org/) (LGPL), [libwebp](https://chromium.googlesource.com/webm/libwebp) и [libzip](https://libzip.org/). Их лицензии входят в установочный пакет, см. `THIRD_PARTY_NOTICES.txt`.
+
+## 📄 Лицензия
+
+Проект распространяется по лицензии [GPL-3.0](LICENSE): его можно свободно использовать, изменять и распространять, но при распространении изменённой версии или программ на его основе их исходный код тоже нужно открыть под GPL-3.0.

@@ -65,6 +65,8 @@ Copy-Item (Join-Path $share 'libwebp\copyright') (Join-Path $licenses 'libwebp.t
 Copy-Item (Join-Path $share 'libzip\copyright') (Join-Path $licenses 'libzip.txt')
 Copy-Item (Join-Path $share 'zlib\copyright') (Join-Path $licenses 'zlib.txt')
 Get-ChildItem (Join-Path $root 'packaging') -Filter '*.txt' | Copy-Item -Destination $stage
+# 本程序自己的许可证（GPL-3.0）
+Copy-Item (Join-Path $root 'LICENSE') (Join-Path $stage 'LICENSE.txt')
 
 # ---- portable zip
 $zip = Join-Path $dist "$name.zip"
