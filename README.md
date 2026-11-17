@@ -26,22 +26,34 @@
   <a href="https://www.cvevth.top/sticker"><b>🌐 在线创建贴纸包</b></a>
 </p>
 
+<p align="center">
+  <a href="#-功能">功能</a> · <a href="#-下载安装">下载安装</a> · <a href="#-快速上手">快速上手</a> · <a href="#-telegram-贴纸规格">贴纸规格</a> · <a href="#-常见问题">常见问题</a>
+</p>
+
 ![主窗口](docs/screenshots/main-window.png)
 
-## 功能
+## ✨ 功能
+
+### 🎯 转换
 
 - **一键符合 Telegram 规格**：视频和动图转成 WebM（VP9）视频贴纸，图片转成 WebP 静态贴纸；尺寸、帧率、体积自动处理，不用自己调参数
 - **画质尽量高，体积一定不超限**：按时长和运动量规划码率与帧率，两遍编码；超出 256KB 自动降码率或帧率重试，偏小时上调码率把画质"填满"
 - **超过 3 秒也能用**：保留全部帧，只把文件头里的时长改写为 2.99 秒，可以通过 @Stickers 机器人的时长检查
-- **截取与裁切**：在时间轴上打点，从一段视频里截出多个片段；裁切框支持比例锁定、圆角、圆形和镜像；点击片段自动循环预览
-- **Emoji 与关键词**：双击设置 Emoji，右键批量设置 Emoji 和关键词；也可以接入兼容 OpenAI 的视觉模型，自动识别画面情绪匹配 Emoji
 - **素材格式多**：MP4、MKV、WebM、MOV、AVI、FLV、GIF、APNG、动态 WebP、PNG、JPG、WebP、BMP、TIFF、HEIC；透明视频、透明 GIF / PNG 都会保留透明
 - **自定义表情**：切换到 100×100 模式，一次做好一套自定义表情（Custom Emoji）
+
+### 🎬 剪辑
+
+- **截取与裁切**：在时间轴上打点，从一段视频里截出多个片段；裁切框支持比例锁定、圆角、圆形和镜像；点击片段自动循环预览
+- **Emoji 与关键词**：双击设置 Emoji，右键批量设置 Emoji 和关键词；也可以接入兼容 OpenAI 的视觉模型，自动识别画面情绪匹配 Emoji
+
+### 💡 体验
+
 - **多语言界面**：简体中文、English、Русский，默认跟随系统语言，可以在右上角 ⚙ 菜单里切换
 - **浅色 / 深色主题**：默认跟随系统，也可以在右上角 ⚙ 菜单里固定为浅色或深色，切换立即生效
 - **不怕中断**：列表和所有编辑自动保存，关掉再打开会原样恢复；也能导出原片和参数清单，换台电脑继续编辑
 
-## 下载安装
+## 📦 下载安装
 
 到 [Releases](https://github.com/cvEvth/telegram-sticker-maker/releases/latest) 下载：
 
@@ -53,26 +65,26 @@
 
 系统要求：Windows 10 / 11 64 位；macOS 12 及以上，Apple Silicon（M 系列芯片）。所有安装包都自带运行库，不需要另外安装任何东西。
 
-## 快速上手
+## 🚀 快速上手
 
 1. 把视频、动图或图片**拖进窗口**，也可以点「添加文件」「添加文件夹」
 2. 需要截取片段或裁切画面时，点每一行的 ✂️ 打开编辑窗口
 3. **双击「目标文件名」**设置 Emoji；右键菜单可以批量设置 Emoji、关键词，或让 AI 匹配 Emoji
 4. 点「🚀 开始转换」，完成后会在输出目录生成 `TG_Stickers_日期_时间.zip`（贴纸 + 记录 Emoji 和关键词的 `stickers.json`）
 
-### 截取与裁切
+### ✂️ 截取与裁切
 
 一段视频可以截出多个片段，每个片段都有自己的起止时间、裁切框、圆角、镜像和 Emoji。点片段卡片或时间轴上的色块会在片段内循环播放，`[` / `]` 打起点和终点，`空格`播放暂停。
 
 ![截取与裁切窗口](docs/screenshots/editor.png)
 
-### 创建贴纸包
+### 🎉 创建贴纸包
 
 转换完成后，前往 **[www.cvevth.top/sticker](https://www.cvevth.top/sticker)** 创建你的 Telegram 贴纸包，也可以把压缩包直接发给 Telegram 机器人 **@cvEvthBot**。
 
 <p align="center"><img src="docs/screenshots/done-dialog.png" width="540" alt="转换成功"></p>
 
-## Telegram 贴纸规格
+## 📐 Telegram 贴纸规格
 
 工具会自动按下面的官方要求输出：
 
@@ -82,7 +94,7 @@
 | 静态贴纸 | 长边 512px | WebP，可透明 | 512 KB |
 | 自定义表情 | 100×100 | 视频 WebM / 静态 WebP | 64 KB |
 
-## 常见问题
+## ❓ 常见问题
 
 <details>
 <summary><b>打开时 Windows 提示"已保护你的电脑"</b></summary>
@@ -111,13 +123,13 @@ macOS 版没有经过 Apple 公证，第一次打开会被拦下。到「系统�
 <details>
 <summary><b>设置和缓存保存在哪里</b></summary>
 
-默认在 `%LOCALAPPDATA%\TelegramStickerMaker`（设置、自动保存的列表、预览缓存）。可以在右侧「数据目录」里改到别的盘，「清除预览缓存」可以释放空间。卸载程序时会保留这些数据，重新安装后可以继续使用。
+默认在 Windows 的 `%LOCALAPPDATA%\TelegramStickerMaker`、macOS 的 `~/Library/Preferences/TelegramStickerMaker`（设置、自动保存的列表、预览缓存）。可以在右侧「数据目录」里改到别的盘，「清除预览缓存」可以释放空间。卸载程序时会保留这些数据，重新安装后可以继续使用。
 </details>
 
-## 开发
+## 🛠️ 开发
 
 C++20 · Qt 6.8 · FFmpeg 8.1 · libwebp · libzip · CMake + vcpkg。构建、测试、打包和发版流程见 [docs/development.md](docs/development.md)，版本改动见 [CHANGELOG.md](CHANGELOG.md)。
 
-## 致谢
+## 🙏 致谢
 
 本程序使用了 [Qt](https://www.qt.io/)（LGPL v3）、[FFmpeg](https://ffmpeg.org/)（LGPL）、[libwebp](https://chromium.googlesource.com/webm/libwebp)、[libzip](https://libzip.org/) 等开源组件，许可证随安装包附带，见 `THIRD_PARTY_NOTICES.txt`。

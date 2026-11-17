@@ -26,22 +26,34 @@
   <a href="https://www.cvevth.top/sticker"><b>🌐 Create a sticker pack online</b></a>
 </p>
 
+<p align="center">
+  <a href="#-features">Features</a> · <a href="#-download">Download</a> · <a href="#-quick-start">Quick start</a> · <a href="#-telegram-sticker-specs">Sticker specs</a> · <a href="#-faq">FAQ</a>
+</p>
+
 ![Main window](docs/screenshots/main-window.png)
 
-## Features
+## ✨ Features
+
+### 🎯 Conversion
 
 - **Telegram specs, handled for you**: videos and GIFs become WebM (VP9) video stickers, images become WebP static stickers; size, frame rate and file size are taken care of, no settings to tune
 - **Best possible quality, never over the limit**: bitrate and frame rate are planned from duration and motion, with two-pass encoding; anything over 256 KB is retried at a lower bitrate or frame rate, and undersized results get a higher bitrate to "fill up" the quality
 - **Longer than 3 seconds still works**: all frames are kept and only the duration in the file header is rewritten to 2.99 s, which passes the @Stickers bot's duration check
-- **Trim and crop**: mark points on the timeline to cut several clips from one video; the crop box supports aspect-ratio lock, rounded corners, circles and mirroring; click a clip to preview it on loop
-- **Emoji and keywords**: double-click to set an emoji, or right-click to set emoji and keywords in bulk; you can also connect an OpenAI-compatible vision model to match emoji to the mood of each frame automatically
 - **Lots of input formats**: MP4, MKV, WebM, MOV, AVI, FLV, GIF, APNG, animated WebP, PNG, JPG, WebP, BMP, TIFF, HEIC; transparency in videos, GIFs and PNGs is preserved
 - **Custom emoji**: switch to 100×100 mode to make a whole Custom Emoji set at once
+
+### 🎬 Editing
+
+- **Trim and crop**: mark points on the timeline to cut several clips from one video; the crop box supports aspect-ratio lock, rounded corners, circles and mirroring; click a clip to preview it on loop
+- **Emoji and keywords**: double-click to set an emoji, or right-click to set emoji and keywords in bulk; you can also connect an OpenAI-compatible vision model to match emoji to the mood of each frame automatically
+
+### 💡 Everyday use
+
 - **English, Simplified Chinese and Russian interface**: follows your system language by default; switch it from the ⚙ menu in the top-right corner
 - **Light and dark themes**: follows your system by default, or pick light or dark from the ⚙ menu; the change applies right away
 - **Safe from interruptions**: the list and every edit are saved automatically and restored exactly when you reopen the app; you can also export the source files with a settings manifest and continue on another computer
 
-## Download
+## 📦 Download
 
 Get it from [Releases](https://github.com/cvEvth/telegram-sticker-maker/releases/latest):
 
@@ -53,26 +65,26 @@ Get it from [Releases](https://github.com/cvEvth/telegram-sticker-maker/releases
 
 Requirements: Windows 10 / 11, 64-bit; or macOS 12 or later on Apple Silicon (M-series chips). Every package bundles its runtimes, nothing else to install.
 
-## Quick start
+## 🚀 Quick start
 
 1. **Drag** videos, GIFs or images **into the window**, or click "Add files" / "Add folder"
 2. To trim clips or crop the frame, click ✂️ on a row to open the editor
 3. **Double-click "Target file name"** to set an emoji; the right-click menu sets emoji and keywords in bulk, or lets AI match emoji
 4. Click "🚀 Start conversion". When it finishes, the output folder contains `TG_Stickers_<date>_<time>.zip` (the stickers plus a `stickers.json` with their emoji and keywords)
 
-### Trim and crop
+### ✂️ Trim and crop
 
 One video can be cut into several clips, each with its own start and end, crop box, rounded corners, mirroring and emoji. Clicking a clip card or its block on the timeline loops playback within that clip; `[` / `]` set the start and end points, and `Space` plays or pauses.
 
 ![Trim and crop window](docs/screenshots/editor.png)
 
-### Create a sticker pack
+### 🎉 Create a sticker pack
 
 After converting, go to **[www.cvevth.top/sticker](https://www.cvevth.top/sticker)** to create your Telegram sticker pack, or send the zip straight to the Telegram bot **@cvEvthBot**.
 
 <p align="center"><img src="docs/screenshots/done-dialog.png" width="540" alt="Conversion finished"></p>
 
-## Telegram sticker specs
+## 📐 Telegram sticker specs
 
 Output automatically follows the official requirements:
 
@@ -82,7 +94,7 @@ Output automatically follows the official requirements:
 | Static sticker | 512 px on the long side | WebP, transparency allowed | 512 KB |
 | Custom emoji | 100×100 | WebM video / WebP static | 64 KB |
 
-## FAQ
+## ❓ FAQ
 
 <details>
 <summary><b>Windows says "Windows protected your PC" when I open it</b></summary>
@@ -111,13 +123,13 @@ Long clips with complex, fast-moving content may not fit in 256 KB even at the l
 <details>
 <summary><b>Where are settings and caches stored?</b></summary>
 
-By default in `%LOCALAPPDATA%\TelegramStickerMaker` (settings, the auto-saved list and preview caches). You can move it to another drive with "Data folder" on the right, and "Clear preview cache" frees up space. Uninstalling keeps this data, so you can pick up where you left off after reinstalling.
+By default in `%LOCALAPPDATA%\TelegramStickerMaker` on Windows and `~/Library/Preferences/TelegramStickerMaker` on macOS (settings, the auto-saved list and preview caches). You can move it to another drive with "Data folder" on the right, and "Clear preview cache" frees up space. Uninstalling keeps this data, so you can pick up where you left off after reinstalling.
 </details>
 
-## Development
+## 🛠️ Development
 
 C++20 · Qt 6.8 · FFmpeg 8.1 · libwebp · libzip · CMake + vcpkg. See [docs/development.md](docs/development.md) (Chinese) for building, testing, packaging and releasing, and [CHANGELOG.md](CHANGELOG.md) for version history.
 
-## Acknowledgements
+## 🙏 Acknowledgements
 
 This app uses open-source components including [Qt](https://www.qt.io/) (LGPL v3), [FFmpeg](https://ffmpeg.org/) (LGPL), [libwebp](https://chromium.googlesource.com/webm/libwebp) and [libzip](https://libzip.org/). Their licenses ship with the installer; see `THIRD_PARTY_NOTICES.txt`.
