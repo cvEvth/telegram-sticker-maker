@@ -1,4 +1,5 @@
-# 自动发版：推送 v1.2.3 这样的标签 → 构建、测试、打包，并创建 GitHub Release 上传安装包与便携 zip。
+# 自动发版：推送 v1.2.3 这样的标签 → Windows 和 macOS 分别构建、测试、打包，
+# 然后创建 GitHub Release，上传 Windows 安装包、便携 zip 和 macOS DMG。
 # 在 Actions 页面手动运行时只构建打包，产物作为构建附件保留 7 天，不发布 Release（用来试跑）。
 name: Release
 
@@ -25,15 +26,15 @@ env:
   VCPKG_COMMIT: a5f736224e85b32e25a8ffc52562333180396642
   # BtbN 的 FFmpeg 8.1 LGPL 共享库构建（随 8.1 分支补丁版本滚动更新）
   FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-win64-lgpl-shared-8.1.zip
+  # macOS 版自己从源码静态编译 FFmpeg（LGPL，带 libvpx / libopus / libwebp），不依赖 Homebrew 的动态库
+  FFMPEG_MAC_TAG: n8.1.3
 
 jobs:
-  release:
+  windows:
     runs-on: windows-2022
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # 需要完整历史和标签，用来列出上一版以来的提交
 
       - name: Version
         shell: pwsh
@@ -97,11 +98,156 @@ jobs:
         shell: pwsh
         run: scripts\package.ps1 -SkipBuild
 
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            dist/*.exe
+            dist/*.zip
+          if-no-files-found: error
+          retention-days: 1 # 只给下面的 release job 用
+
+  macos:
+    runs-on: macos-15 # Apple Silicon，产物是 arm64 的 .app
+    timeout-minutes: 120
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '12.0'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then v="${GITHUB_REF_NAME#v}"; else v='${{ inputs.version }}'; fi
+          [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version '$v' (expected x.y.z)" >&2; exit 1; }
+          echo "TSM_VERSION=$v" >> "$GITHUB_ENV"
+          echo "Version $v"
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: mac
+          target: desktop
+          arch: clang_64
+          modules: qtmultimedia qtimageformats
+          cache: true
+
+      - name: Install build tools
+        run: |
+          brew install ninja pkgconf
+          cmake --version | head -1
+
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-macos-${{ env.VCPKG_COMMIT }}-${{ env.MACOSX_DEPLOYMENT_TARGET }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Set up vcpkg and install libraries
+        shell: bash
+        run: |
+          root="$RUNNER_TEMP/vcpkg"
+          git init -q "$root"
+          git -C "$root" fetch -q --depth 1 https://github.com/microsoft/vcpkg "$VCPKG_COMMIT"
+          git -C "$root" checkout -q FETCH_HEAD
+          "$root/bootstrap-vcpkg.sh" -disableMetrics
+          # 覆盖 arm64-osx triplet：静态库，最低系统版本与 .app 一致
+          mkdir -p "$RUNNER_TEMP/triplets"
+          cp "$root/triplets/arm64-osx.cmake" "$RUNNER_TEMP/triplets/arm64-osx.cmake"
+          echo "set(VCPKG_OSX_DEPLOYMENT_TARGET $MACOSX_DEPLOYMENT_TARGET)" >> "$RUNNER_TEMP/triplets/arm64-osx.cmake"
+          mkdir -p "$RUNNER_TEMP/vcpkg-cache"
+          export VCPKG_DEFAULT_BINARY_CACHE="$RUNNER_TEMP/vcpkg-cache"
+          # 在仓库外运行（经典模式），一并装上编译 FFmpeg 要用的 libvpx / opus
+          cd "$RUNNER_TEMP"
+          "$root/vcpkg" install --triplet arm64-osx --overlay-triplets="$RUNNER_TEMP/triplets" \
+            libwebp "libzip[core]" libvpx opus
+          echo "TSM_DEPS_PREFIX=$root/installed/arm64-osx" >> "$GITHUB_ENV"
+
+      - name: Restore FFmpeg build
+        id: ffmpeg-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ffmpeg
+          key: ffmpeg-macos-${{ env.FFMPEG_MAC_TAG }}-${{ env.VCPKG_COMMIT }}-${{ env.MACOSX_DEPLOYMENT_TARGET }}-${{ hashFiles('.github/workflows/release.yml') }}
+
+      - name: Build FFmpeg
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          src="$RUNNER_TEMP/ffmpeg-src"
+          git clone -q --depth 1 --branch "$FFMPEG_MAC_TAG" https://github.com/FFmpeg/FFmpeg "$src"
+          cd "$src"
+          # 只从 vcpkg 找第三方库，关掉自动探测，避免链接到 Homebrew 的动态库
+          PKG_CONFIG_LIBDIR="$TSM_DEPS_PREFIX/lib/pkgconfig" ./configure \
+            --prefix="$RUNNER_TEMP/ffmpeg" \
+            --pkg-config-flags=--static \
+            --disable-shared --enable-static \
+            --disable-doc --disable-ffplay --disable-debug \
+            --disable-autodetect \
+            --enable-zlib --enable-bzlib --enable-iconv \
+            --enable-audiotoolbox --enable-videotoolbox \
+            --enable-libvpx --enable-libopus --enable-libwebp
+          make -j"$(sysctl -n hw.ncpu)"
+          make install
+
+      - name: Check FFmpeg
+        shell: bash
+        run: |
+          bin="$RUNNER_TEMP/ffmpeg/bin"
+          "$bin/ffmpeg" -hide_banner -version | sed -n 1p
+          for exe in ffmpeg ffprobe; do
+            # 只允许依赖系统库，否则换一台 Mac 就运行不了
+            bad=$(otool -L "$bin/$exe" | tail -n +2 | awk '{print $1}' | grep -v -E '^(/usr/lib/|/System/Library/)' || true)
+            [ -z "$bad" ] || { echo "$exe links non-system libraries:" >&2; echo "$bad" >&2; exit 1; }
+          done
+          enc=$("$bin/ffmpeg" -hide_banner -encoders)
+          for e in libvpx-vp9 libwebp libopus; do
+            grep -q " $e " <<<"$enc" || { echo "FFmpeg is missing encoder $e" >&2; exit 1; }
+          done
+          echo "FFMPEG_ROOT=$RUNNER_TEMP/ffmpeg" >> "$GITHUB_ENV"
+          echo "QT_ROOT=$QT_ROOT_DIR" >> "$GITHUB_ENV"
+
+      - name: Build and test
+        run: scripts/build-macos.sh release test
+
+      - name: Package
+        run: scripts/package-macos.sh --skip-build
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*.dmg
+          if-no-files-found: error
+          retention-days: 1 # 只给下面的 release job 用
+
+  release:
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 需要完整历史和标签，用来列出上一版以来的提交
+
+      - name: Version
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then v="${GITHUB_REF_NAME#v}"; else v='${{ inputs.version }}'; fi
+          echo "TSM_VERSION=$v" >> "$GITHUB_ENV"
+
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
       - name: Release notes
         shell: pwsh
         run: |
-          $assets = Get-ChildItem dist -File | Where-Object { $_.Extension -in '.exe', '.zip' }
-          if ($assets.Count -ne 2) { throw "Expected setup.exe and .zip in dist, found: $($assets.Name -join ', ')" }
+          $assets = Get-ChildItem dist -File | Where-Object { $_.Extension -in '.exe', '.zip', '.dmg' }
+          if ($assets.Count -ne 3) { throw "Expected setup.exe, .zip and .dmg in dist, found: $($assets.Name -join ', ')" }
           $sums = $assets | ForEach-Object { '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name }
           # 更新内容：CHANGELOG.md 里对应版本的一节；没写时列出上一个标签以来的提交标题
           $changelog = Get-Content CHANGELOG.md -Raw -Encoding UTF8
@@ -117,10 +263,10 @@ jobs:
             if (-not $changes) { $changes = '- 无' }
             Write-Host "CHANGELOG.md has no section for v$env:TSM_VERSION; listing commits in $range"
           }
-          $notes = (Get-Content packaging\release-notes.md -Raw -Encoding UTF8).Replace('{{VERSION}}', $env:TSM_VERSION).Replace('{{CHANGES}}', $changes)
+          $notes = (Get-Content packaging/release-notes.md -Raw -Encoding UTF8).Replace('{{VERSION}}', $env:TSM_VERSION).Replace('{{CHANGES}}', $changes)
           $fence = '```'
           $notes += "`n## SHA-256`n`n$fence`n" + ($sums -join "`n") + "`n$fence`n"
-          Set-Content dist\release-notes.md $notes -Encoding UTF8
+          Set-Content dist/release-notes.md $notes -Encoding UTF8
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -129,6 +275,7 @@ jobs:
           path: |
             dist/*.exe
             dist/*.zip
+            dist/*.dmg
             dist/release-notes.md
           retention-days: 7
 
@@ -138,5 +285,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $assets = (Get-ChildItem dist -File | Where-Object { $_.Extension -in '.exe', '.zip' }).FullName
-          gh release create $env:GITHUB_REF_NAME @assets --title $env:GITHUB_REF_NAME --notes-file dist\release-notes.md --verify-tag
+          $assets = (Get-ChildItem dist -File | Where-Object { $_.Extension -in '.exe', '.zip', '.dmg' }).FullName
+          gh release create $env:GITHUB_REF_NAME @assets --title $env:GITHUB_REF_NAME --notes-file dist/release-notes.md --verify-tag

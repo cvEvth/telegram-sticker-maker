@@ -87,7 +87,9 @@ Qt 6.8 的 `FindWrapOpenGL.cmake` 会链接 macOS 15+ 已移除的 `AGL.framewor
 
 ## 发版
 
-推送 `v` 开头的版本标签，GitHub Actions（`.github/workflows/release.yml`）会在 Windows 上构建、跑全部测试、打包，并创建 GitHub Release 上传安装程序和便携 zip（附 SHA-256）。版本号直接取自标签。
+推送 `v` 开头的版本标签，GitHub Actions（`.github/workflows/release.yml`）会分别在 Windows 和 macOS（Apple Silicon）上构建、跑全部测试、打包，两边都成功后创建 GitHub Release，上传 Windows 安装程序、便携 zip 和 macOS DMG（附 SHA-256）。任何一边失败都不会发布。版本号直接取自标签。
+
+macOS 这边的依赖全部在 CI 里现装：Qt 用 install-qt-action，libwebp / libzip / libvpx / opus 用 vcpkg 静态库（与 Windows 同一个 vcpkg 提交），FFmpeg 从源码静态编译（版本见工作流里的 `FFMPEG_MAC_TAG`，LGPL，只链接 vcpkg 的库和系统库）。工作流会检查 ffmpeg / ffprobe 不依赖系统以外的动态库，并且带 libvpx-vp9、libwebp、libopus 编码器。改了库版本记得同步 `packaging/macos/THIRD_PARTY_NOTICES.txt`。
 
 1. 在 [CHANGELOG.md](../CHANGELOG.md) 加一节 `## vX.Y.Z`，写这一版的改动（会放在 Release 说明开头）；没写时自动列出上一版以来的提交标题
 2. 提交并推送
