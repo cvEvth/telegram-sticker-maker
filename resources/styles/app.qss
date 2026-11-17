@@ -23,12 +23,12 @@ QToolTip { background: ${elevated}; color: ${ink}; border: 1px solid ${lineStron
 #SiteLink:hover { background: ${accentBg}; }
 #UpdateLink { background: ${bg}; color: ${ok}; border: 2px solid ${ok}; border-radius: 10px; padding: 5px 14px; font-size: 12px; font-weight: 700; }
 #UpdateLink:hover { background: ${soft}; }
-QPushButton#PrefsButton {
+QPushButton#ThemeButton, QPushButton#LanguageButton {
     background: ${bg}; border: 1px solid ${lineStrong}; border-radius: 16px; padding: 0; font-size: 15px;
     min-width: 32px; max-width: 32px; min-height: 32px; max-height: 32px;
 }
-QPushButton#PrefsButton:hover { border-color: ${accent}; background: ${soft}; }
-QPushButton#PrefsButton::menu-indicator { width: 0; }
+QPushButton#ThemeButton:hover, QPushButton#LanguageButton:hover { border-color: ${accent}; background: ${soft}; }
+QPushButton#ThemeButton::menu-indicator, QPushButton#LanguageButton::menu-indicator { width: 0; }
 
 /* 按钮 */
 QPushButton {

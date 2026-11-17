@@ -1446,9 +1446,7 @@ QStringList MainWindow::scanFolder(const QString& dir)
 
 void MainWindow::checkForUpdates()
 {
-    if (!m_settings.checkUpdates())
-        return;
-    // 上次确认已是最新版后一天内不再查；发现过新版本则每次启动都会再查并提醒
+    // 总是检查，只提醒、不自动下载。上次确认已是最新版后一天内不再查；发现过新版本则每次启动都会再查并提醒
     const QDateTime last = m_settings.lastUpdateCheck();
     if (last.isValid() && last.secsTo(QDateTime::currentDateTime()) < 24 * 3600)
         return;
