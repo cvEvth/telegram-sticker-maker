@@ -38,7 +38,7 @@
 
 - **Telegram specs, handled for you**: videos and GIFs become WebM (VP9) video stickers, images become WebP static stickers; size, frame rate and file size are taken care of, no settings to tune
 - **Best possible quality, never over the limit**: bitrate and frame rate are planned from duration and motion, with two-pass encoding; anything over 256 KB is retried at a lower bitrate or frame rate, and undersized results get a higher bitrate to "fill up" the quality
-- **Longer than 3 seconds still works**: all frames are kept and only the duration in the file header is rewritten to 2.99 s, which passes the @Stickers bot's duration check
+- **Longer than 3 seconds still works**: all frames are kept and only the duration in the file header is rewritten to 2.99 s, which passes the @Stickers bot's duration check (this relies on the bot only reading the duration from the file header, so it may stop working if Telegram changes its rules)
 - **Lots of input formats**: MP4, MKV, WebM, MOV, AVI, FLV, GIF, APNG, animated WebP, PNG, JPG, WebP, BMP, TIFF, HEIC; transparency in videos, GIFs and PNGs is preserved
 - **Custom emoji**: switch to 100×100 mode to make a whole Custom Emoji set at once
 
@@ -90,9 +90,11 @@ Output automatically follows the official requirements:
 
 | Type | Size | Format | Max file size |
 |---|---|---|---|
-| Video sticker | 512 px on the long side | WebM (VP9), no audio, ≤ 3 s | 256 KB |
+| Video sticker | 512 px on the long side | WebM (VP9), no audio, ≤ 3 s, ≤ 30 fps | 256 KB |
 | Static sticker | 512 px on the long side | WebP, transparency allowed | 512 KB |
 | Custom emoji | 100×100 | WebM video / WebP static | 64 KB |
+
+Videos longer than 3 seconds are not cut short; see "Longer than 3 seconds still works" under Features.
 
 ## ❓ FAQ
 
@@ -111,7 +113,7 @@ The macOS version isn't notarized by Apple, so macOS blocks it the first time. G
 <details>
 <summary><b>How do I use AI emoji matching?</b></summary>
 
-Click "⚙️ AI settings" in the toolbar and fill in the API key, base URL and model name. Any vision model that speaks the OpenAI Chat Completions format works (OpenAI, DeepSeek, Moonshot, OneAPI-style relays and so on). If the base URL points to your own machine (localhost / 127.0.0.1), the key can be left empty. Recognition only looks at the final sticker area (with crop, rounded corners and mirroring applied); for videos, several frames are combined into one image.
+Click "⚙️ AI settings" in the toolbar and fill in the API key, base URL and model name. Any vision model that speaks the OpenAI Chat Completions format works (OpenAI, Gemini, Moonshot, OneAPI-style relays and so on). If the model name is left empty it defaults to `gemini-3.5-flash-lite`, but an empty base URL means the official OpenAI address; to use Gemini, set the base URL to `https://generativelanguage.googleapis.com/v1beta/openai/`. If the base URL points to your own machine (localhost / 127.0.0.1), the key can be left empty. Recognition only looks at the final sticker area (with crop, rounded corners and mirroring applied); for videos, several frames are combined into one image.
 </details>
 
 <details>

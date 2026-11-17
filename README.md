@@ -38,7 +38,7 @@
 
 - **一键符合 Telegram 规格**：视频和动图转成 WebM（VP9）视频贴纸，图片转成 WebP 静态贴纸；尺寸、帧率、体积自动处理，不用自己调参数
 - **画质尽量高，体积一定不超限**：按时长和运动量规划码率与帧率，两遍编码；超出 256KB 自动降码率或帧率重试，偏小时上调码率把画质"填满"
-- **超过 3 秒也能用**：保留全部帧，只把文件头里的时长改写为 2.99 秒，可以通过 @Stickers 机器人的时长检查
+- **超过 3 秒也能用**：保留全部帧，只把文件头里的时长改写为 2.99 秒，可以通过 @Stickers 机器人的时长检查（这是利用机器人只看文件头时长的做法，Telegram 以后改规则可能会失效）
 - **素材格式多**：MP4、MKV、WebM、MOV、AVI、FLV、GIF、APNG、动态 WebP、PNG、JPG、WebP、BMP、TIFF、HEIC；透明视频、透明 GIF / PNG 都会保留透明
 - **自定义表情**：切换到 100×100 模式，一次做好一套自定义表情（Custom Emoji）
 
@@ -90,9 +90,11 @@
 
 | 类型 | 尺寸 | 格式 | 体积上限 |
 |---|---|---|---|
-| 视频贴纸 | 长边 512px | WebM（VP9），无音轨，≤ 3 秒 | 256 KB |
+| 视频贴纸 | 长边 512px | WebM（VP9），无音轨，≤ 3 秒，≤ 30fps | 256 KB |
 | 静态贴纸 | 长边 512px | WebP，可透明 | 512 KB |
 | 自定义表情 | 100×100 | 视频 WebM / 静态 WebP | 64 KB |
+
+超过 3 秒的视频不会被截断，处理方式见上面「功能」里的「超过 3 秒也能用」。
 
 ## ❓ 常见问题
 
@@ -111,7 +113,7 @@ macOS 版没有经过 Apple 公证，第一次打开会被拦下。到「系统�
 <details>
 <summary><b>AI 匹配 Emoji 怎么用</b></summary>
 
-点工具栏的「⚙️ AI 设置」，填写 API Key、Base URL 和模型名称。支持任何兼容 OpenAI Chat Completions 格式的视觉模型（如 OpenAI、DeepSeek、Moonshot、OneAPI 等中转）。Base URL 指向本机（localhost / 127.0.0.1）时可以不填 Key。识别时只看最终贴纸区域（已应用裁切、圆角、镜像），视频会取几帧拼成一张图。
+点工具栏的「⚙️ AI 设置」，填写 API Key、Base URL 和模型名称。支持任何兼容 OpenAI Chat Completions 格式的视觉模型（如 OpenAI、Gemini、Moonshot，或 OneAPI 等中转）。模型名称留空时默认用 `gemini-3.5-flash-lite`，但 Base URL 留空时是 OpenAI 官方地址；用 Gemini 时 Base URL 要填 `https://generativelanguage.googleapis.com/v1beta/openai/`。Base URL 指向本机（localhost / 127.0.0.1）时可以不填 Key。识别时只看最终贴纸区域（已应用裁切、圆角、镜像），视频会取几帧拼成一张图。
 </details>
 
 <details>
