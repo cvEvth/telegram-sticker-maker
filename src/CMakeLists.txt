@@ -115,6 +115,10 @@ if(APPLE)
     target_sources(TelegramStickerMaker PRIVATE "${PROJECT_SOURCE_DIR}/packaging/macos/THIRD_PARTY_NOTICES.txt")
     set_source_files_properties("${PROJECT_SOURCE_DIR}/packaging/macos/THIRD_PARTY_NOTICES.txt"
         PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+    # 本程序自己的许可证（GPL-3.0）
+    target_sources(TelegramStickerMaker PRIVATE "${PROJECT_SOURCE_DIR}/LICENSE")
+    set_source_files_properties("${PROJECT_SOURCE_DIR}/LICENSE"
+        PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
     set_target_properties(TelegramStickerMaker PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST "${PROJECT_SOURCE_DIR}/packaging/macos/Info.plist.in"
         MACOSX_BUNDLE_BUNDLE_NAME "Telegram Sticker Maker"

@@ -118,13 +118,16 @@ private slots:
         QCOMPARE(ru.translate("tsm::MainWindow", "已添加 %n 项", nullptr, 21), QStringLiteral("%n элемент"));
     }
 
-    // 标题栏设置菜单：主题立即换配色并记住，重开窗口沿用；语言与检查更新也在这里
+    // 标题栏主题、语言两个按钮：主题立即换配色并记住，重开窗口沿用；按钮图标跟着变；没有关闭检查更新的开关
     void preferencesMenu()
     {
         QDir(AppPaths::configDir()).removeRecursively();
         const ThemeMode initial = themeModeFromString(qEnvironmentVariable("TSM_THEME", QStringLiteral("dark")));
-        const auto menuOf = [](QWidget& window) {
-            auto* button = window.findChild<QPushButton*>(QStringLiteral("PrefsButton"));
+        const auto buttonOf = [](QWidget& window, const char* name) {
+            return window.findChild<QPushButton*>(QString::fromLatin1(name));
+        };
+        const auto menuOf = [&](QWidget& window, const char* name) {
+            QPushButton* button = buttonOf(window, name);
             return button ? button->menu() : nullptr;
         };
         const auto actionFor = [](QMenu* menu, const QString& data) -> QAction* {
@@ -136,39 +139,46 @@ private slots:
         {
             MainWindow window;
             window.show();
-            QMenu* menu = menuOf(window);
-            QVERIFY(menu);
-            QVERIFY(actionFor(menu, QStringLiteral("system"))->isChecked()); // 默认跟随系统
+            QVERIFY(!buttonOf(window, "PrefsButton")); // 旧的 ⚙ 合并菜单已拆掉
+            QPushButton* themeButton = buttonOf(window, "ThemeButton");
+            QMenu* themeMenu = menuOf(window, "ThemeButton");
+            QMenu* languageMenu = menuOf(window, "LanguageButton");
+            QVERIFY(themeButton && themeMenu && languageMenu);
+            QCOMPARE(themeMenu->actions().size(), 3); // 只有主题，没有语言或检查更新
+            QCOMPARE(languageMenu->actions().size(), int(Language::available().size()) + 1);
+            QVERIFY(actionFor(themeMenu, QStringLiteral("system"))->isChecked()); // 默认跟随系统
+            QCOMPARE(themeButton->text(), QStringLiteral("🌓"));
+            QVERIFY(actionFor(languageMenu, QString())->isChecked());
             for (const Language::Option& option : Language::available())
-                QVERIFY(actionFor(menu, option.code));
+                QVERIFY(actionFor(languageMenu, option.code));
 
-            actionFor(menu, QStringLiteral("light"))->trigger();
+            actionFor(themeMenu, QStringLiteral("light"))->trigger();
             QVERIFY(!theme().dark);
             QVERIFY(qApp->styleSheet().contains(theme().bg.name()));
             QCOMPARE(AppSettings().theme(), QStringLiteral("light"));
-            actionFor(menu, QStringLiteral("dark"))->trigger();
+            QCOMPARE(themeButton->text(), QStringLiteral("☀️"));
+            actionFor(themeMenu, QStringLiteral("dark"))->trigger();
             QVERIFY(theme().dark);
+            QCOMPARE(themeButton->text(), QStringLiteral("🌙"));
             QVERIFY(qApp->styleSheet().contains(theme().bg.name()));
             QVERIFY(!qApp->styleSheet().contains(QStringLiteral("${")));
 
-            QAction* updates = nullptr;
-            for (QAction* a : menu->actions())
-                if (a->isCheckable() && a->data().isNull())
-                    updates = a;
-            QVERIFY(updates && updates->isChecked());
-            updates->trigger();
-            QVERIFY(!AppSettings().checkUpdates());
-            menu->popup(window.mapToGlobal(QPoint(window.width() - 260, 50)));
-            QTest::qWaitForWindowExposed(menu);
-            snapshot(menu, QStringLiteral("prefs_menu.png"));
-            menu->hide();
+            themeMenu->popup(window.mapToGlobal(QPoint(window.width() - 200, 50)));
+            QVERIFY(QTest::qWaitForWindowExposed(themeMenu));
+            snapshot(themeMenu, QStringLiteral("theme_menu.png"));
+            themeMenu->hide();
+            languageMenu->popup(window.mapToGlobal(QPoint(window.width() - 160, 50)));
+            QVERIFY(QTest::qWaitForWindowExposed(languageMenu));
+            snapshot(languageMenu, QStringLiteral("language_menu.png"));
+            languageMenu->hide();
+            snapshot(&window, QStringLiteral("header_buttons.png"));
         }
         {
             MainWindow window;
-            QVERIFY(actionFor(menuOf(window), QStringLiteral("dark"))->isChecked());
+            QVERIFY(actionFor(menuOf(window, "ThemeButton"), QStringLiteral("dark"))->isChecked());
+            QCOMPARE(buttonOf(window, "ThemeButton")->text(), QStringLiteral("🌙"));
         }
         AppSettings().setTheme(QStringLiteral("system"));
-        AppSettings().setCheckUpdates(true);
         applyTheme(*qApp, initial);
     }
 

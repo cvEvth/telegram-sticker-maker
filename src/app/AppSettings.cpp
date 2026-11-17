@@ -26,8 +26,6 @@ constexpr auto AiApiKey = "ai/api_key";
 constexpr auto ShowDoneDialog = "ui/show_done_dialog";
 constexpr auto Language = "ui/language";
 constexpr auto Theme = "ui/theme";
-constexpr auto CheckUpdates = "update/check";
-constexpr auto LastUpdateCheck = "update/last_check";
 } // namespace key
 
 AppSettings::AppSettings()
@@ -135,9 +133,5 @@ QString AppSettings::language() const { return value(key::Language, QString()).t
 void AppSettings::setLanguage(const QString& language) { setValue(key::Language, language); }
 QString AppSettings::theme() const { return value(key::Theme, QStringLiteral("system")).toString(); }
 void AppSettings::setTheme(const QString& theme) { setValue(key::Theme, theme); }
-bool AppSettings::checkUpdates() const { return value(key::CheckUpdates, true).toBool(); }
-void AppSettings::setCheckUpdates(bool on) { setValue(key::CheckUpdates, on); }
-QDateTime AppSettings::lastUpdateCheck() const { return value(key::LastUpdateCheck, QDateTime()).toDateTime(); }
-void AppSettings::setLastUpdateCheck(const QDateTime& time) { setValue(key::LastUpdateCheck, time); }
 
 } // namespace tsm

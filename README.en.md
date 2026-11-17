@@ -18,6 +18,7 @@
   <a href="https://github.com/cvEvth/telegram-sticker-maker/releases"><img src="https://img.shields.io/github/downloads/cvEvth/telegram-sticker-maker/total?label=downloads" alt="Downloads"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078d4" alt="Windows 10 / 11">
   <img src="https://img.shields.io/badge/macOS-12%2B%20(Apple%20Silicon)-000000" alt="macOS 12+ (Apple Silicon)">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0"></a>
 </p>
 
 <p align="center">
@@ -26,22 +27,34 @@
   <a href="https://www.cvevth.top/sticker"><b>🌐 Create a sticker pack online</b></a>
 </p>
 
+<p align="center">
+  <a href="#-features">Features</a> · <a href="#-download">Download</a> · <a href="#-quick-start">Quick start</a> · <a href="#-telegram-sticker-specs">Sticker specs</a> · <a href="#-faq">FAQ</a>
+</p>
+
 ![Main window](docs/screenshots/main-window.png)
 
-## Features
+## ✨ Features
+
+### 🎯 Conversion
 
 - **Telegram specs, handled for you**: videos and GIFs become WebM (VP9) video stickers, images become WebP static stickers; size, frame rate and file size are taken care of, no settings to tune
 - **Best possible quality, never over the limit**: bitrate and frame rate are planned from duration and motion, with two-pass encoding; anything over 256 KB is retried at a lower bitrate or frame rate, and undersized results get a higher bitrate to "fill up" the quality
-- **Longer than 3 seconds still works**: all frames are kept and only the duration in the file header is rewritten to 2.99 s, which passes the @Stickers bot's duration check
-- **Trim and crop**: mark points on the timeline to cut several clips from one video; the crop box supports aspect-ratio lock, rounded corners, circles and mirroring; click a clip to preview it on loop
-- **Emoji and keywords**: double-click to set an emoji, or right-click to set emoji and keywords in bulk; you can also connect an OpenAI-compatible vision model to match emoji to the mood of each frame automatically
+- **Longer than 3 seconds still works**: all frames are kept and only the duration in the file header is rewritten to 2.99 s, which passes the @Stickers bot's duration check (this relies on the bot only reading the duration from the file header, so it may stop working if Telegram changes its rules)
 - **Lots of input formats**: MP4, MKV, WebM, MOV, AVI, FLV, GIF, APNG, animated WebP, PNG, JPG, WebP, BMP, TIFF, HEIC; transparency in videos, GIFs and PNGs is preserved
 - **Custom emoji**: switch to 100×100 mode to make a whole Custom Emoji set at once
-- **English, Simplified Chinese and Russian interface**: follows your system language by default; switch it from the ⚙ menu in the top-right corner
-- **Light and dark themes**: follows your system by default, or pick light or dark from the ⚙ menu; the change applies right away
+
+### 🎬 Editing
+
+- **Trim and crop**: mark points on the timeline to cut several clips from one video; the crop box supports aspect-ratio lock, rounded corners, circles and mirroring; click a clip to preview it on loop
+- **Emoji and keywords**: double-click to set an emoji, or right-click to set emoji and keywords in bulk; you can also connect an OpenAI-compatible vision model to match emoji to the mood of each frame automatically
+
+### 💡 Everyday use
+
+- **English, Simplified Chinese and Russian interface**: follows your system language by default; switch it with the 🌏 button in the top-right corner
+- **Light and dark themes**: follows your system by default, or pick light or dark with the theme button (🌓 / ☀️ / 🌙) in the top-right corner; the change applies right away
 - **Safe from interruptions**: the list and every edit are saved automatically and restored exactly when you reopen the app; you can also export the source files with a settings manifest and continue on another computer
 
-## Download
+## 📦 Download
 
 Get it from [Releases](https://github.com/cvEvth/telegram-sticker-maker/releases/latest):
 
@@ -53,36 +66,38 @@ Get it from [Releases](https://github.com/cvEvth/telegram-sticker-maker/releases
 
 Requirements: Windows 10 / 11, 64-bit; or macOS 12 or later on Apple Silicon (M-series chips). Every package bundles its runtimes, nothing else to install.
 
-## Quick start
+## 🚀 Quick start
 
 1. **Drag** videos, GIFs or images **into the window**, or click "Add files" / "Add folder"
 2. To trim clips or crop the frame, click ✂️ on a row to open the editor
 3. **Double-click "Target file name"** to set an emoji; the right-click menu sets emoji and keywords in bulk, or lets AI match emoji
 4. Click "🚀 Start conversion". When it finishes, the output folder contains `TG_Stickers_<date>_<time>.zip` (the stickers plus a `stickers.json` with their emoji and keywords)
 
-### Trim and crop
+### ✂️ Trim and crop
 
 One video can be cut into several clips, each with its own start and end, crop box, rounded corners, mirroring and emoji. Clicking a clip card or its block on the timeline loops playback within that clip; `[` / `]` set the start and end points, and `Space` plays or pauses.
 
 ![Trim and crop window](docs/screenshots/editor.png)
 
-### Create a sticker pack
+### 🎉 Create a sticker pack
 
 After converting, go to **[www.cvevth.top/sticker](https://www.cvevth.top/sticker)** to create your Telegram sticker pack, or send the zip straight to the Telegram bot **@cvEvthBot**.
 
 <p align="center"><img src="docs/screenshots/done-dialog.png" width="540" alt="Conversion finished"></p>
 
-## Telegram sticker specs
+## 📐 Telegram sticker specs
 
 Output automatically follows the official requirements:
 
 | Type | Size | Format | Max file size |
 |---|---|---|---|
-| Video sticker | 512 px on the long side | WebM (VP9), no audio, ≤ 3 s | 256 KB |
+| Video sticker | 512 px on the long side | WebM (VP9), no audio, ≤ 3 s, ≤ 30 fps | 256 KB |
 | Static sticker | 512 px on the long side | WebP, transparency allowed | 512 KB |
 | Custom emoji | 100×100 | WebM video / WebP static | 64 KB |
 
-## FAQ
+Videos longer than 3 seconds are not cut short; see "Longer than 3 seconds still works" under Features.
+
+## ❓ FAQ
 
 <details>
 <summary><b>Windows says "Windows protected your PC" when I open it</b></summary>
@@ -99,7 +114,7 @@ The macOS version isn't notarized by Apple, so macOS blocks it the first time. G
 <details>
 <summary><b>How do I use AI emoji matching?</b></summary>
 
-Click "⚙️ AI settings" in the toolbar and fill in the API key, base URL and model name. Any vision model that speaks the OpenAI Chat Completions format works (OpenAI, DeepSeek, Moonshot, OneAPI-style relays and so on). If the base URL points to your own machine (localhost / 127.0.0.1), the key can be left empty. Recognition only looks at the final sticker area (with crop, rounded corners and mirroring applied); for videos, several frames are combined into one image.
+Click "⚙️ AI settings" in the toolbar and fill in the API key, base URL and model name. Any vision model that speaks the OpenAI Chat Completions format works (OpenAI, Gemini, Moonshot, OneAPI-style relays and so on). If the model name is left empty it defaults to `gemini-3.5-flash-lite`, but an empty base URL means the official OpenAI address; to use Gemini, set the base URL to `https://generativelanguage.googleapis.com/v1beta/openai/`. If the base URL points to your own machine (localhost / 127.0.0.1), the key can be left empty. Recognition only looks at the final sticker area (with crop, rounded corners and mirroring applied); for videos, several frames are combined into one image.
 </details>
 
 <details>
@@ -111,13 +126,17 @@ Long clips with complex, fast-moving content may not fit in 256 KB even at the l
 <details>
 <summary><b>Where are settings and caches stored?</b></summary>
 
-By default in `%LOCALAPPDATA%\TelegramStickerMaker` (settings, the auto-saved list and preview caches). You can move it to another drive with "Data folder" on the right, and "Clear preview cache" frees up space. Uninstalling keeps this data, so you can pick up where you left off after reinstalling.
+By default in `%LOCALAPPDATA%\TelegramStickerMaker` on Windows and `~/Library/Preferences/TelegramStickerMaker` on macOS (settings, the auto-saved list and preview caches). You can move it to another drive with "Data folder" on the right, and "Clear preview cache" frees up space. Uninstalling keeps this data, so you can pick up where you left off after reinstalling.
 </details>
 
-## Development
+## 🛠️ Development
 
 C++20 · Qt 6.8 · FFmpeg 8.1 · libwebp · libzip · CMake + vcpkg. See [docs/development.md](docs/development.md) (Chinese) for building, testing, packaging and releasing, and [CHANGELOG.md](CHANGELOG.md) for version history.
 
-## Acknowledgements
+## 🙏 Acknowledgements
 
 This app uses open-source components including [Qt](https://www.qt.io/) (LGPL v3), [FFmpeg](https://ffmpeg.org/) (LGPL), [libwebp](https://chromium.googlesource.com/webm/libwebp) and [libzip](https://libzip.org/). Their licenses ship with the installer; see `THIRD_PARTY_NOTICES.txt`.
+
+## 📄 License
+
+This project is licensed under [GPL-3.0](LICENSE): you are free to use, modify and distribute it, but if you distribute a modified version or software based on it, you must release its source code under GPL-3.0 as well.
