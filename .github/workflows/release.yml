@@ -179,14 +179,15 @@ jobs:
           src="$RUNNER_TEMP/ffmpeg-src"
           git clone -q --depth 1 --branch "$FFMPEG_MAC_TAG" https://github.com/FFmpeg/FFmpeg "$src"
           cd "$src"
-          # 只从 vcpkg 找第三方库，关掉自动探测，避免链接到 Homebrew 的动态库
+          # 只从 vcpkg 找第三方库，关掉自动探测，避免链接到 Homebrew 的动态库。
+          # 不开 iconv：只用于字幕 / TS 字符集转换，贴纸用不到，开了在 macOS 上还会漏链 -liconv
           PKG_CONFIG_LIBDIR="$TSM_DEPS_PREFIX/lib/pkgconfig" ./configure \
             --prefix="$RUNNER_TEMP/ffmpeg" \
             --pkg-config-flags=--static \
             --disable-shared --enable-static \
             --disable-doc --disable-ffplay --disable-debug \
             --disable-autodetect \
-            --enable-zlib --enable-bzlib --enable-iconv \
+            --enable-zlib --enable-bzlib \
             --enable-audiotoolbox --enable-videotoolbox \
             --enable-libvpx --enable-libopus --enable-libwebp
           make -j"$(sysctl -n hw.ncpu)"
