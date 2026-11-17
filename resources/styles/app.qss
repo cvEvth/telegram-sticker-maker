@@ -11,8 +11,8 @@ QToolTip { background: ${elevated}; color: ${ink}; border: 1px solid ${lineStron
 #AppSubtitle { color: ${muted}; font-size: 11px; }
 #Badge {
     background: ${accent}; color: ${onAccent}; font-weight: 700;
-    border: 2px solid ${shadow}; border-right-width: 3px; border-bottom-width: 3px; border-radius: 8px;
-    padding: 3px 11px; font-size: 12px;
+    border: 1px solid ${accent}; border-radius: 8px;
+    padding: 5px 13px; font-size: 12px;
 }
 #Badge[muted="true"] { background: ${soft}; color: ${muted}; border: 1px solid ${lineStrong}; padding: 5px 13px; }
 #SiteLink {
@@ -39,15 +39,15 @@ QPushButton:pressed { background: ${accentBg}; }
 QPushButton:disabled { color: ${muted}; background: ${bg2}; border-color: ${line}; }
 QPushButton::menu-indicator { subcontrol-position: right center; right: 10px; }
 
-/* 主按钮：粉色实底 + 粗黑描边模拟硬投影，按下时投影收回 */
+/* 主按钮：粉色实底，扁平无投影；按下时文字下移一点 */
 QPushButton#PrimaryButton {
     background: ${accent}; color: ${onAccent}; border-radius: 12px;
-    border: 2px solid ${shadow}; border-right-width: 5px; border-bottom-width: 5px;
+    border: 1px solid ${accent};
     font-size: 15px; font-weight: 800;
 }
-QPushButton#PrimaryButton:hover { background: ${accentHover}; }
-QPushButton#PrimaryButton:pressed { border-right-width: 2px; border-bottom-width: 2px; border-left-width: 5px; border-top-width: 5px; }
-QPushButton#PrimaryButton:disabled { background: ${accentBg}; color: ${accentFg}; border: 2px solid ${lineStrong}; }
+QPushButton#PrimaryButton:hover { background: ${accentHover}; border-color: ${accentHover}; }
+QPushButton#PrimaryButton:pressed { background: ${accent}; padding-top: 8px; padding-bottom: 4px; }
+QPushButton#PrimaryButton:disabled { background: ${accentBg}; color: ${accentFg}; border: 1px solid ${lineStrong}; }
 
 QPushButton#DangerButton, QPushButton#DangerGhostButton { color: ${bad}; background: transparent; border-color: ${badLine}; }
 QPushButton#DangerButton:hover, QPushButton#DangerGhostButton:hover { border-color: ${bad}; }
