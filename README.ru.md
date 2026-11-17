@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Программа для Windows, которая пакетно превращает видео, GIF и картинки в стикеры Telegram<br>
+  Программа для Windows и macOS, которая пакетно превращает видео, GIF и картинки в стикеры Telegram<br>
   Обрежьте фрагменты и кадр, задайте эмодзи и ключевые слова — и одним нажатием получите стикеры WebM / WebP по официальным требованиям
 </p>
 
@@ -17,6 +17,7 @@
   <a href="https://github.com/cvEvth/telegram-sticker-maker/releases/latest"><img src="https://img.shields.io/github/v/release/cvEvth/telegram-sticker-maker?label=%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F" alt="Последняя версия"></a>
   <a href="https://github.com/cvEvth/telegram-sticker-maker/releases"><img src="https://img.shields.io/github/downloads/cvEvth/telegram-sticker-maker/total?label=%D0%B7%D0%B0%D0%B3%D1%80%D1%83%D0%B7%D0%BA%D0%B8" alt="Загрузки"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078d4" alt="Windows 10 / 11">
+  <img src="https://img.shields.io/badge/macOS-12%2B%20(Apple%20Silicon)-000000" alt="macOS 12+ (Apple Silicon)">
 </p>
 
 <p align="center">
@@ -48,8 +49,9 @@
 |---|---|
 | `TelegramStickerMaker-x.y.z-win64-setup.exe` | Установщик; по умолчанию ставит программу для текущего пользователя, права администратора не нужны |
 | `TelegramStickerMaker-x.y.z-win64.zip` | Портативная версия; распакуйте и запустите `TelegramStickerMaker.exe` |
+| `TelegramStickerMaker-x.y.z-macos-arm64.dmg` | Версия для macOS; откройте образ и перетащите программу в «Программы» |
 
-Требования: Windows 10 / 11, 64 бит. Оба пакета содержат всё необходимое, ничего дополнительно устанавливать не нужно.
+Требования: Windows 10 / 11, 64 бит; или macOS 12 и новее на Apple Silicon (чипы M-серии). Все пакеты содержат всё необходимое, ничего дополнительно устанавливать не нужно.
 
 ## Быстрый старт
 
@@ -86,6 +88,12 @@
 <summary><b>При запуске Windows пишет «Система Windows защитила ваш компьютер»</b></summary>
 
 У программы нет платного сертификата подписи кода, поэтому Windows SmartScreen показывает «неизвестный издатель». Нажмите «Подробнее» → «Выполнить в любом случае». В описании каждого релиза указаны контрольные суммы SHA-256, по ним можно проверить скачанный файл.
+</details>
+
+<details>
+<summary><b>macOS пишет, что не удаётся проверить разработчика / программу нельзя открыть</b></summary>
+
+Версия для macOS не нотариально заверена Apple, поэтому при первом запуске macOS её блокирует. Откройте «Системные настройки → Конфиденциальность и безопасность» и нажмите «Всё равно открыть», либо выполните в Терминале `xattr -dr com.apple.quarantine /Applications/TelegramStickerMaker.app` и откройте программу снова. Это нужно сделать один раз.
 </details>
 
 <details>
