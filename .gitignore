@@ -6,3 +6,5 @@ CMakeUserPresets.json
 *.user
 *.log
 /dist/
+
+.DS_Store
