@@ -101,7 +101,7 @@ HeaderBar::HeaderBar(AppSettings& settings, QWidget* parent)
                                       settings.setLanguage(code);
                                       QMessageBox::information(window(), tr("界面语言"), tr("重启程序后生效"));
                                   });
-    m_language->setText(QStringLiteral("🔤"));
+    m_language->setText(QStringLiteral("🌏"));
 
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(18, 10, 18, 10);

@@ -50,7 +50,7 @@
 
 ### 💡 Everyday use
 
-- **English, Simplified Chinese and Russian interface**: follows your system language by default; switch it with the 🔤 button in the top-right corner
+- **English, Simplified Chinese and Russian interface**: follows your system language by default; switch it with the 🌏 button in the top-right corner
 - **Light and dark themes**: follows your system by default, or pick light or dark with the theme button (🌓 / ☀️ / 🌙) in the top-right corner; the change applies right away
 - **Safe from interruptions**: the list and every edit are saved automatically and restored exactly when you reopen the app; you can also export the source files with a settings manifest and continue on another computer
 
